@@ -7,7 +7,9 @@ extern "C" void kmain() {
         for(int j = 0; j < i; ++j) {
             fb.putc(' ');
         }
-        fb.puts("Hello World!\f");
+        fb.puts("Hello World! ");
+        fb.printInt(i, 10);
+        fb.putc('\f');
     }
 
     while(true) {

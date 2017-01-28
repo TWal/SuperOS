@@ -101,3 +101,33 @@ void FrameBuffer::puts(const char* s, bool updateCurs) {
     if(updateCurs) updateCursor();
 }
 
+
+void FrameBuffer::printDigit(int d, bool updateCurs) {
+    if(d <= 9) {
+        putc('0' + d, false);
+    } else {
+        putc('a' + (d-10), false);
+    }
+    if(updateCurs) updateCursor();
+}
+
+void FrameBuffer::printInt(int n, uint base, bool updateCurs) {
+    if(n < 0) {
+        putc('-', false);
+        n = -n;
+    }
+    uint i = 1;
+    while(i*base <= (uint)n) {
+        i *= base;
+    }
+    while(n > 0) {
+        printDigit(n/i, false);
+        n %= i;
+        i /= base;
+    }
+    while(i >= 1) {
+        putc('0', false);
+        i /= base;
+    }
+    if(updateCurs) updateCursor();
+}

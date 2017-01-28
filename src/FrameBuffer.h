@@ -13,6 +13,8 @@ class FrameBuffer {
         void scroll(uint n, bool updateCurs=true);
         void putc(char c, bool updateCurs=true);
         void puts(const char* s, bool updateCurs=true);
+        void printDigit(int d, bool updateCurs=true);
+        void printInt(int n, uint base, bool updateCurs=true);
     private:
         int _cursCol;
         int _cursRow;
