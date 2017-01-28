@@ -2,18 +2,23 @@
 
 static char* const FB = (char*)0xB8000;
 
+inline static char getColor(char fg, char bg) {
+    return (fg & 0xF) | ((bg & 0xF) << 4);
+}
+
 FrameBuffer::FrameBuffer() {
     clear();
 }
 
-void FrameBuffer::clear() {
-    _fg = 0xF;
-    _bg = 0x0;
+void FrameBuffer::clear(char fg, char bg) {
+    _fg = fg;
+    _bg = bg;
     _cursCol = 0;
     _cursRow = 0;
+    char color = getColor(_fg, _bg);
     for(int i = 0 ; i < 80 * 25 ; ++i){
         FB[2*i] = 0;
-        FB[2*i+1] = 0xF;
+        FB[2*i+1] = color;
     }
 }
 
@@ -39,10 +44,11 @@ void FrameBuffer::updateCursor() {
 void FrameBuffer::writeChar(char c, int col, int row, char fg, char bg) {
     int i = 80*row + col;
     FB[2*i] = c;
-    FB[2*i+1] = (fg & 0xF) | ((bg & 0xF) << 4);
+    FB[2*i+1] = getColor(fg, bg);
 }
 
 void FrameBuffer::scroll(uint n, bool updateCurs) {
+    char color = getColor(_fg, _bg);
     for(int row = 0; row < 25; ++row) {
         for(int col = 0; col < 80; ++col) {
             int posTo = 80*row+col;
@@ -52,7 +58,7 @@ void FrameBuffer::scroll(uint n, bool updateCurs) {
                 FB[2*posTo+1] = FB[2*posFrom+1];
             } else {
                 FB[2*posTo] = 0;
-                FB[2*posTo+1] = 0xF;
+                FB[2*posTo+1] = color;
             }
         }
     }
@@ -141,10 +147,7 @@ void FrameBuffer::printInt(int n, uint base, uint padding, bool updateCurs) {
     if(updateCurs) updateCursor();
 }
 
-void FrameBuffer::printf(const char* s, ...) {
-    va_list ap;
-    va_start(ap, s);
-    (void)s;
+void FrameBuffer::vprintf(const char* s, va_list ap) {
     while(*s) {
         if(*s != '%') {
             putc(*s, false);
@@ -176,6 +179,13 @@ void FrameBuffer::printf(const char* s, ...) {
             //omg me dunno wat to do!!!
         }
     }
-    va_end(ap);
     updateCursor();
 }
+
+void FrameBuffer::printf(const char* s, ...) {
+    va_list ap;
+    va_start(ap, s);
+    vprintf(s, ap);
+    va_end(ap);
+}
+
