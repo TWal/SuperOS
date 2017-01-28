@@ -111,15 +111,24 @@ void FrameBuffer::printDigit(int d, bool updateCurs) {
     if(updateCurs) updateCursor();
 }
 
-void FrameBuffer::printInt(int n, uint base, bool updateCurs) {
+void FrameBuffer::printInt(int n, uint base, uint padding, bool updateCurs) {
     if(n < 0) {
         putc('-', false);
         n = -n;
     }
+
     uint i = 1;
     while(i*base <= (uint)n) {
         i *= base;
+        if(padding > 0) {
+            padding -= 1;
+        }
     }
+
+    for(uint j = 1; j < padding; ++j) {
+        putc('0', false);
+    }
+
     while(n > 0) {
         printDigit(n/i, false);
         n %= i;
@@ -130,4 +139,43 @@ void FrameBuffer::printInt(int n, uint base, bool updateCurs) {
         i /= base;
     }
     if(updateCurs) updateCursor();
+}
+
+void FrameBuffer::printf(const char* s, ...) {
+    va_list ap;
+    va_start(ap, s);
+    (void)s;
+    while(*s) {
+        if(*s != '%') {
+            putc(*s, false);
+            ++s;
+            continue;
+        }
+        ++s;
+        if(*s == '%') {
+            putc('%', false);
+            ++s;
+        } else if(*s == 'd') {
+            printInt(va_arg(ap, int), 10, 0, false);
+            ++s;
+        } else if(*s == 'x') {
+            putc('0', false);
+            putc('x', false);
+            printInt(va_arg(ap, int), 16, 0, false);
+            ++s;
+        } else if(*s == 's') {
+            puts(va_arg(ap, char*), false);
+            ++s;
+        } else if(*s == 'c') {
+            //integer types smaller than int are promoted to int
+            //when used in a ...
+            char c = va_arg(ap, int);
+            putc(c, false);
+            ++s;
+        } else {
+            //omg me dunno wat to do!!!
+        }
+    }
+    va_end(ap);
+    updateCursor();
 }

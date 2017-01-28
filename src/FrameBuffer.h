@@ -14,7 +14,8 @@ class FrameBuffer {
         void putc(char c, bool updateCurs=true);
         void puts(const char* s, bool updateCurs=true);
         void printDigit(int d, bool updateCurs=true);
-        void printInt(int n, uint base, bool updateCurs=true);
+        void printInt(int n, uint base, uint padding=0, bool updateCurs=true);
+        void printf(const char* s, ...);
     private:
         int _cursCol;
         int _cursRow;
