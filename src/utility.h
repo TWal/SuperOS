@@ -6,16 +6,24 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void outb(ushort port, uchar data);
 int inb(ushort port);
 
-#ifdef __cplusplus
+template<typename T> T min(const T& a, const T& b) {
+    if(a < b) {
+        return a;
+    } else {
+        return b;
+    }
 }
-#endif
+
+template<typename T> T max(const T& a, const T& b) {
+    if(a < b) {
+        return b;
+    } else {
+        return a;
+    }
+}
 
 #endif
 

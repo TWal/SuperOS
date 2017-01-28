@@ -3,9 +3,15 @@
 
 extern "C" void kmain() {
     FrameBuffer fb;
-    const char* s = "Hello World!";
-    for(int i = 0; i < 12; ++i) {
-        fb.writeChar(s[i], i, i);
+    for(int i = 0; i < 20; ++i) {
+        for(int j = 0; j < i; ++j) {
+            fb.putc(' ');
+        }
+        fb.puts("Hello World!\f");
     }
-    fb.moveCursor(12, 12);
+
+    while(true) {
+        for(int i = 0; i < 5000000; ++i);
+        fb.scroll(1);
+    }
 }
