@@ -8,7 +8,7 @@ SRCDIR = src
 OUTDIR = out
 
 ASFLAGS = --32
-CFLAGS = -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c
+CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -fno-exceptions -fno-rtti -Wall -Wextra -Werror -c
 CXXFLAGS = $(CFLAGS)
 LDFLAGS = -T $(SRCDIR)/link.ld -melf_i386
 

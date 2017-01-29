@@ -16,11 +16,19 @@ SECTIONS {
     .data ALIGN (0x1000) :
     {
         *(.data)
+
+
     }
 
     .bss ALIGN (0x1000) :
     {
         *(COMMON)
         *(.bss)
+    }
+    .init_array ALIGN (0x1000) :
+    {
+    __init_array_start = .;
+    *(.init_array)
+    __init_array_end = .;
     }
 }
