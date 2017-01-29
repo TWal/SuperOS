@@ -6,7 +6,7 @@
 class FrameBuffer {
     public:
         FrameBuffer();
-        void clear(char fg = 0xF, char bgj= 0x0);
+        void clear(char fg = 0xF, char bg = 0x0);
         void moveCursor(int col, int row, bool updateCurs=true);
         void updateCursor();
         void writeChar(char c, int col, int row, char fg = 15, char bg = 0);
