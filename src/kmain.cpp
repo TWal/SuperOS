@@ -1,5 +1,6 @@
 #include "FrameBuffer.h"
 #include "utility.h"
+#include "globals.h"
 
 typedef void(*funcp)();
 
@@ -14,7 +15,6 @@ void init(){
         (*p)();
     }
 }
-FrameBuffer fb;
 
 extern "C" void kmain() {
     init();
@@ -25,10 +25,10 @@ extern "C" void kmain() {
         fb.printf("%s%c %d\f", "Hello World", '!', i);
     }
 
-    //while(true) {
+    while(true) {
         for(int i = 0; i < 5000000; ++i);
         fb.scroll(1);
-        //}
+    }
 }
 extern "C" void __cxa_pure_virtual (){}
 void * __dso_handle=0;
