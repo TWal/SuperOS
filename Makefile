@@ -51,7 +51,7 @@ $(OUTDIR)/%.o: $(SRCDIR)/%.cpp out
 	$(CXX) $(CXXFLAGS)  $< -o $@
 
 out:
-	mkdir -p out
+	mkdir -p $(OUTDIR)
 
 clean:
-	rm out/*
+	rm $(OUTDIR)/*
