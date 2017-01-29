@@ -23,7 +23,7 @@ OBJ = $(patsubst $(SRCDIR)/%.s, $(OUTDIR)/%.o, $(SRCASM)) \
 all: kernel.elf
 
 kernel.elf: $(OBJ)
-	ld $(LDFLAGS) $(OBJ) -o kernel.elf
+	ld $(LDFLAGS) $(OBJ) -o kernel.elf --print-map | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
 
 os.iso: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf

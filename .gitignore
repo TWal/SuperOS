@@ -3,3 +3,4 @@ os.iso
 bochslog.txt
 iso/boot/kernel.elf
 out/*
+ld_mapping
