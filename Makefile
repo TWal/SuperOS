@@ -41,6 +41,9 @@ os.iso: kernel.elf
 run: os.iso
 	bochs -f bochsrc.txt -q
 
+runqemu: os.iso
+	qemu-system-x86_64 -boot d -cdrom os.iso -m 512
+
 $(OUTDIR)/%.s.o: $(SRCDIR)/%.s out
 	$(AS) $(ASFLAGS) $< -o $@
 
