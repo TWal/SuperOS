@@ -17,23 +17,31 @@ void init(){
     }
 }
 
-extern "C" void prout(){
-    bsod("prout !!");
+extern "C" void bigfail(){
+    bsod("Double fault :-(");
 }
 
 extern "C" void inter153();
 
+extern "C" void keyboard() {
+    bsod("Key pressed!");
+    breakpoint;
+    pic.endOfInterrupt(0);
+}
+
 extern "C" void kmain() {
 
     init();
-    IDT[153].setAddr(reinterpret_cast<void*>(prout));
-    IDT[153].present =true;
+    IDT[8].setAddr(reinterpret_cast<void*>(bigfail));
+    IDT[8].present =true;
+    IDT[0x21].setAddr(reinterpret_cast<void*>(keyboard));
+    IDT[0x21].present =true;
+    //pic.clearMask(1);
+    asm("sti");
     lidt();
-    breakpoint;
-    interrupt<153>();
-    bsod("You fail !!");
-
+    fb.puts("Salut l'ami !!!\n");
 }
+
 extern "C" void __cxa_pure_virtual (){}
 void * __dso_handle=0;
 //extern "C" void  __cxa_atexit(){}

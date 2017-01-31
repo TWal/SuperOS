@@ -7,8 +7,10 @@ class Pic {
     public:
         Pic();
         void endOfInterrupt(uchar irq);
-        void setMask(uchar irq);
-        void clearMask(uchar irq);
+        ushort getMask();
+        void setMask(ushort mask);
+    private:
+        ushort _mask;
 };
 
 #endif

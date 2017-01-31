@@ -36,6 +36,9 @@ Pic::Pic() {
     const uchar ICW4 = ICW4_8086;
     outb(PIC1_DATA, ICW4);
     outb(PIC2_DATA, ICW4);
+
+    setMask(0xFFFD);
+    asm volatile("sti");
 }
 
 void Pic::endOfInterrupt(uchar irq) {
@@ -46,27 +49,13 @@ void Pic::endOfInterrupt(uchar irq) {
     outb(PIC1_COMMAND, PIC_EOI);
 }
 
-void Pic::setMask(uchar irq) {
-    ushort port;
-    if(irq < 8) {
-        port = PIC1_DATA;
-    } else {
-        port = PIC2_DATA;
-        irq -= 8;
-    }
-    uchar value = inb(port) | (1 << irq);
-    outb(port, value);
+ushort Pic::getMask() {
+    return _mask;
 }
 
-void Pic::clearMask(uchar irq) {
-    ushort port;
-    if(irq < 8) {
-        port = PIC1_DATA;
-    } else {
-        port = PIC2_DATA;
-        irq -= 8;
-    }
-    uchar value = inb(port) & ~(1 << irq);
-    outb(port, value);
+void Pic::setMask(ushort mask) {
+    _mask = mask;
+    outb(PIC1_DATA, _mask&0x00FF);
+    outb(PIC2_DATA, _mask&0xFF00 >> 8);
 }
 
