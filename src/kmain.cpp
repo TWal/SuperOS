@@ -43,7 +43,6 @@ extern "C" void kmain() {
     pic.activate(Pic::KEYBOARD);
     asm("sti");
     fb.puts("Salut l'ami !!!\n");
-    breakpoint;
 }
 
 extern "C" void __cxa_pure_virtual (){}

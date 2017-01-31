@@ -37,7 +37,11 @@ void vbsod(const char* s, va_list ap) {
     fb.puts("(btw, you lost)");
     fb.moveCursor(3,8);
     fb.vprintf(s, ap);
-    while(true);
+
+    breakpoint; //Don't waste cpu when using bochs!
+    while(true) {
+        asm volatile("cli;hlt");
+    }
 }
 
 void bsod(const char* s, ...) {
