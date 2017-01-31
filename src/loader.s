@@ -16,6 +16,7 @@ kernel_stack:
 .int MAGIC_NUMBER, FLAGS, CHECKSUM
 
 loader:
+  #xchg %bx,%bx
   mov $(STACKSIZE + kernel_stack),%esp
   call kmain
 loop:

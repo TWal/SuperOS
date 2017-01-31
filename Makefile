@@ -16,9 +16,9 @@ SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)
 SRCCXX = $(wildcard $(SRCDIR)/*.cpp)
 
-OBJ = $(patsubst $(SRCDIR)/%.s, $(OUTDIR)/%.o, $(SRCASM)) \
-      $(patsubst $(SRCDIR)/%.c, $(OUTDIR)/%.o, $(SRCC))   \
-      $(patsubst $(SRCDIR)/%.cpp, $(OUTDIR)/%.o, $(SRCCXX))
+OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
+      $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCC))   \
+      $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCCXX))
 
 all: kernel.elf
 
@@ -41,17 +41,25 @@ os.iso: kernel.elf
 run: os.iso
 	bochs -f bochsrc.txt -q
 
-$(OUTDIR)/%.o: $(SRCDIR)/%.s out
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s out
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/%.o: $(SRCDIR)/%.c out
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c out
 	$(CC) $(CFLAGS)  $< -o $@
 
-$(OUTDIR)/%.o: $(SRCDIR)/%.cpp out
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp out
 	$(CXX) $(CXXFLAGS)  $< -o $@
 
 out:
 	mkdir -p $(OUTDIR)
 
 clean:
-	rm $(OUTDIR)/*
+	rm -rf $(OUTDIR)
+	rm -f disassembly
+	rm -f ld_mapping
+	rm -f os.iso
+	rm -f kernel.elf
+	rm -f bochslog.txt
+
+dasm:
+	objdump -D -C kernel.elf > disassembly
