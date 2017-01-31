@@ -37,8 +37,7 @@ Pic::Pic() {
     outb(PIC1_DATA, ICW4);
     outb(PIC2_DATA, ICW4);
 
-    setMask(0xFFFD);
-    asm volatile("sti");
+    setMask(0xFFFF);
 }
 
 void Pic::endOfInterrupt(uchar irq) {
@@ -59,3 +58,10 @@ void Pic::setMask(ushort mask) {
     outb(PIC2_DATA, _mask&0xFF00 >> 8);
 }
 
+void Pic::activate(uchar irq) {
+    setMask(getMask() & ~(1<<irq));
+}
+
+void Pic::desactivate(uchar irq) {
+    setMask(getMask() | (1<<irq));
+}

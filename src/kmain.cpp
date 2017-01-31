@@ -26,8 +26,7 @@ extern "C" void inter153();
 
 extern "C" void keyboard() {
     bsod("Key pressed!");
-    breakpoint;
-    pic.endOfInterrupt(0);
+    pic.endOfInterrupt(1);
 }
 
 extern "C" void kmain() {
@@ -40,10 +39,11 @@ extern "C" void kmain() {
     IDT[8].present =true;
     IDT[0x21].setAddr(reinterpret_cast<void*>(keyboard));
     IDT[0x21].present =true;
-    //pic.clearMask(1);
-    asm("sti");
     lidt();
+    pic.activate(Pic::KEYBOARD);
+    asm("sti");
     fb.puts("Salut l'ami !!!\n");
+    breakpoint;
 }
 
 extern "C" void __cxa_pure_virtual (){}
