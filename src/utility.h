@@ -47,5 +47,9 @@ void bsod(const char* s, ...);
 
 #define breakpoint asm volatile("xchg %bx, %bx")
 
+
+#define cli asm volatile("cli");
+#define sti asm volatile("sti");
+
 #endif
 

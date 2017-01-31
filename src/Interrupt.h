@@ -26,6 +26,20 @@ extern InterruptEntry IDT[256];
 
 void lidt();
 
+typedef int (*interFuncR)(const int,const int);
+typedef void (*interFunc)(const int,const int);
+
+extern "C" interFunc* intIDT;
+
+class InterruptTable {
+    interFunc _intIDT [256];
+    bool doReturn [256]; // switch when libc++ is avaible
+    void addInt(int i,interFunc f);
+    void addInt(int i,interFuncR f);
+};
+
+
+
 template<uchar num>
 void interrupt(){
     asm volatile(

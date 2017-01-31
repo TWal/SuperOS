@@ -2,6 +2,7 @@
 #include "utility.h"
 #include "globals.h"
 #include "Interrupt.h"
+#include "Segmentation.h"
 
 typedef void(*funcp)();
 
@@ -30,8 +31,11 @@ extern "C" void keyboard() {
 }
 
 extern "C" void kmain() {
-
     init();
+    cli;
+    stdGDT();
+    lgdt();
+    switchSegReg();
     IDT[8].setAddr(reinterpret_cast<void*>(bigfail));
     IDT[8].present =true;
     IDT[0x21].setAddr(reinterpret_cast<void*>(keyboard));
