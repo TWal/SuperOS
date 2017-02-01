@@ -63,7 +63,11 @@ extern "C" void kmain() {
     while(true) {
         Keycode kc = kbd.poll();
         if(!kc.isRelease && kc.symbol > 0) {
-            fb.putc(kc.symbol);
+            if(kc.symbol == '\b') {
+                fb.puts("\b \b");
+            } else {
+                fb.putc(kc.symbol);
+            }
         }
         //fb.printf("Key pressed! %x %x %c %x %d\n", kc.scanCode, kc.symbol, kc.symbol, kc.flags, kc.isRelease);
     }
