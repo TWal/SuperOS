@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "Interrupt.h"
 #include "Segmentation.h"
+#include "Keyboard.h"
 
 typedef void(*funcp)();
 
@@ -25,7 +26,11 @@ extern "C" void bigfail(){
 extern "C" void inter153();
 
 extern "C" void keyboard() {
-    bsod("Key pressed!");
+    Keyboard kb;
+    kb.setKeymap(&dvorakKeymap);
+    kb.handleScanCode(inb(0x60));
+    Keycode kc = kb.poll();
+    bsod("Key pressed! %x %c %x %d", kc.scanCode, kc.symbol, kc.flags, kc.isRelease);
     pic.endOfInterrupt(1);
 }
 
