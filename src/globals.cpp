@@ -4,5 +4,5 @@ GDTDescriptor gdt;
 InterruptTable idt;
 FrameBuffer fb;
 Pic pic;
-
+Keyboard kbd;
 

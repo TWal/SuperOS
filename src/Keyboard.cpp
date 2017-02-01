@@ -84,13 +84,14 @@ Keycode Keyboard::poll() {
 
         bool release = (sc & RELEASE) != 0;
         char bit = -1;
-        if(sc == CTRL_SC) {
+        uchar rsc = sc & ~RELEASE;
+        if(rsc == CTRL_SC) {
             bit = LCTRL;
-        } else if(sc == SHIFT_SC) {
+        } else if(rsc == SHIFT_SC) {
             bit = LSHIFT;
-        } else if(sc == ALT_SC) {
+        } else if(rsc == ALT_SC) {
             bit = LALT;
-        } else if(sc == CAPSLOCK_SC) {
+        } else if(rsc == CAPSLOCK_SC) {
             bit = CAPSLOCK;
         }
         if(bit >= 0) {
@@ -102,10 +103,14 @@ Keycode Keyboard::poll() {
         }
 
         char symbol;
-        if(_flags & ((1<<LSHIFT) | (1<<RSHIFT) | (1<<CAPSLOCK))) {
-            symbol = _keymap->shift[sc & ~RELEASE];
+        if((sc & ~RELEASE) > 0x45) {
+            symbol = -1;
         } else {
-            symbol = _keymap->noShift[sc & ~RELEASE];
+            if(_flags & ((1<<LSHIFT) | (1<<RSHIFT) | (1<<CAPSLOCK))) {
+                symbol = _keymap->shift[sc & ~RELEASE];
+            } else {
+                symbol = _keymap->noShift[sc & ~RELEASE];
+            }
         }
 
         Keycode res;

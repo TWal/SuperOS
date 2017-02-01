@@ -30,14 +30,13 @@ void printer (int a,int b){
     fb.printf ("a is : %d, b is %d\n",a,b);
 }
 
-extern "C" void keyboard() {
-    Keyboard kb;
-    kb.setKeymap(&dvorakKeymap);
-    kb.handleScanCode(inb(0x60));
-    Keycode kc = kb.poll();
-    bsod("Key pressed! %x %c %x %d", kc.scanCode, kc.symbol, kc.flags, kc.isRelease);
+void keyboard(int a, int b) {
+    (void)a;
+    (void)b;
+    kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
 }
+
 void div0 (int a, int b){
     (void)a;
     (void)b;
@@ -55,26 +54,19 @@ extern "C" void kmain() {
     idt.init();
     idt.addInt(8,doublefault);
     sti;
-
-    idt.addInt(153,printer);
-    idt.addInt(227,printer);
     idt.addInt(0,div0);
-    idt.addInt(200,sum);
-    interrupt<153>(12,45);
-    interrupt<153>(13,46);
-    interrupt<153>(14,47);
-    interrupt<227>(-98,456);
-    interrupt<227>(0,interruptr<200>(40,2));
-    // int i = 1000000000;
-    /*while (true){
-        volatile int j = 1/i;
-        (void)j;
-        }*/
+    idt.addInt(0x21,keyboard);
+    pic.activate(Pic::KEYBOARD);
 
+    kbd.setKeymap(&azertyKeymap);
 
-    // asm("sti");
-    //lidt();
-    fb.puts("Salut l'ami !!!\n");
+    while(true) {
+        Keycode kc = kbd.poll();
+        if(!kc.isRelease && kc.symbol > 0) {
+            fb.putc(kc.symbol);
+        }
+        //fb.printf("Key pressed! %x %x %c %x %d\n", kc.scanCode, kc.symbol, kc.symbol, kc.flags, kc.isRelease);
+    }
 }
 
 extern "C" void __cxa_pure_virtual (){}
