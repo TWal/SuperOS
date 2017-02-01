@@ -31,3 +31,29 @@ void lidt (){
         );
 }
 
+
+
+InterruptTable::InterruptTable(){
+    initIntIDT(); // load the _inter_... in intIDT[...]
+    for(int i = 0 ; i < 256 ; ++i){
+        IDT[i].setAddr(reinterpret_cast<void*>(intIDT[i]));
+        intIDT[i] = nullptr;
+    }
+
+}
+
+void InterruptTable::init(){
+    lidt();
+}
+
+void InterruptTable::addInt(int i,interFunc f){
+    intIDT[i] = f;
+    doReturn[i] = false;
+    IDT[i].present =true;
+}
+void InterruptTable::addInt(int i,interFuncR f){
+    intIDT[i] = reinterpret_cast<interFunc>(f);
+    doReturn[i] = true;
+    IDT[i].present = true;
+}
+

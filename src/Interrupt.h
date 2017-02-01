@@ -29,13 +29,16 @@ void lidt();
 typedef int (*interFuncR)(const int,const int);
 typedef void (*interFunc)(const int,const int);
 
-extern "C" interFunc* intIDT;
+extern "C" interFunc intIDT[256];
+extern "C" void initIntIDT ();
+extern "C" bool doReturn [256]; // switch when libc++ is avaible
 
 class InterruptTable {
-    interFunc _intIDT [256];
-    bool doReturn [256]; // switch when libc++ is avaible
+public:
+    void init();
     void addInt(int i,interFunc f);
     void addInt(int i,interFuncR f);
+    InterruptTable();
 };
 
 

@@ -46,28 +46,38 @@ void GDTEntry::setFullExecSegment(){
     executable =true;
 }
 
+GDTDescriptor::GDTDescriptor(){
+}
 
-void stdGDT(){
+void GDTDescriptor::init(){
+    stdGDT();
+    lgdt();
+    switchSegReg();
+}
+
+
+void GDTDescriptor::stdGDT(){
     GDT[0].clear();
     GDT[1].setFullExecSegment();
     GDT[2].setFullDataSegment();
 }
 
-void lgdt(){
-    GDTDescriptor loader = {3*8,GDT};
+void GDTDescriptor::lgdt(){
+    _size = 3*8;
+    _GDT = GDT;
     asm volatile (
         "lgdt (%0)" :
-        : "r"(&loader):
+        : "r"(this):
         );
 }
-void switchSegReg(){
+void GDTDescriptor::switchSegReg(){
     asm volatile (
         "ljmp $0x08 , $switchSegRes_rec;"
         "switchSegRes_rec : \n"
-        "mov $0x10,%%ax;"
-        "mov %%ax,%%ds;"
-        "mov %%ax,%%ss;"
-        "mov %%ax,%%es;":
-        : :
+        "mov $0x10,%%eax;"
+        "mov %%eax,%%ds;"
+        "mov %%eax,%%ss;"
+        "mov %%eax,%%es;":
+        : : "%eax"
         );
 }

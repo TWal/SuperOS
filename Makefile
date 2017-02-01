@@ -12,13 +12,14 @@ CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -fno-exceptions -fno-r
 CXXFLAGS = $(CFLAGS)
 LDFLAGS = -T $(SRCDIR)/link.ld -melf_i386
 
-SRCASM = $(wildcard $(SRCDIR)/*.s)
+SRCASM = $(wildcard $(SRCDIR)/*.s) 
 SRCC = $(wildcard $(SRCDIR)/*.c)
 SRCCXX = $(wildcard $(SRCDIR)/*.cpp)
 
 OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
       $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCC))   \
-      $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCCXX))
+      $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCCXX)) \
+      $(OUTDIR)/InterruptInt.o
 
 all: kernel.elf
 
@@ -57,3 +58,8 @@ clean:
 
 dasm:
 	objdump -D -C kernel.elf > disassembly
+
+$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
+	python3 $(SRCDIR)/Interrupt.py > $(OUTDIR)/InterruptInt.s
+	$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
+	

@@ -36,16 +36,19 @@ static_assert(sizeof(GDTEntry) == 8 , "GDTEntry has wrong size");
 extern GDTEntry GDT[3];
 
 
-struct GDTDescriptor{
-    ushort size;
-    GDTEntry* GDT;
+class GDTDescriptor{
+public :
+    GDTDescriptor();
+    void init();
+    void stdGDT();
+    void lgdt();
+    void switchSegReg();
+private:
+    ushort _size;
+    GDTEntry* _GDT;
 
 }__attribute__((packed));
 
-void stdGDT();
-
-void lgdt();
-void switchSegReg();
 
 
 

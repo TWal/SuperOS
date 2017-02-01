@@ -19,11 +19,16 @@ void init(){
     }
 }
 
-extern "C" void bigfail(){
-    bsod("Double fault :-(");
+
+void doublefault(int a, int b){
+    (void)a;
+    (void)b;
+    bsod("Double fault !!\n It may be an uncaught interruption");
 }
 
-extern "C" void inter153();
+void printer (int a,int b){
+    fb.printf ("a is : %d, b is %d\n",a,b);
+}
 
 extern "C" void keyboard() {
     Keyboard kb;
@@ -33,20 +38,42 @@ extern "C" void keyboard() {
     bsod("Key pressed! %x %c %x %d", kc.scanCode, kc.symbol, kc.flags, kc.isRelease);
     pic.endOfInterrupt(1);
 }
+void div0 (int a, int b){
+    (void)a;
+    (void)b;
+    bsod(" 1/0 in not infinity !");
+}
+
+int sum (int a, int b){
+    return a+b;
+}
 
 extern "C" void kmain() {
-    init();
     cli;
-    stdGDT();
-    lgdt();
-    switchSegReg();
-    IDT[8].setAddr(reinterpret_cast<void*>(bigfail));
-    IDT[8].present =true;
-    IDT[0x21].setAddr(reinterpret_cast<void*>(keyboard));
-    IDT[0x21].present =true;
-    lidt();
-    pic.activate(Pic::KEYBOARD);
-    asm("sti");
+    init();
+    gdt.init();
+    idt.init();
+    idt.addInt(8,doublefault);
+    sti;
+
+    idt.addInt(153,printer);
+    idt.addInt(227,printer);
+    idt.addInt(0,div0);
+    idt.addInt(200,sum);
+    interrupt<153>(12,45);
+    interrupt<153>(13,46);
+    interrupt<153>(14,47);
+    interrupt<227>(-98,456);
+    interrupt<227>(0,interruptr<200>(40,2));
+    // int i = 1000000000;
+    /*while (true){
+        volatile int j = 1/i;
+        (void)j;
+        }*/
+
+
+    // asm("sti");
+    //lidt();
     fb.puts("Salut l'ami !!!\n");
 }
 

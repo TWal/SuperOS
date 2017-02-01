@@ -19,5 +19,6 @@ loader:
   #xchg %bx,%bx
   mov $(STACKSIZE + kernel_stack),%esp
   call kmain
+  xchg %bx,%bx
 loop:
   jmp loop
