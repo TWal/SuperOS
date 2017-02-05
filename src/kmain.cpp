@@ -4,6 +4,7 @@
 #include "Interrupt.h"
 #include "Segmentation.h"
 #include "Keyboard.h"
+#include "Paging.h"
 
 typedef void(*funcp)();
 
@@ -48,6 +49,7 @@ int sum (int a, int b){
 }
 
 extern "C" void kmain() {
+    PDE[0].present = false;
     cli;
     init();
     gdt.init();

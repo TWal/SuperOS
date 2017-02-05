@@ -24,7 +24,8 @@ OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
 all: kernel.elf
 
 kernel.elf: $(OBJ)
-	ld $(LDFLAGS) $(OBJ) -o kernel.elf --print-map | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
+	ld $(LDFLAGS) $(OBJ) -o kernel.elf --print-map > ld_mapping_full
+	cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
 
 os.iso: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf

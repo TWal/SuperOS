@@ -4,3 +4,5 @@ bochslog.txt
 iso/boot/kernel.elf
 out/*
 ld_mapping
+ld_mapping_full
+disassembly
