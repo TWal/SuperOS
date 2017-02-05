@@ -1,4 +1,4 @@
-megs:            32
+megs:            512
 display_library: x
 romimage:        file=/usr/share/bochs/BIOS-bochs-latest
 vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
@@ -8,3 +8,4 @@ log:             bochslog.txt
 clock:           sync=realtime, time0=local
 cpu:             count=1, ips=1000000
 magic_break:     enabled=1
+keyboard: type=mf, serial_delay=200, paste_delay=100000

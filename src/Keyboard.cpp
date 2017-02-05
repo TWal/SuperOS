@@ -76,6 +76,10 @@ Keycode Keyboard::poll() {
         uchar sc = _deque.front();
         _deque.pop_front();
 
+        if(sc == 0x00 || sc == 0xff) {
+            bsod("Keyboard error :-(");
+        }
+
         const uchar RELEASE = 0x80;
         const uchar CTRL_SC = 0x1d;
         const uchar SHIFT_SC = 0x2a;
