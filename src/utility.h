@@ -4,10 +4,13 @@
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
+typedef long long int lint;
 
 
 void outb(ushort port, uchar data);
-int inb(ushort port);
+uchar inb(ushort port);
+void outw(ushort port, ushort data);
+ushort inw(ushort port);
 
 template<typename T> T min(const T& a, const T& b) {
     if(a < b) {

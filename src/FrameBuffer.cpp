@@ -31,8 +31,8 @@ void FrameBuffer::moveCursor(int col, int row, bool updateCurs) {
 void FrameBuffer::updateCursor() {
     static const ushort CURSOR_COMMAND_PORT = 0x3D4;
     static const ushort CURSOR_DATA_PORT = 0x3D5;
-    static const ushort CURSOR_HIGH_BYTE = 0xE;
-    static const ushort CURSOR_LOW_BYTE = 0xF;
+    static const uchar CURSOR_HIGH_BYTE = 0xE;
+    static const uchar CURSOR_LOW_BYTE = 0xF;
 
     int pos = 80*_cursRow + _cursCol;
     outb(CURSOR_COMMAND_PORT, CURSOR_HIGH_BYTE);

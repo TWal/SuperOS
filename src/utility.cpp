@@ -2,14 +2,23 @@
 #include "FrameBuffer.h"
 
 void outb(ushort port, uchar data) {
-    asm volatile("out %0, %1" : : "r"(data), "r"(port));
+    asm volatile("outb %0, %1" : : "r"(data), "r"(port));
 }
 
-int inb(ushort port) {
-    int res;
-    asm volatile("inw %1; movl %%eax, %0" : "=r"(res) : "r"(port) : "%eax");
+uchar inb(ushort port) {
+    uchar res;
+    asm volatile("inb %1; movb %%al, %0" : "=r"(res) : "r"(port) : "%al");
     return res;
 }
+void outw(ushort port, ushort data){
+    asm volatile("outw %0, %1" : : "r"(data), "r"(port));
+}
+ushort inw(ushort port){
+    ushort res;
+    asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "r"(port) : "%al");
+    return res;
+}
+
 
 void vbsod(const char* s, va_list ap) {
     const char fg = FrameBuffer::WHITE;
