@@ -1,4 +1,4 @@
-.PHONY: out
+.PHONY: run runqemu
 
 AS = as
 CC = gcc
@@ -35,19 +35,21 @@ run: os.iso
 	bochs -f bochsrc.txt -q
 
 runqemu: os.iso
-	qemu-system-x86_64 -boot d -cdrom os.iso -m 512
+	qemu-system-x86_64 -boot d -hda os.iso -m 512
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s out
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s
+	@mkdir -p $(OUTDIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c out
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c
+	@mkdir -p $(OUTDIR)
 	$(CC) $(CFLAGS)  $< -o $@
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp out
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(OUTDIR)
 	$(CXX) $(CXXFLAGS)  $< -o $@
 
-out:
-	mkdir -p $(OUTDIR)
+
 
 clean:
 	rm -rf $(OUTDIR)

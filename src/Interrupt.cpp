@@ -34,10 +34,10 @@ void lidt (){
 
 
 InterruptTable::InterruptTable(){
+    initIntIDT(); // load the _inter_... in intIDT[...]
 }
 
 void InterruptTable::init(){
-    initIntIDT(); // load the _inter_... in intIDT[...]
     for(int i = 0 ; i < 256 ; ++i){
         IDT[i].setAddr(reinterpret_cast<void*>(intIDT[i]));
         intIDT[i] = nullptr;

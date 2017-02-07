@@ -5,6 +5,7 @@
 #include "Segmentation.h"
 #include "Keyboard.h"
 #include "Paging.h"
+#include "HardDrive.h"
 
 typedef void(*funcp)();
 
@@ -57,7 +58,25 @@ extern "C" void kmain() {
     idt.addInt(8,doublefault);
     sti;
     idt.addInt(0,div0);
-    idt.addInt(0x21,keyboard);
+
+    HDD first(1,true);
+    uchar data[512];
+    first.readabs(0,data,256);
+
+    for (int i = 0 ; i < 256 ; ++i){
+        fb.printf("%x ",data[i]);
+    }
+
+    fb.printf("\n");
+    while(true){
+        for(int i = 0 ; i < 100000000 ; ++i);
+        first.getStatus().printStatus(); 
+        fb.printf("\r");
+        }
+    //bsod("Is activated : %d",int(first.isThereADisk()));
+
+
+    /*idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
 
     kbd.setKeymap(&azertyKeymap);
@@ -70,9 +89,9 @@ extern "C" void kmain() {
             } else {
                 fb.putc(kc.symbol);
             }
-        }
+            }
         //fb.printf("Key pressed! %x %x %c %x %d\n", kc.scanCode, kc.symbol, kc.symbol, kc.flags, kc.isRelease);
-    }
+        }*/
 }
 
 extern "C" void __cxa_pure_virtual (){}
