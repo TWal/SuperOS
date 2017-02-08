@@ -46,4 +46,6 @@ SECTIONS {
     *(.init_array)
     __init_array_end = .;
     }
+
+    kernel_code_end = .;
 }

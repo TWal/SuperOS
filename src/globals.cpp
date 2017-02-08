@@ -6,3 +6,4 @@ FrameBuffer fb;
 Pic pic;
 Keyboard kbd;
 multibootInfo multiboot;
+PhysicalMemoryAllocator physmemalloc;

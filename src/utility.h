@@ -5,6 +5,16 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef long long int lint;
+typedef unsigned long long int ulint;
+
+static_assert(sizeof(char) == 1);
+static_assert(sizeof(uchar) == 1);
+static_assert(sizeof(short) == 2);
+static_assert(sizeof(ushort) == 2);
+static_assert(sizeof(int) == 4);
+static_assert(sizeof(uint) == 4);
+static_assert(sizeof(lint) == 8);
+static_assert(sizeof(ulint) == 8);
 
 
 void outb(ushort port, uchar data);

@@ -6,6 +6,7 @@
 #include "Keyboard.h"
 #include "Paging.h"
 #include "HardDrive.h"
+#include "PhysicalMemoryAllocator.h"
 
 typedef void(*funcp)();
 
@@ -63,7 +64,16 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
 #define BLA 0
 #if BLA == 0
-    fb.printf("%d %d %d\n", multiboot.flags, multiboot.mem_lower, multiboot.mem_upper);
+    fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
+    void* p1 = physmemalloc.alloc();
+    void* p2 = physmemalloc.alloc();
+    void* p3 = physmemalloc.alloc();
+    physmemalloc.free(p1);
+    void* p4 = physmemalloc.alloc();
+    physmemalloc.free(p2);
+    void* p5 = physmemalloc.alloc();
+    fb.printf("%x %x %x %x %x\n", p1, p2, p3, p4, p5);
+
 #elif BLA == 1
     HDD first(1,true);
     uchar data[512];
@@ -79,8 +89,8 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
         first.getStatus().printStatus();
         fb.printf("\r");
     }
-#else
 
+#else
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
 
