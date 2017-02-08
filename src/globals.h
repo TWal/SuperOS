@@ -6,12 +6,14 @@
 #include "Segmentation.h"
 #include "Interrupt.h"
 #include "Keyboard.h"
+#include "multiboot.h"
 
 extern FrameBuffer fb;
 extern Pic pic;
 extern GDTDescriptor gdt;
 extern InterruptTable idt;
 extern Keyboard kbd;
+extern multibootInfo multiboot;
 
 #endif
 

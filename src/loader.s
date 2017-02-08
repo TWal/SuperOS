@@ -2,7 +2,7 @@
 .global loaderbefore
 
 .equ MAGIC_NUMBER, 0x1BADB002
-.equ FLAGS, 0x0
+.equ FLAGS, 0x2 #information about memory
 .equ CHECKSUM, -MAGIC_NUMBER - FLAGS
 # MAGICNUMBER + FLAGS + CHECKSUM = 0
 
@@ -21,7 +21,9 @@ kernel_stack_lower:
 
 loaderbefore:
     mov $(STACKSIZE + kernel_stack_lower),%esp
+    push %ebx #multiboot info pointer is in %ebx
     call setupPaging
+    pop %ecx #now it is in %ecx
     #give the address of PDE
     mov $PDElower, %eax
     mov %eax, %cr3
@@ -41,7 +43,10 @@ loaderbefore:
 .text
 loader:
     mov $(STACKSIZE + kernel_stack),%esp
+    add $0xC0000000, %ecx
+    push %ecx
     call kmain
+    pop %ecx
     xchg %bx,%bx
 loop:
     jmp loop

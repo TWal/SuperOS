@@ -49,7 +49,8 @@ int sum (int a, int b){
     return a+b;
 }
 
-extern "C" void kmain() {
+extern "C" void kmain(multibootInfo* multibootinfo) {
+    multiboot = *multibootinfo;
     PDE[0].present = false;
     cli;
     init();
@@ -59,6 +60,11 @@ extern "C" void kmain() {
     sti;
     idt.addInt(0,div0);
 
+
+#define BLA 0
+#if BLA == 0
+    fb.printf("%d %d %d\n", multiboot.flags, multiboot.mem_lower, multiboot.mem_upper);
+#elif BLA == 1
     HDD first(1,true);
     uchar data[512];
     first.readabs(0,data,256);
@@ -70,13 +76,12 @@ extern "C" void kmain() {
     fb.printf("\n");
     while(true){
         for(int i = 0 ; i < 100000000 ; ++i);
-        first.getStatus().printStatus(); 
+        first.getStatus().printStatus();
         fb.printf("\r");
-        }
-    //bsod("Is activated : %d",int(first.isThereADisk()));
+    }
+#else
 
-
-    /*idt.addInt(0x21,keyboard);
+    idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
 
     kbd.setKeymap(&azertyKeymap);
@@ -91,7 +96,8 @@ extern "C" void kmain() {
             }
             }
         //fb.printf("Key pressed! %x %x %c %x %d\n", kc.scanCode, kc.symbol, kc.symbol, kc.flags, kc.isRelease);
-        }*/
+    }
+#endif
 }
 
 extern "C" void __cxa_pure_virtual (){}
