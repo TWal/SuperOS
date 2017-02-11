@@ -2,6 +2,8 @@
 #define HARDDRIVE_H
 
 #include "utility.h"
+#include "Partition.h"
+
 
 
 struct StatusByte{
@@ -23,6 +25,8 @@ class HDD {
     uint _basePort;
     bool _master;
     bool active;
+    PartitionTableEntry table [4];
+
 
 public :
     bool isThereADisk();
@@ -31,8 +35,9 @@ public :
     void setMaster(bool master);
     void setBus(int bus);
     void init();
-    void writeabs (lint LBA , void* data, uint size);
-    void readabs (lint LBA, void * data, uint size);
+    void writelba (lint LBA , void* data, uint size);
+    void readlba (lint LBA, void * data, uint size);
+    void writeaddr(lint addr,void* data,uint size);
     void activate(){}
 
 };

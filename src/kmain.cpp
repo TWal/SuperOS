@@ -62,7 +62,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(0,div0);
 
 
-#define BLA 0
+#define BLA 1
 #if BLA == 0
     fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
     void* p1 = physmemalloc.alloc();
@@ -77,7 +77,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 #elif BLA == 1
     HDD first(1,true);
     uchar data[512];
-    first.readabs(0,data,256);
+    first.readlba(0,data,256);
 
     for (int i = 0 ; i < 256 ; ++i){
         fb.printf("%x ",data[i]);
