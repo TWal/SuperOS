@@ -122,9 +122,12 @@ void FrameBuffer::printInt(int n, uint base, uint padding, bool updateCurs) {
         putc('-', false);
         n = -n;
     }
+    printUInt(n,base,padding,updateCurs);
+}
 
+void FrameBuffer::printUInt(uint n, uint base, uint padding, bool updateCurs){
     uint i = 1;
-    while(i*base <= (uint)n) {
+    while(n/i >= base) {
         i *= base;
         if(padding > 0) {
             padding -= 1;
@@ -155,16 +158,24 @@ void FrameBuffer::vprintf(const char* s, va_list ap) {
             continue;
         }
         ++s;
+        int padding = 0;
+        while (*s >= '0' && *s <= '9'){
+            padding = 10*padding + (*s - '0');
+            ++s;
+        }
         if(*s == '%') {
             putc('%', false);
             ++s;
-        } else if(*s == 'd') {
-            printInt(va_arg(ap, int), 10, 0, false);
+        } else if(*s == 'u') {
+            printUInt(va_arg(ap, uint), 10, padding, false);
             ++s;
-        } else if(*s == 'x') {
-            putc('0', false);
-            putc('x', false);
-            printInt(va_arg(ap, int), 16, 0, false);
+        } else if(*s == 'd') {
+            printInt(va_arg(ap, int), 10, padding, false);
+            ++s;
+        } else if(*s == 'x'|| *s == 'p') {
+            //putc('0', false); // wrong relatively to the standard
+            //putc('x', false);
+            printUInt(va_arg(ap, int), 16, padding, false);
             ++s;
         } else if(*s == 's') {
             puts(va_arg(ap, char*), false);
