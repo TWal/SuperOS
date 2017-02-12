@@ -8,3 +8,4 @@ ld_mapping_full
 disassembly
 .dep/*
 disk.img
+libc.a

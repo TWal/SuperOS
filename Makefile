@@ -10,9 +10,10 @@ DEPDIR = .dep
 LIBC = libc
 
 ASFLAGS = --32
-CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror -c -O1
+CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror -c -O1 -isystem $(LIBC)
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
-LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none -L. -lc
+LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none
+LIBS = -L. -lc
 
 SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)
@@ -36,8 +37,8 @@ LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC))
 all: kernel.elf
 
 kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a
-	g++ $(LDFLAGS) $(OBJ) -o kernel.elf -Xlinker --print-map > ld_mapping_full
-	cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping	
+	g++ $(LDFLAGS) $(OBJ) -o kernel.elf -Xlinker --print-map $(LIBS) > ld_mapping_full
+	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping	
 
 os.iso: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
@@ -55,21 +56,21 @@ runqemu: os.iso
 runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a
 	@mkdir -p $(OUTDIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CC) $(CFLAGS)  $< -o $@
-	$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
+	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CXX) $(CXXFLAGS) $< -o $@
-	$(CXX) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
+	@$(CXX) -isystem libc -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
 
 $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
 	python3 $(SRCDIR)/Interrupt.py > $(OUTDIR)/InterruptInt.s
@@ -82,7 +83,7 @@ $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
 	$(CC) $(CFLAGS)  $< -o $@
-	$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
+	@$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
 
 libc.a: $(LIBCOBJ)
 	ar rcs libc.a $(LIBCOBJ)
@@ -128,7 +129,7 @@ mvtoimg: kernel.elf
 
 builddisk: load partition mount grubinst mvtoimg ulm
 
-updatedisk: lm mvtoimg ulm
+updatedisk: kernel.elf lm mvtoimg ulm
 
 
 
