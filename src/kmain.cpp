@@ -76,20 +76,26 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
 #elif BLA == 1
     HDD first(1,true);
-    uchar data[512];
-    first.readlba(0,data,256);
+    first.init();
 
-    for (int i = 0 ; i < 256 ; ++i){
-        fb.printf("%x ",data[i]);
-    }
+    first.writeaddr(0xf0095,"random data !",13);
+
+    PartitionTableEntry part1 = first[1];
+
+    fb.printf ("Partition 1 from %8x to %8x ",part1.begLBA,part1.endLBA);
 
     fb.printf("\n");
     while(true){
-        for(int i = 0 ; i < 100000000 ; ++i);
+        for(int i = 0 ; i < 1000000 ; ++i);
         first.getStatus().printStatus();
         fb.printf("\r");
     }
 
+#elif BLA == 2
+    int i = 0x1f80000;
+
+    fb.printf ("%8x + %p\n",i,&i);
+    fb.printf ("%d ",i);
 #else
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);

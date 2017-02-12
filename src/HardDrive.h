@@ -26,7 +26,7 @@ class HDD {
     bool _master;
     bool active;
     PartitionTableEntry table [4];
-
+    uchar MBR[512];
 
 public :
     bool isThereADisk();
@@ -35,10 +35,12 @@ public :
     void setMaster(bool master);
     void setBus(int bus);
     void init();
-    void writelba (lint LBA , void* data, uint size);
-    void readlba (lint LBA, void * data, uint size);
-    void writeaddr(lint addr,void* data,uint size);
+    void writelba (ulint LBA , const void* data, uint nbsector);
+    void readlba (ulint LBA, void * data, uint nbsector);
+    void writeaddr (ulint addr , const void* data, uint size);
+    void readaddr (ulint addr, void * data, uint size);
     void activate(){}
+    PartitionTableEntry operator[](int i);
 
 };
 

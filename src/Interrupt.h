@@ -50,6 +50,7 @@ void interrupt(){
         : "i"(num) :
         );
 }
+
 template<uchar num>
 void interrupt(int eax){
     asm volatile(
@@ -58,6 +59,7 @@ void interrupt(int eax){
         : "i"(num) , "r"(eax): "%eax"
         );
 }
+
 template<uchar num>
 void interrupt(int eax,int ebx){
     asm volatile(
@@ -81,6 +83,7 @@ int interruptr(){
         );
     return res;
 }
+
 template<uchar num>
 int interruptr(int eax){
     int res;
@@ -94,6 +97,7 @@ int interruptr(int eax){
         );
     return res;
 }
+
 template<uchar num>
 int interruptr(int eax,int ebx){
     int res;
