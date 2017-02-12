@@ -7,16 +7,18 @@ CXX = g++
 SRCDIR = src
 OUTDIR = out
 DEPDIR = .dep
+LIBC = libc
 
 ASFLAGS = --32
-CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror -c
+CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror -c -O1
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
-LDFLAGS = -T $(SRCDIR)/link.ld -melf_i386
+LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none -L. -lc
 
 SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)
 SRCCXX = $(wildcard $(SRCDIR)/*.cpp)
-DEPF = $(wildcard $(DEPDIR)/*.d)
+DEPF = $(wildcard $(DEPDIR)/*.d) $(wildcard $(DEPDIR)/$(LIBC)/*.d)
+
 
 OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
       $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCC))   \
@@ -27,11 +29,14 @@ OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
 LOOPDEV = /dev/loop0
 MNTPATH = /mnt/test# must be absolute and not relative
 
+LIBCSRC = $(wildcard $(LIBC)/src/*.c)
+LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC))
+
 
 all: kernel.elf
 
-kernel.elf: $(OBJ) $(SRCDIR)/link.ld
-	ld $(LDFLAGS) $(OBJ) -o kernel.elf --print-map > ld_mapping_full
+kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a
+	g++ $(LDFLAGS) $(OBJ) -o kernel.elf -Xlinker --print-map > ld_mapping_full
 	cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping	
 
 os.iso: kernel.elf
@@ -56,7 +61,9 @@ $(OUTDIR)/%.s.o: $(SRCDIR)/%.s
 
 $(OUTDIR)/%.c.o: $(SRCDIR)/%.c
 	@mkdir -p $(OUTDIR)
+	@mkdir -p $(DEPDIR)
 	$(CC) $(CFLAGS)  $< -o $@
+	$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
 $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(OUTDIR)
@@ -67,6 +74,20 @@ $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp
 $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
 	python3 $(SRCDIR)/Interrupt.py > $(OUTDIR)/InterruptInt.s
 	$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
+
+
+
+
+$(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
+	@mkdir -p $(OUTDIR)/libc
+	@mkdir -p $(DEPDIR)/libc
+	$(CC) $(CFLAGS)  $< -o $@
+	$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
+
+libc.a: $(LIBCOBJ)
+	ar rcs libc.a $(LIBCOBJ)
+
+
 
 
 
@@ -121,6 +142,7 @@ clean:
 	rm -f os.iso
 	rm -f kernel.elf
 	rm -f bochslog.txt
+	rm -f libc.a
 
 mrproper: clean
 	rm -f disk.img
