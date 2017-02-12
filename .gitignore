@@ -6,3 +6,5 @@ out/*
 ld_mapping
 ld_mapping_full
 disassembly
+.dep/*
+disk.img
