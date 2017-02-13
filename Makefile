@@ -9,11 +9,14 @@ OUTDIR = out
 DEPDIR = .dep
 LIBC = libc
 
+LIB32GCC = /usr/lib/gcc/x86_64-linux-gnu/6/32
+
 ASFLAGS = --32
-CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror -c -O1 -isystem $(LIBC)
+CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror \
+				 -c -O1 -isystem $(LIBC) -Wno-packed-bitfield-compat
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none
-LIBS = -L. -lc
+LIBS = -L. -L $(LIB32GCC) -lc -lgcc
 
 SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)
@@ -32,6 +35,7 @@ MNTPATH = /mnt/test# must be absolute and not relative
 
 LIBCSRC = $(wildcard $(LIBC)/src/*.c)
 LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC))
+LIBCH = $(wildcard $(LIBC)/*.h)
 
 
 all: kernel.elf
@@ -85,7 +89,7 @@ $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
 	$(CC) $(CFLAGS)  $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
 
-libc.a: $(LIBCOBJ)
+libc.a: $(LIBCOBJ) $(LIBCH)
 	ar rcs libc.a $(LIBCOBJ)
 
 
@@ -102,13 +106,16 @@ load: disk.img
 
 partition:
 	sudo echo "," | sudo sfdisk $(LOOPDEV)
+	sudo partprobe $(LOOPDEV)
 	sudo mkfs.fat -F 32 $(LOOPDEV)p1
 
 unload:
 	sudo losetup -d $(LOOPDEV)
+  #sudo partprobe "$(LOOPDEV)"
 
 mount:
 	sudo mkdir -p $(MNTPATH)
+	sudo partprobe $(LOOPDEV)
 	sudo mount $(LOOPDEV)p1 $(MNTPATH)
 
 umount:

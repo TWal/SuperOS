@@ -2,6 +2,7 @@
 #define HARDDRIVE_H
 
 #include "utility.h"
+#include "Bytes.h"
 #include "Partition.h"
 
 
@@ -21,7 +22,7 @@ struct StatusByte{
 
 }__attribute((packed));
 
-class HDD {
+class HDD : public HDDBytes {
     uint _basePort;
     bool _master;
     bool active;
@@ -29,6 +30,10 @@ class HDD {
     uchar MBR[512];
 
 public :
+    ulint getSize() {return 0;}; // for now I don't know how to get this information
+    bool isInRAM() {return false ;}
+    void* getData(){return nullptr;}
+
     bool isThereADisk();
     HDD(uchar bus,bool master);
     StatusByte getStatus();

@@ -7,6 +7,7 @@
 #include "Paging.h"
 #include "HardDrive.h"
 #include "PhysicalMemoryAllocator.h"
+#include "FAT.h"
 
 typedef void(*funcp)();
 
@@ -82,7 +83,10 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     PartitionTableEntry part1 = first[1];
 
-    fb.printf ("Partition 1 from %8x to %8x ",part1.begLBA,part1.endLBA);
+    fb.printf ("Partition 1 from %8x to %8x \n",part1.begLBA,part1.endLBA);
+
+    Partition pa1 (&first,part1);
+    FATFS fs (&pa1);
 
     fb.printf("\n");
     while(true){
@@ -92,10 +96,10 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     }
 
 #elif BLA == 2
-    int i = 0x1f80000;
-
-    fb.printf ("%8x + %p\n",i,&i);
-    fb.printf ("%d ",i);
+    volatile lint i = 42000000000000;
+    volatile lint j = 10000000000;
+    int res = i/j; // testing libgcc
+    fb.printf ("val :%d ",res);
 #else
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
