@@ -1,0 +1,89 @@
+#ifndef __SUPOS_CPP_STRING
+#define __SUPOS_CPP_STRING
+
+#include <cstddef>
+#include <string.h> // TODO switch to cstring
+#include <memory>
+
+namespace std {
+
+    template <typename charT>
+    struct char_traits {
+    };
+
+    template<>
+    struct char_traits<char>{
+        typedef char char_type;
+        typedef int int_type;
+        static inline bool eq(char_type c1,char_type c2){
+            return c1 == c2;
+        }
+        static inline bool lt(char_type c1,char_type c2){
+            return c1 < c2;
+        }
+        static inline size_t length(const char_type* c){
+            return strlen(c);
+        }
+        static inline void assign(char_type& r, const char_type& c) noexcept {
+            r = c;
+        }
+        static inline char_type assign (char_type* p, size_t n, char_type c){
+            while (n--) {*p = c; ++p;};
+            return c;
+        }
+        static inline int compare (const char_type* p, const char_type* q, size_t n) {
+            while (n--) {if (!eq(*p,*q)) return lt(*p,*q)?-1:1; ++p; ++q;}
+            return 0;
+        }
+        static inline char_type* copy (char_type* dest, const char_type* src, size_t n){
+            return reinterpret_cast<char_type*>(memcpy(dest,src,n));
+        }
+        // TODO finish that
+
+    };
+
+    template < class charT,
+               class traits = char_traits<charT>,
+               class Alloc = allocator<charT>
+               >
+    class basic_string{
+    public :
+        typedef traits traits_type;
+        typedef Alloc allocator_type;
+        typedef size_t size_type;
+        Alloc _alloc;
+        charT *_data;
+        size_type _size;
+        size_type _capacity;
+
+        inline size_type strategy(size_type s){
+            size_t res = 1 << (8*sizeof(size_t) - __builtin_clz(s+1)+1);
+            if(res) return res;
+            else return s;
+        }
+
+    public :
+
+
+        explicit basic_string (const allocator_type& alloc = allocator_type())
+            : _alloc(alloc),_data(nullptr),_size(0),_capacity(0){
+        }
+        basic_string (const charT* s, const allocator_type& alloc = allocator_type())
+            :_alloc(alloc){
+           _size = traits_type::length(s);
+           _capacity = strategy(s);
+           _data = _alloc.allocate(_capacity);
+           traits_type::copy(_data,s,_size +1);
+        }
+        ~basic_string(){
+            _alloc.deallocate(_data,_capacity);
+        }
+        const charT* data() const noexcept {return _data;};
+        const charT* c_str() const noexcept {return _data;};
+    };
+
+    typedef basic_string<char> string;
+
+}
+
+#endif

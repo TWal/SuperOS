@@ -9,3 +9,4 @@ disassembly
 .dep/*
 disk.img
 libc.a
+libc++.a

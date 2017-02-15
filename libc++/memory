@@ -1,0 +1,38 @@
+#ifndef __SUPOS_CPP_MEMORY
+#define __SUPOS_CPP_MEMORY
+
+#include <cstddef>
+#include <cstdlib>
+
+namespace std {
+
+    template<typename T >
+    class allocator{
+    public :
+        typedef T value_type;
+        typedef T& reference;
+        typedef T* pointer;
+        typedef const T* const_pointer;
+        typedef size_t size_type;
+
+        allocator() noexcept {};
+        allocator(const allocator&) noexcept {};
+        template<typename U>
+        allocator(const allocator<U>&) noexcept {};
+        ~allocator(){};
+        pointer address(reference x) const noexcept{
+            return &x;
+        }
+        pointer allocate(size_t size, const_pointer hint = 0){
+            return reinterpret_cast<pointer>(malloc(size*sizeof(value_type)));
+        }
+        void deallocate (pointer p, size_type n){
+            (void)n;
+            free(p);
+        }
+
+    };
+
+}
+
+#endif

@@ -8,15 +8,20 @@ SRCDIR = src
 OUTDIR = out
 DEPDIR = .dep
 LIBC = libc
+LIBCXX = libc++
 
 LIB32GCC = /usr/lib/gcc/x86_64-linux-gnu/6/32
 
 ASFLAGS = --32
-CFLAGS = -m32 -nostdlib -fno-builtin -fno-stack-protector -Wall -Wextra -Werror \
-				 -c -O1 -isystem $(LIBC) -Wno-packed-bitfield-compat
+CFLAGS = -m32  -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -Wall -Wextra \
+				 -c -O1  -Wno-packed-bitfield-compat \
+				 -isystem $(LIBC) \
+				 -isystem $(LIBCXX)\
+				 -DSUP_OS_KERNEL
+
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none
-LIBS = -L. -L $(LIB32GCC) -lc -lgcc
+LIBS = -L. -L $(LIB32GCC) -lc -lgcc -lgcc_eh -lsupc++ -lc++
 
 SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)
@@ -37,12 +42,16 @@ LIBCSRC = $(wildcard $(LIBC)/src/*.c)
 LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC))
 LIBCH = $(wildcard $(LIBC)/*.h)
 
+LIBCXXSRC = $(wildcard $(LIBCXX)/src/*.cpp)
+LIBCXXOBJ = $(patsubst $(LIBCXX)/src/%.cpp,$(OUTDIR)/$(LIBCXX)/%.o,$(LIBCXXSRC))
+LIBCXXH = $(wildcard $(LIBCXX)/*) $(wildcard $(LIBCXX)/include/*.h)
+
 
 all: kernel.elf
 
-kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a
+kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
 	g++ $(LDFLAGS) $(OBJ) -o kernel.elf -Xlinker --print-map $(LIBS) > ld_mapping_full
-	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping	
+	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
 
 os.iso: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
@@ -91,6 +100,16 @@ $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
 
 libc.a: $(LIBCOBJ) $(LIBCH)
 	ar rcs libc.a $(LIBCOBJ)
+
+
+$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp
+	@mkdir -p $(OUTDIR)/libc++
+	@mkdir -p $(DEPDIR)/libc++
+	$(CXX) $(CXXFLAGS)  $< -o $@
+	@$(CXX) -MM -MT '$@' -MF $(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<)  $<
+
+libc++.a: $(LIBCXXOBJ) $(LIBCXXH)
+	ar rcs libc++.a $(LIBCXXOBJ)
 
 
 
