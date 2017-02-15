@@ -76,7 +76,7 @@ namespace std {
            traits_type::copy(_data,s,_size +1);
         }
         ~basic_string(){
-            _alloc.deallocate(_data,_capacity);
+            if(_data) _alloc.deallocate(_data,_capacity);
         }
         const charT* data() const noexcept {return _data;};
         const charT* c_str() const noexcept {return _data;};
