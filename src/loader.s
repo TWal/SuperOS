@@ -6,11 +6,13 @@
 .equ CHECKSUM, -MAGIC_NUMBER - FLAGS
 # MAGICNUMBER + FLAGS + CHECKSUM = 0
 
+.equ HEAPSTACKSIZE, 16324
 .equ STACKSIZE, 4096
 
 .bss
-kernel_stack:
-    .space STACKSIZE
+kernel_heapstack:
+  .global kernel_heapstack
+    .space HEAPSTACKSIZE
 
 .section .bss.lower
 kernel_stack_lower:
@@ -42,7 +44,7 @@ loaderbefore:
 
 .text
 loader:
-    mov $(STACKSIZE + kernel_stack),%esp
+    mov $(HEAPSTACKSIZE + kernel_heapstack),%esp
     add $0xC0000000, %ecx
     push %ecx
     call kmain
