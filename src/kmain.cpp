@@ -1,3 +1,4 @@
+
 #include "FrameBuffer.h"
 #include "utility.h"
 #include "globals.h"
@@ -8,6 +9,12 @@
 #include "HardDrive.h"
 #include "PhysicalMemoryAllocator.h"
 #include "FAT.h"
+#include "dirtyMalloc.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <memory>
+
+using namespace std;
 
 typedef void(*funcp)();
 
@@ -63,7 +70,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(0,div0);
 
 
-#define BLA 1
+#define BLA 3
 #if BLA == 0
     fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
     void* p1 = physmemalloc.alloc();
@@ -100,6 +107,21 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     volatile lint j = 10000000000;
     int res = i/j; // testing libgcc
     fb.printf ("val :%d ",res);
+#elif BLA == 3
+    std::string s = "/prout/caca/hey";
+    std::string s2 = s;
+    fb.printf("%s\n",s2.c_str());
+    auto v = split(s,'/');
+    for(auto s : v){
+        fb.printf("%s\n",s.c_str());
+    }
+    fb.printf("%u\n",v.size());
+
+    fb.printf("%s\n",concat(v,'/').c_str());
+
+    //v.at(45);
+
+
 #else
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);

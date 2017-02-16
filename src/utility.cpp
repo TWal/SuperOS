@@ -1,5 +1,8 @@
 #include "utility.h"
 #include "FrameBuffer.h"
+#include "globals.h"
+
+using namespace std;
 
 void outb(ushort port, uchar data) {
     asm volatile("outb %0, %1" : : "r"(data), "r"(port));
@@ -58,4 +61,29 @@ void bsod(const char* s, ...) {
     va_start(ap, s);
     vbsod(s, ap);
     va_end(ap);
+}
+
+
+vector<string> split(std::string str,char separator){
+    vector<string> res ;
+    size_t pos = 0;
+    while (pos < str.size()){
+        size_t pos2 = str.find_first_of(separator,pos);
+        if (pos2 == string::npos){
+            res.push_back(str.substr(pos));
+            break;
+        }
+        res.push_back(str.substr(pos,pos2 - pos));
+        pos = pos2 +1;
+    }
+    return res;
+}
+std::string concat(std::vector<std::string> strs,char separator){
+    string res;
+    for(auto s : strs){
+        res.append(s);
+        res.push_back(separator);
+    }
+    res.pop_back();
+    return res;
 }

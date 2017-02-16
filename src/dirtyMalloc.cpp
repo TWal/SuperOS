@@ -11,3 +11,7 @@ void* malloc(size_t size){
     heapoffset += size;
     return kernel_heapstack + ((int)heapoffset - size);
 }
+
+void free(void* ptr){
+    (void)ptr;
+}

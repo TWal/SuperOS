@@ -2,6 +2,8 @@
 #define UTILITY_H
 
 #include <stdarg.h>
+#include <vector>
+#include <string>
 
 
 typedef unsigned char uchar;
@@ -44,7 +46,7 @@ template<typename T> T max(const T& a, const T& b) {
 
 
 void vbsod(const char* s, va_list ap);
-void bsod(const char* s, ...);
+extern "C" void bsod(const char* s, ...);
 
 //Trick to have S__LINE _ a string containing the line number
 #define __S(x) #x
@@ -62,6 +64,9 @@ void bsod(const char* s, ...);
 
 #define cli asm volatile("cli");
 #define sti asm volatile("sti");
+
+std::vector<std::string> split(std::string str,char separator);
+std::string concat(std::vector<std::string> strs,char separator);
 
 #endif
 

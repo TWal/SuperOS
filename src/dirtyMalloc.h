@@ -5,7 +5,7 @@
 
 extern "C" void* malloc (size_t size);
 
-extern "C" inline void free (void* ptr){(void)ptr;}
+extern "C" void free (void* ptr);
 
 inline void operator delete (void*ptr){free(ptr);}
 inline void operator delete[] (void*ptr){free(ptr);}
