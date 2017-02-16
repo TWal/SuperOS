@@ -1,6 +1,7 @@
 #include "FrameBuffer.h"
+#include "globals.h"
 
-static char* const FB = (char*) 0xC00B8000;
+static char* const FB = (char*) (0xB8000 + THREEGB);
 
 inline static char getColor(char fg, char bg) {
     return (fg & 0xF) | ((bg & 0xF) << 4);

@@ -7,3 +7,4 @@ Pic pic;
 Keyboard kbd;
 multibootInfo multiboot;
 PhysicalMemoryAllocator physmemalloc;
+Paging paging;

@@ -35,6 +35,11 @@ SECTIONS {
         *(.data)
     }
 
+    .data.PT ALIGN (0x1000) :
+    {
+        *(.data.PT)
+    }
+
     .bss ALIGN (0x1000) : AT(ADDR(.bss)-0xC0000000)
     {
         *(COMMON)
@@ -47,5 +52,5 @@ SECTIONS {
     __init_array_end = .;
     }
 
-    kernel_code_end = .;
+    kernel_code_end = . - 0xC0000000;
 }

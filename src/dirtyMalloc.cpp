@@ -7,6 +7,18 @@ extern "C" uchar kernel_heapstack[];
 
 static uint heapoffset;
 
+#if 1
+
+void* malloc(size_t size) {
+    return kmalloc(size);
+}
+
+void free(void* ptr) {
+    kfree(ptr);
+}
+
+#else
+
 void* malloc(size_t size){
     heapoffset += size;
     return kernel_heapstack + ((int)heapoffset - size);
@@ -15,3 +27,5 @@ void* malloc(size_t size){
 void free(void* ptr){
     (void)ptr;
 }
+
+#endif

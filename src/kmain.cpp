@@ -69,18 +69,17 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     sti;
     idt.addInt(0,div0);
 
-
-#define BLA 3
+#define BLA 0
 #if BLA == 0
     fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
-    void* p1 = physmemalloc.alloc();
-    void* p2 = physmemalloc.alloc();
-    void* p3 = physmemalloc.alloc();
-    physmemalloc.free(p1);
-    void* p4 = physmemalloc.alloc();
-    physmemalloc.free(p2);
-    void* p5 = physmemalloc.alloc();
-    fb.printf("%x %x %x %x %x\n", p1, p2, p3, p4, p5);
+    uint size = 1024*1024*8;
+    char* p1 = (char*)kmalloc(size);
+    // the size where the bsod bug
+
+    for(uint i = 0; i < size; ++i) {
+        p1[i] = 0;
+    }
+    bsod("Coucou");
 
 #elif BLA == 1
     HDD first(1,true);

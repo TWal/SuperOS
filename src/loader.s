@@ -24,7 +24,7 @@ kernel_stack_lower:
 loaderbefore:
     mov $(STACKSIZE + kernel_stack_lower),%esp
     push %ebx #multiboot info pointer is in %ebx
-    call setupPaging
+    call setupBasicPaging
     pop %ecx #now it is in %ecx
     #give the address of PDE
     mov $PDElower, %eax

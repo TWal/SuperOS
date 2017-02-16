@@ -5,15 +5,18 @@
 extern "C" void* kernel_code_end;
 
 PhysicalMemoryAllocator::PhysicalMemoryAllocator() :
-    _bitset((uint*)((char*)kernel_code_end + 0xC0000000)), _memoryStart(nullptr), _size(0) {
+    _bitset((uint*)((char*)&kernel_code_end + THREEGB)), _memoryStart(nullptr), _size(0) {
 
     uint lastsize = 1;
+    //There is usually 2 iterations
     while(_size != lastsize) {
         lastsize = _size;
-        _size = ((uint)(kernel_code_end)+_size-0x00100000)/(4*1024*8) - multiboot.mem_upper / (4*8);
+        _size = multiboot.mem_upper / (4*8) - ((uint)(&kernel_code_end)+_size-0x00100000)/(4*1024*8);
     }
 
-    _memoryStart = (char*)kernel_code_end + _size;
+    uint memStart = (uint)&kernel_code_end + _size + THREEGB;
+    memStart += 0x1000 - (memStart%0x1000);
+    _memoryStart = (char*)memStart;
 }
 
 void* PhysicalMemoryAllocator::alloc() {
