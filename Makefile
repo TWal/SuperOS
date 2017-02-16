@@ -69,17 +69,17 @@ runqemu: os.iso
 runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a
 	@mkdir -p $(OUTDIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CC) $(CFLAGS)  $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CXX) $(CXXFLAGS) $< -o $@
@@ -102,13 +102,13 @@ libc.a: $(LIBCOBJ) $(LIBCH)
 	ar rcs libc.a $(LIBCOBJ)
 
 
-$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp
+$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
 	$(CXX) $(CXXFLAGS)  $< -o $@
 	@$(CXX) -MM -MT '$@' -MF $(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<)  $<
 
-libc++.a: $(LIBCXXOBJ) $(LIBCXXH)
+libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a
 	ar rcs libc++.a $(LIBCXXOBJ)
 
 

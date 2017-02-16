@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <memory>
+#include <assert.h>
+#include <utility>
 
 namespace std{
     template < class T, class Alloc = allocator<T> >
@@ -11,7 +13,9 @@ namespace std{
         typedef T value_type;
         typedef Alloc allocator_type;
         typedef T* pointer;
+        typedef T& reference;
         typedef size_t size_type;
+        typedef pointer iterator;
 
     private :
         Alloc _alloc;
@@ -24,6 +28,8 @@ namespace std{
             if(res) return res;
             else return s;
         }
+
+
     public :
 
         explicit vector (const allocator_type& alloc = allocator_type())
@@ -34,7 +40,7 @@ namespace std{
             _capacity = strategy(n);
             _data = _alloc.allocate(_capacity);
             for(size_t i = 0 ; i < n ; ++i){
-                _data[i]->value_type();
+                _data[i].T();
             }
         }
         vector (size_type n, const value_type& val,
@@ -42,13 +48,61 @@ namespace std{
         ~vector(){
             if(_size && _data){
                 for(size_t i = 0 ; i < _size ; ++i){
-                    _data[i]->~value_type();
+                    _data[i].~value_type();
                 }
             }
-            if(_data) _alloc.deallocate(_data);
+            if(_data) _alloc.deallocate(_data,_capacity);
         }
+        reference operator [](size_type i){
+            return _data[i];
+        }
+        reference at(size_type i){
+            assert(i < _size && "At assert failed");
+            return _data[i];
+        }
+        size_type size(){
+            return _size;
+        }
+        void reserve(size_type size){
+            if (_size>0 && size <= _capacity) return;
+            size_type capacity = strategy(size);
+            pointer data = _alloc.allocate(capacity);
+            for(int i = 0 ; i < _size ; ++i){
+                data[i] = move(_data[i]);
+            }
+            _alloc.deallocate(_data,_capacity);
+            _capacity = capacity;
+            _data = data;
+        }
+        void push_back (const value_type& val){
+            reserve(_size+1);
+            _data[_size] = val;
+            ++_size;
+        }
+        iterator begin(){
+            return _data;
+        }
+        iterator end(){
+            return _data + _size;
+        }
+        iterator erase (iterator first, iterator last){
+            size_type diff = last - first;
+            if(!diff)return end();
+            for (int i = first - _data ; i < _size ; ++i){
+                _data[i] = move(_data[i + diff]);
+            }
+            _size -= diff;
+
+        }
+        iterator erase (iterator position){
+            erase(position,position+1);
+        }
+        void pop_back(){
+            assert(_size > 0 && "pop_back on empty vector");
+            --_size;
+            _data[_size].~value_type();
+        }
+
     };
-
 }
-
 #endif

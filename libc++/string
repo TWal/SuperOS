@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string.h> // TODO switch to cstring
+#include <assert.h>
 #include <memory>
 
 namespace std {
@@ -51,6 +52,14 @@ namespace std {
         typedef traits traits_type;
         typedef Alloc allocator_type;
         typedef size_t size_type;
+        typedef charT value_type;
+        typedef charT* pointer;
+        typedef charT& reference;
+        typedef pointer iterator;
+
+        static const size_t npos = -1;
+
+    private:
         Alloc _alloc;
         charT *_data;
         size_type _size;
@@ -71,15 +80,106 @@ namespace std {
         basic_string (const charT* s, const allocator_type& alloc = allocator_type())
             :_alloc(alloc){
            _size = traits_type::length(s);
-           _capacity = strategy(s);
+           _capacity = strategy(_size);
            _data = _alloc.allocate(_capacity);
            traits_type::copy(_data,s,_size +1);
         }
         ~basic_string(){
             if(_data) _alloc.deallocate(_data,_capacity);
         }
-        const charT* data() const noexcept {return _data;};
-        const charT* c_str() const noexcept {return _data;};
+        basic_string(basic_string& str):basic_string(str.c_str()){
+        }
+        basic_string(basic_string&&str)
+            :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){}
+        basic_string& operator=(const charT* s){
+            size_t size = size= traits_type::length(s);
+            reserve(size +1);
+            _size = size;
+            traits_type::copy(_data,s,_size);
+            return *this;
+        }
+        basic_string& operator=(const basic_string&str){
+            reserve(str._size +1);
+            _size = str._size;
+            traits_type::copy(_data,str.c_str(),_size);
+            return *this;
+        }
+        const charT* data() const noexcept {
+            _data[_size] = 0;
+            return _data;
+        };
+        const charT* c_str() const noexcept {return data();};
+        reference operator [](size_type i){
+            return _data + i;
+        }
+        reference at(size_type i){
+            assert(i < _size && "At assert failed");
+            return _data + i;
+        }
+        size_type size()const {
+            return _size;
+        }
+        void reserve(size_type size){
+            if (_size >0 && size <= _capacity) return;
+            size_type capacity = strategy(size);
+            pointer data = _alloc.allocate(capacity);
+            traits_type::copy(data,_data,_size);
+            _alloc.deallocate(_data,_capacity);
+            _capacity = capacity;
+            _data = data;
+        }
+        void push_back (const value_type& val){
+            reserve(_size+1);
+            traits_type::assign(_data[_size],val);
+            ++_size;
+        }
+        iterator begin(){
+            return _data;
+        }
+        iterator end(){
+            return _data + _size;
+        }
+        iterator erase (iterator first, iterator last){
+            size_type diff = last - first;
+            if(!diff)return end();
+            for (int i = first - _data ; i < _size ; ++i){
+                traits_type::assign(_data[i],_data[i + diff]);
+            }
+            _size -= diff;
+
+        }
+        iterator erase (iterator position){
+            erase(position,position+1);
+        }
+        size_t find_first_of (char c, size_t pos = 0) const{
+            pointer data = _data + pos;
+            while (data < _data + _size){
+                if (traits_type::eq(*data,c))return data-_data;
+                ++data;
+            }
+            return npos;
+        }
+        basic_string substr (size_t pos = 0, size_t len = npos) const{
+            if (len == npos) len = _size - pos;
+            size_t endpos = pos + len;
+            charT beg;
+            traits_type::assign(beg,_data[endpos]);
+            _data[endpos] = 0;
+            basic_string res = _data+ pos;
+            traits_type::assign(_data[endpos],beg);
+            return res;
+        }
+        basic_string& append (const basic_string& str){
+            reserve(_size + str.size()+1);
+            traits_type::copy(_data+_size,str._data,str._size);
+            _size += str._size;
+        }
+        void pop_back(){
+            assert(_size > 0 && "pop_back on empty vector");
+            --_size;
+        }
+
+
     };
 
     typedef basic_string<char> string;
