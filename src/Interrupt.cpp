@@ -56,3 +56,9 @@ void InterruptTable::addInt(int i,interFuncR f){
     IDT[i].present = true;
 }
 
+void InterruptTable::allPresent(){
+    for(int i = 0 ; i < 256 ; ++i){
+        IDT[i].present =true;
+    }
+}
+

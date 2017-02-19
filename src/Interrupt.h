@@ -39,6 +39,7 @@ public:
     void addInt(int i,interFunc f);
     void addInt(int i,interFuncR f);
     InterruptTable();
+    void allPresent();// only for debugging purpose
 };
 
 
