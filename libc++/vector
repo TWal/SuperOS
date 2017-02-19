@@ -80,10 +80,12 @@ namespace std{
             if (_size>0 && size <= _capacity) return;
             size_type capacity = strategy(size);
             pointer data = _alloc.allocate(capacity);
-            for(int i = 0 ; i < _size ; ++i){
-                data[i] = move(_data[i]);
+            if(_data){
+                for(int i = 0 ; i < _size ; ++i){
+                    data[i] = move(_data[i]);
+                }
+                _alloc.deallocate(_data,_capacity);
             }
-            _alloc.deallocate(_data,_capacity);
             _capacity = capacity;
             _data = data;
         }

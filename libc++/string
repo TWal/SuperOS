@@ -105,6 +105,7 @@ namespace std {
             return *this;
         }
         const charT* data() const noexcept {
+            const_cast<basic_string*>(this)->reserve(1);
             _data[_size] = 0;
             return _data;
         };
@@ -123,8 +124,10 @@ namespace std {
             if (_size >0 && size <= _capacity) return;
             size_type capacity = strategy(size);
             pointer data = _alloc.allocate(capacity);
-            traits_type::copy(data,_data,_size);
-            _alloc.deallocate(_data,_capacity);
+            if(_data) {
+                traits_type::copy(data,_data,_size);
+                _alloc.deallocate(_data,_capacity);
+            }
             _capacity = capacity;
             _data = data;
         }
