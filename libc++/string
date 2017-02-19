@@ -74,7 +74,7 @@ namespace std {
     public :
 
 
-        explicit basic_string (const allocator_type& alloc = allocator_type())
+        basic_string (const allocator_type& alloc = allocator_type())
             : _alloc(alloc),_data(nullptr),_size(0),_capacity(0){
         }
         basic_string (const charT* s, const allocator_type& alloc = allocator_type())
@@ -87,7 +87,7 @@ namespace std {
         ~basic_string(){
             if(_data) _alloc.deallocate(_data,_capacity);
         }
-        basic_string(basic_string& str):basic_string(str.c_str()){
+        basic_string(const basic_string& str):basic_string(str.c_str()){
         }
         basic_string(basic_string&&str)
             :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){}
@@ -177,6 +177,14 @@ namespace std {
         void pop_back(){
             assert(_size > 0 && "pop_back on empty vector");
             --_size;
+        }
+        bool operator==(const basic_string& str2){
+            if (_size != str2._size) return false;
+            return traits_type::compare(c_str(),str2.c_str(),_size) == 0;
+        }
+        bool operator!=(const basic_string& str2){
+            if (_size != str2._size) return true;
+            return traits_type::compare(c_str(),str2.c_str(),_size) != 0;
         }
 
 

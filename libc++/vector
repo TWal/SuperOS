@@ -16,6 +16,7 @@ namespace std{
         typedef T& reference;
         typedef size_t size_type;
         typedef pointer iterator;
+        typedef const T* const_iterator;
 
     private :
         Alloc _alloc;
@@ -43,8 +44,20 @@ namespace std{
                 _data[i].T();
             }
         }
+        vector (const vector& oth): _alloc(oth._alloc),_data(nullptr),
+                                    _size(0),_capacity(0){
+            reserve(oth._size);
+            _size = oth._size;
+            for(int i =0 ; i < _size;++i){
+                _data[i] = oth._data[i];
+            }
+        }
+        vector (vector&& oth): _alloc(move(oth._alloc)),_data(oth._data),
+                                     _size(oth._size),_capacity(oth._capacity){}
+
         vector (size_type n, const value_type& val,
                 const allocator_type& alloc = allocator_type());
+
         ~vector(){
             if(_size && _data){
                 for(size_t i = 0 ; i < _size ; ++i){
@@ -83,6 +96,18 @@ namespace std{
             return _data;
         }
         iterator end(){
+            return _data + _size;
+        }
+        const_iterator begin() const{
+            return _data;
+        }
+        const_iterator end()const {
+            return _data + _size;
+        }
+        const_iterator cbegin()const{
+            return _data;
+        }
+        const_iterator cend()const{
             return _data + _size;
         }
         iterator erase (iterator first, iterator last){
