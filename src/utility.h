@@ -68,5 +68,9 @@ extern "C" void bsod(const char* s, ...);
 std::vector<std::string> split(std::string str,char separator);
 std::string concat(std::vector<std::string> strs,char separator);
 
+#define WAIT(time) do { \
+        for(volatile int i = 0 ; i < time ; ++i); \
+    } while(false)
+
 #endif
 
