@@ -5,7 +5,7 @@
 
 extern "C" uchar kernel_heapstack[];
 
-static uint heapoffset;
+static uint heapoffset = 0;
 
 #if 1
 
