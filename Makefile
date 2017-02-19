@@ -15,7 +15,7 @@ LIB32GCC = /usr/lib/gcc/x86_64-linux-gnu/6/32
 OPTILVL = -O1
 
 ASFLAGS = --32
-CFLAGS = -m32  -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -Wall -Wextra \
+CFLAGS = -m32  -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
 				 -Wno-packed-bitfield-compat \
 				 $(OPTILVL) \
 				 -isystem $(LIBC) \

@@ -11,8 +11,8 @@
 #include "FAT.h"
 #include "dirtyMalloc.h"
 #include <stdarg.h>
-#include <stdio.h>
 #include <memory>
+#include "CommandLine.h"
 
 using namespace std;
 
@@ -34,7 +34,13 @@ void init(){
 void doublefault(int a, int b){
     (void)a;
     (void)b;
-    bsod("Double fault !!\n It may be an uncaught interruption");
+    bsod("Double fault !! It may be an uncaught interruption.");
+}
+void pagefault(int a, int b){
+    (void)a;
+    (void)b;
+    bsod("Page fault !! Access on invalid address");
+// TODO get address from CR2 + read error code
 }
 
 void printer (int a,int b){
@@ -51,7 +57,7 @@ void keyboard(int a, int b) {
 void div0 (int a, int b){
     (void)a;
     (void)b;
-    bsod(" 1/0 in not infinity !");
+    bsod(" 1/0 is not infinity !");
 }
 
 int sum (int a, int b){
@@ -62,14 +68,15 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     multiboot = *multibootinfo;
     PDE[0].present = false;
     cli;
-    init();
+    init(); //C++ global contructors should not change machine state.
     gdt.init();
     idt.init();
     idt.addInt(8,doublefault);
+    idt.addInt(0xE,pagefault);
     sti;
     idt.addInt(0,div0);
 
-#define BLA 0
+#define BLA 4
 #if BLA == 0
     fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
     uint size = 1024*1024*8;
@@ -120,15 +127,38 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     //v.at(45);
 
+#elif BLA == 4
+    idt.addInt(0x21,keyboard);
+    pic.activate(Pic::KEYBOARD);
+
+    kbd.setKeymap(&azertyKeymap);
+
+    CommandLine cl;
+
+    // proof of concept for command
+    cl.add("test",[](const vector<string>& args){
+                fb.printf("test Command in kmain\n");
+            });
+
+    //running command line
+    cl.run();
+
 
 #else
+    volatile int  j =42;
+    breakpoint;
+    j-=42;
+    //volatile int i = 1/j;
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
 
     kbd.setKeymap(&azertyKeymap);
 
     while(true) {
+        breakpoint;
+        breakpoint;
         Keycode kc = kbd.poll();
+        breakpoint;
         if(!kc.isRelease && kc.symbol > 0) {
             if(kc.symbol == '\b') {
                 fb.puts("\b \b");
