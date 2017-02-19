@@ -24,6 +24,7 @@ class Keyboard {
         Keyboard();
         void handleScanCode(uchar sc);
         Keycode poll();
+        uchar pollSC();
         void setKeymap(const Keymap* km);
         enum Flags {
             LSHIFT = 0,

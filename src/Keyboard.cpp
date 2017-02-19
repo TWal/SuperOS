@@ -1,4 +1,5 @@
 #include "Keyboard.h"
+#include "globals.h"
 
 
 const Keymap azertyKeymap = {
@@ -67,18 +68,23 @@ void Keyboard::handleScanCode(uchar sc) {
     _deque.push_back(sc);
 }
 
+//Code qui peut être modifié par une interruption : __attribute__((optimize("O0")))
+uchar __attribute__((optimize("O0"))) Keyboard::pollSC(){
+    while(_deque.empty()) {
+        asm volatile("hlt");
+    }
+    uchar sc = _deque.front();
+    _deque.pop_front();
+    return sc;
+}
+
+
 Keycode Keyboard::poll() {
     //TODO: handle e0
     while(true) {
-        if(_deque.empty()) {
-            asm volatile("hlt");
-        }
-        uchar sc = _deque.front();
-        _deque.pop_front();
 
-        if(sc == 0x00 || sc == 0xff) {
-            bsod("Keyboard error :-(");
-        }
+        uchar sc = pollSC();
+
 
         const uchar RELEASE = 0x80;
         const uchar CTRL_SC = 0x1d;
