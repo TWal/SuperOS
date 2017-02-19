@@ -23,11 +23,11 @@ struct IDTLoader{
     InterruptEntry * IDT;
 }__attribute__((packed));
 
-void lidt (){
+void __attribute__((optimize("O0"))) lidt (){
     IDTLoader lo = {256*8,IDT};
     asm volatile (
-        "lidt (%0)" :
-        : "r"(&lo):
+        "lidt %0" :
+        : "m"(lo):
         );
 }
 

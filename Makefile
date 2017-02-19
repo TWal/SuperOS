@@ -12,9 +12,12 @@ LIBCXX = libc++
 
 LIB32GCC = /usr/lib/gcc/x86_64-linux-gnu/6/32
 
+OPTILVL = -O1
+
 ASFLAGS = --32
 CFLAGS = -m32  -nostdlib -ffreestanding -fno-builtin -fno-stack-protector -Wall -Wextra \
-				 -c -O1  -Wno-packed-bitfield-compat \
+				 -Wno-packed-bitfield-compat \
+				 $(OPTILVL) \
 				 -isystem $(LIBC) \
 				 -isystem $(LIBCXX)\
 				 -DSUP_OS_KERNEL
@@ -76,13 +79,13 @@ $(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a
 $(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
-	$(CC) $(CFLAGS)  $< -o $@
+	$(CC) $(CFLAGS)  -c $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
 $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 	@$(CXX) -isystem libc -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
 
 $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
@@ -95,7 +98,7 @@ $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
 $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
-	$(CC) $(CFLAGS)  $< -o $@
+	$(CC) $(CFLAGS)  -c $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
 
 libc.a: $(LIBCOBJ) $(LIBCH)
@@ -105,7 +108,7 @@ libc.a: $(LIBCOBJ) $(LIBCH)
 $(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
-	$(CXX) $(CXXFLAGS)  $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 	@$(CXX) -MM -MT '$@' -MF $(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<)  $<
 
 libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a
