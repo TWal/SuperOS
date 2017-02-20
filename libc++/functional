@@ -1,0 +1,13 @@
+#ifndef __SUPOS_CPP_FUNCTIONAL
+#define __SUPOS_CPP_FUNCTIONAL
+
+namespace std {
+    template <class T> struct less {
+        bool operator() (const T& x, const T& y) const {return x<y;}
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef bool result_type;
+    };
+}
+
+#endif

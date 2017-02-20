@@ -53,7 +53,11 @@ namespace std{
             }
         }
         vector (vector&& oth): _alloc(move(oth._alloc)),_data(oth._data),
-                                     _size(oth._size),_capacity(oth._capacity){}
+                                     _size(oth._size),_capacity(oth._capacity){
+            oth._data = nullptr;
+            oth._size = 0;
+            oth._capacity = 0;
+        }
 
         vector (size_type n, const value_type& val,
                 const allocator_type& alloc = allocator_type());
@@ -65,6 +69,24 @@ namespace std{
                 }
             }
             if(_data) _alloc.deallocate(_data,_capacity);
+        }
+        vector& operator= (const vector& x){
+            if(_data){
+                for(size_t i = 0 ; i < _size ; ++i){
+                    _data[i].~value_type();
+                }
+            }
+            reserve(x.size());
+            for(size_t i = 0 ; i < x._size ; ++ i){
+                _data[i] = x._data[i];
+            }
+            _size = x._size;
+            return *this;
+        }
+        vector& operator= (vector&& x){
+            this->~vector();
+            this->vector(move(x));
+            return *this;
         }
         reference operator [](size_type i){
             return _data[i];

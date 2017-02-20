@@ -91,7 +91,11 @@ namespace std {
         basic_string(const basic_string& str):basic_string(str.c_str()){
         }
         basic_string(basic_string&&str)
-            :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){}
+            :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){
+            str._data = nullptr;
+            str._size = 0;
+            str._capacity = 0;
+        }
 
         basic_string& operator=(const charT* s){
             size_t size = traits_type::length(s);

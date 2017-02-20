@@ -1,0 +1,67 @@
+#ifndef __SUPOS_CPP_MAP
+#define __SUPOS_SPP_MAP
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <algorithm>
+#include <functional>
+
+namespace std {
+    template < class Key,                                     // map::key_type
+               class T,                                       // map::mapped_type
+               class Compare = less<Key>,                     // map::key_compare
+               class Alloc = allocator<pair<const Key,T> >    // map::allocator_type
+               >
+    class map : private vector<pair<const Key,T>>  {
+    public:
+        typedef Key key_type;
+        typedef T mapped_type;
+        typedef pair<const Key,T> value_type;
+        typedef Compare key_compare;
+        typedef Alloc allocator_type;
+        typedef value_type* pointer;
+        typedef const value_type* const_pointer;
+        typedef value_type& reference;
+        typedef size_t size_type;
+        typedef pointer iterator;
+        typedef const_pointer const_iterator;
+
+    private :
+        key_compare _comp;
+    public:
+
+        map(){}
+        explicit map(const allocator_type& alloc):vector<value_type>(alloc),_comp(){}
+        map(const map& oth):vector<value_type>(oth),_comp(){}
+        map(map&& oth):vector<value_type>(move(oth)),_comp(){}
+        //default ~map is Ok.
+        /*map& operator= (const map& x){
+            _data = x._data;
+            return *this;
+        }
+        map& operator= (map&& x){
+            _data = move(x._data);
+            return *this;
+            }*/
+        using vector<value_type>::operator=;
+        using vector<value_type>::begin;
+        using vector<value_type>::end;
+        using vector<value_type>::erase;
+        using vector<value_type>::empty;
+        iterator find (const key_type& k){
+            auto it = lower_bound(begin(),end());
+            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            else return end();
+        }
+        const_iterator find (const key_type& k) const{
+            auto it = lower_bound(begin(),end());
+            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            else return end();
+        }
+
+    };
+}
+
+#endif

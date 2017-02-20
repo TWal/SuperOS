@@ -3,3 +3,6 @@
 #include "../string"
 #include "../memory"
 #include "../new"
+#include "../iterator"
+#include "../algorithm"
+#include "../map"
