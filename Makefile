@@ -10,7 +10,7 @@ DEPDIR = .dep
 LIBC = libc
 LIBCXX = libc++
 
-LIB32GCC = /usr/lib/gcc/x86_64-linux-gnu/6/32
+LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 
 OPTILVL = -O1
 
@@ -24,7 +24,7 @@ CFLAGS = -m32  -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
 
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none
-LIBS = -L. -L $(LIB32GCC) -lc -lgcc -lgcc_eh -lsupc++ -lc++
+LIBS = -L. -L $(LIB32GCC) -lc -lgcc -lc++
 
 SRCASM = $(wildcard $(SRCDIR)/*.s)
 SRCC = $(wildcard $(SRCDIR)/*.c)

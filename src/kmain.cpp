@@ -36,17 +36,12 @@ void doublefault(int a, int b){
     (void)b;
     bsod("Double fault !! It may be an uncaught interruption.");
 }
-void pagefault(int a, int b){
-    (void)a;
-    (void)b;
-    bsod("Page fault !! Access on invalid address");
-// TODO get address from CR2 + read error code
-}
 
 void pagefault(int a, int b){
     (void)a;
     (void)b;
     bsod("Page fault! (aka. segmentation fault)");
+// TODO get address from CR2 + read error code
 }
 
 void printer (int a,int b){
