@@ -16,6 +16,8 @@ void FrameBuffer::clear(char fg, char bg) {
     _bg = bg;
     _cursCol = 0;
     _cursRow = 0;
+    _margLeft = 0;
+    _margRight = 80;
     char color = getColor(_fg, _bg);
     for(int i = 0 ; i < 80 * 25 ; ++i){
         FB[2*i] = 0;
@@ -40,6 +42,11 @@ void FrameBuffer::updateCursor() {
     outb(CURSOR_DATA_PORT, (pos>>8) & 0xFF);
     outb(CURSOR_COMMAND_PORT, CURSOR_LOW_BYTE);
     outb(CURSOR_DATA_PORT, pos & 0xFF);
+}
+
+void FrameBuffer::setMargin(int left, int right) {
+    _margLeft = left;
+    _margRight = right;
 }
 
 void FrameBuffer::writeChar(char c, int col, int row, char fg, char bg) {
@@ -91,8 +98,8 @@ void FrameBuffer::putc(char c, bool updateCurs) {
             _cursCol++;
             break;
     }
-    if(_cursCol >= 80) {
-        _cursCol -= 80;
+    if(_cursCol >= _margRight) {
+        _cursCol -= _margRight - _margLeft;
         _cursRow += 1;
     }
     if(_cursRow >= 25) {

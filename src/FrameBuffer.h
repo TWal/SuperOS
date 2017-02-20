@@ -9,8 +9,11 @@ class FrameBuffer {
         void clear(char fg = 0xF, char bg = 0x0);
         void moveCursor(int col, int row, bool updateCurs=true);
         void updateCursor();
+        void setMargin(int left, int right);
+
         void writeChar(char c, int col, int row, char fg = 15, char bg = 0);
         void scroll(uint n, bool updateCurs=true);
+
         void putc(char c, bool updateCurs=true);
         void puts(const char* s, bool updateCurs=true);
         void printDigit(int d, bool updateCurs=true);
@@ -43,6 +46,8 @@ class FrameBuffer {
         int _cursRow;
         char _fg;
         char _bg;
+        int _margLeft;
+        int _margRight;
 };
 
 #endif

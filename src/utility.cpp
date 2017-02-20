@@ -29,6 +29,7 @@ void vbsod(const char* s, va_list ap) {
     const char bg = FrameBuffer::BLUE;
     FrameBuffer fb;
     fb.clear(fg, bg);
+    fb.setMargin(3, 77);
     for(int j = 0; j < 2; ++j) {
         for(int i = j; i < 79-j; ++i) {
             fb.writeChar('~', i, 0+j, fgOut, bg);
@@ -45,7 +46,7 @@ void vbsod(const char* s, va_list ap) {
     fb.puts("The Blue Screen Of Death (tm)");
     fb.moveCursor(3, 6);
     fb.puts("Me haz an error!!!");
-    fb.moveCursor(63, 22);
+    fb.moveCursor(62, 22);
     fb.puts("(btw, you lost)");
     fb.moveCursor(3,8);
     fb.vprintf(s, ap);
