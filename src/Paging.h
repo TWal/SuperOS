@@ -14,6 +14,8 @@ struct PageDirectoryEntry {
     bool isSizeMega : 1;
     int nothing : 4;
     uint PTaddr : 20;
+    void setAddr(void* a);
+    void setAddr(uint a);
 } __attribute__((packed));
 
 static_assert(sizeof(PageDirectoryEntry) == 4, "PageDirectoryEntry has the wrong size");
@@ -31,7 +33,12 @@ struct PageTable {
     bool global : 1;
     int nothing : 3;
     uint addr : 20;
-};
+    void setAddr(void* a);
+    void setAddr(uint a);
+    void* getAddr();
+} __attribute__((packed));
+
+static_assert(sizeof(PageTable) == 4, "PageTable has the wrong size");
 
 extern "C" void setupBasicPaging() __attribute__((section(".text.lower")));
 

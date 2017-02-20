@@ -10,6 +10,28 @@ PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + HF_BEGIN);
 PageTable PT[1<<20];
 const int MAX_INIT_PAGE = 2;
 
+void PageDirectoryEntry::setAddr(void* a) {
+    setAddr((uint)a);
+}
+
+void PageDirectoryEntry::setAddr(uint a) {
+    assert((a & ((1<<12)-1)) == 0);
+    PTaddr = a >> 12;
+}
+
+void PageTable::setAddr(void* a) {
+    setAddr((uint)a);
+}
+
+void PageTable::setAddr(uint a) {
+    assert((a & ((1<<12)-1)) == 0);
+    addr = a >> 12;
+}
+
+void* PageTable::getAddr() {
+    return (void*)(addr << 12);
+}
+
 void setupBasicPaging() {
     for(int i = 0; i < 1024; ++i) {
         PDElower[i].present = false;
@@ -42,23 +64,45 @@ Paging::Paging() : _brk(HF_BEGIN + MAX_INIT_PAGE*4*1024*1024), _truebrk(_brk) {
     }
 }
 
+static inline PageTable* getPT(uint addr) {
+    return &PT[(addr-HF_BEGIN)>>12];
+}
+
+static inline PageDirectoryEntry* getPDE(uint addr) {
+    return &PDE[addr >> 22];
+}
+
+static inline void invlpg(uint addr) {
+    asm volatile("invlpg (%0)" ::"r" (addr) : "memory");
+}
+
 int Paging::brk(void* paddr) {
     uint addr = (uint)paddr;
     if(addr > _truebrk) {
         while(addr > _truebrk) {
             if((_truebrk & ((1<<22)-1)) == 0) {
                 for(int i = 0; i < 1024; ++i) {
-                    PT[((_truebrk-HF_BEGIN)>>12) + i].present = false;
+                    getPT(_truebrk)[i].present = false;
                 }
-                PDE[_truebrk >> 22].present = true;
+                getPDE(_truebrk)->present = true;
             }
-            uint bla = (uint)physmemalloc.alloc();
-            PT[(_truebrk-HF_BEGIN)>>12].addr = (bla) >> 12;
-            PT[(_truebrk-HF_BEGIN)>>12].present = true;
+            getPT(_truebrk)->setAddr((uint)physmemalloc.alloc());
+            getPT(_truebrk)->present = true;
+            invlpg(_truebrk);
             _truebrk += 0x1000;
         }
     } else {
-        //lol, who needs to free memory in 2017?
+        while(_truebrk - 0x1000 >= addr) {
+            _truebrk -= 0x1000;
+            physmemalloc.free(getPT(_truebrk)->getAddr());
+            getPT(_truebrk)->present = false;
+            getPT(_truebrk)->setAddr(nullptr);
+            if((_truebrk & ((1<<22)-1)) == 0) {
+                getPDE(_truebrk)->present = false;
+                getPDE(_truebrk)->setAddr(nullptr);
+            }
+            invlpg(_truebrk);
+        }
     }
     _brk = addr;
     return 0;

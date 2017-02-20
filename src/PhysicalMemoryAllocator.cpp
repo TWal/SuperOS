@@ -14,7 +14,7 @@ PhysicalMemoryAllocator::PhysicalMemoryAllocator() :
         _size = multiboot.mem_upper / (4*8) - ((uint)(&kernel_code_end)+_size-0x00100000)/(4*1024*8);
     }
 
-    uint memStart = (uint)&kernel_code_end + _size + THREEGB;
+    uint memStart = (uint)&kernel_code_end + _size;
     memStart += 0x1000 - (memStart%0x1000);
     _memoryStart = (char*)memStart;
 }

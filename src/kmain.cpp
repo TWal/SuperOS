@@ -43,6 +43,12 @@ void pagefault(int a, int b){
 // TODO get address from CR2 + read error code
 }
 
+void pagefault(int a, int b){
+    (void)a;
+    (void)b;
+    bsod("Page fault! (aka. segmentation fault)");
+}
+
 void printer (int a,int b){
     fb.printf ("a is : %d, b is %d\n",a,b);
 }
@@ -71,22 +77,20 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     init(); //C++ global contructors should not change machine state.
     gdt.init();
     idt.init();
-    idt.addInt(8,doublefault);
-    idt.addInt(0xE,pagefault);
-    sti;
     idt.addInt(0,div0);
+    idt.addInt(8,doublefault);
+    idt.addInt(14,pagefault);
+    sti;
 
 #define BLA 4
 #if BLA == 0
     fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
-    uint size = 1024*1024*8;
-    char* p1 = (char*)kmalloc(size);
-    // the size where the bsod bug
-
-    for(uint i = 0; i < size; ++i) {
-        p1[i] = 0;
+    for(int i = 0; i < 0x1000; ++i) {
+        (void)malloc(1);
     }
-    bsod("Coucou");
+    char* p = (char*)malloc(1);
+    p[0] = 0;
+    bsod("Coucou %x", p);
 
 #elif BLA == 1
     HDD first(1,true);
