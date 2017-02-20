@@ -67,6 +67,7 @@ namespace std {
 
         inline size_type strategy(size_type s){
             size_t res = 1 << (8*sizeof(size_t) - __builtin_clz(s+1)+1);
+            assert(res > s);
             if(res) return res;
             else return s;
         }
@@ -80,7 +81,7 @@ namespace std {
         basic_string (const charT* s, const allocator_type& alloc = allocator_type())
             :_alloc(alloc){
            _size = traits_type::length(s);
-           _capacity = strategy(_size);
+           _capacity = strategy(_size+1);
            _data = _alloc.allocate(_capacity);
            traits_type::copy(_data,s,_size +1);
         }
@@ -91,8 +92,9 @@ namespace std {
         }
         basic_string(basic_string&&str)
             :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){}
+
         basic_string& operator=(const charT* s){
-            size_t size = size= traits_type::length(s);
+            size_t size = traits_type::length(s);
             reserve(size +1);
             _size = size;
             traits_type::copy(_data,s,_size);
@@ -104,12 +106,14 @@ namespace std {
             traits_type::copy(_data,str.c_str(),_size);
             return *this;
         }
+
         const charT* data() const noexcept {
             const_cast<basic_string*>(this)->reserve(1);
             _data[_size] = 0;
             return _data;
         };
         const charT* c_str() const noexcept {return data();};
+
         reference operator [](size_type i){
             return _data + i;
         }
@@ -117,12 +121,14 @@ namespace std {
             assert(i < _size && "At assert failed");
             return _data + i;
         }
+
         size_type size()const {
             return _size;
         }
+
         void reserve(size_type size){
-            if (_size >0 && size <= _capacity) return;
-            size_type capacity = strategy(size);
+            if (_size >0 && size < _capacity) return;
+            size_type capacity = strategy(size+1);
             pointer data = _alloc.allocate(capacity);
             if(_data) {
                 traits_type::copy(data,_data,_size);
@@ -131,17 +137,20 @@ namespace std {
             _capacity = capacity;
             _data = data;
         }
+
         void push_back (const value_type& val){
             reserve(_size+1);
             traits_type::assign(_data[_size],val);
             ++_size;
         }
+
         iterator begin(){
             return _data;
         }
         iterator end(){
             return _data + _size;
         }
+
         iterator erase (iterator first, iterator last){
             size_type diff = last - first;
             if(!diff)return end();
@@ -154,6 +163,7 @@ namespace std {
         iterator erase (iterator position){
             erase(position,position+1);
         }
+
         size_t find_first_of (char c, size_t pos = 0) const{
             pointer data = _data + pos;
             while (data < _data + _size){
@@ -162,7 +172,9 @@ namespace std {
             }
             return npos;
         }
+
         basic_string substr (size_t pos = 0, size_t len = npos) const{
+            if(pos > _size) return basic_string();
             if (len == npos) len = _size - pos;
             size_t endpos = pos + len;
             charT beg;
@@ -172,13 +184,14 @@ namespace std {
             traits_type::assign(_data[endpos],beg);
             return res;
         }
+
         basic_string& append (const basic_string& str){
             reserve(_size + str.size()+1);
             traits_type::copy(_data+_size,str._data,str._size);
             _size += str._size;
         }
         void pop_back(){
-            assert(_size > 0 && "pop_back on empty vector");
+            assert(_size > 0 && "pop_back on empty basic_string");
             --_size;
         }
         bool empty(){
