@@ -1,0 +1,40 @@
+#ifndef __SUPOS_CPP_NEW
+#define __SUPOS_CPP_NEW
+
+#include <cstddef>
+#include <stdlib.h>
+
+inline void *operator new (size_t size){
+    return malloc(size);
+}
+
+inline void *operator new[] (size_t size){
+    return malloc(size);
+}
+inline void* operator new  ( std::size_t count, void* ptr ){
+    (void)count;
+    return ptr;
+}
+
+inline void* operator new[]( std::size_t count, void* ptr ){
+    (void)count;
+    return ptr;
+}
+
+inline void operator delete  ( void* ptr ){
+    free(ptr);
+}
+inline void operator delete[]( void* ptr ){
+    free(ptr);
+}
+
+inline void operator delete  ( void* ptr, std::size_t sz ){
+    (void)sz;
+    free(ptr);
+}
+inline void operator delete[]( void* ptr, std::size_t sz ){
+    (void)sz;
+    free(ptr);
+}
+
+#endif

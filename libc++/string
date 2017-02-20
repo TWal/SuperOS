@@ -165,6 +165,7 @@ namespace std {
         }
 
         size_t find_first_of (char c, size_t pos = 0) const{
+            if(!_data) return npos;
             pointer data = _data + pos;
             while (data < _data + _size){
                 if (traits_type::eq(*data,c))return data-_data;
