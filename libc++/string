@@ -181,6 +181,9 @@ namespace std {
             assert(_size > 0 && "pop_back on empty vector");
             --_size;
         }
+        bool empty(){
+            return _size == 0;
+        }
         bool operator==(const basic_string& str2){
             if (_size != str2._size) return false;
             return traits_type::compare(c_str(),str2.c_str(),_size) == 0;

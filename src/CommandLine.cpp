@@ -51,7 +51,9 @@ std::string CommandLine::readCommandText(){
         //fb.printf("Reading Command");
         if(!kc.isRelease && kc.symbol > 0) {
             if(kc.symbol == '\b') {
-                fb.puts("\b \b");
+                if(!res.empty()) {
+                    fb.puts("\b \b");
+                }
             } else {
                 fb.putc(kc.symbol);
             }
@@ -59,7 +61,9 @@ std::string CommandLine::readCommandText(){
         else continue;
         if(kc.symbol == '\n') break;
         if(kc.symbol == '\b'){
-            res.pop_back();
+            if(!res.empty()) {
+                res.pop_back();
+            }
             continue;
         }
         if (kc.symbol != -1) res.push_back(kc.symbol);

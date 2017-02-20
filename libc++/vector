@@ -129,6 +129,9 @@ namespace std{
             --_size;
             _data[_size].~value_type();
         }
+        bool empty(){
+            return _size == 0;
+        }
 
     };
 }
