@@ -1,8 +1,6 @@
 #include "CommandLine.h"
 #include "globals.h"
 
-#define ever (;;)
-
 using namespace std;
 
 CommandLine::CommandLine(table_type table):_table(table){
@@ -25,8 +23,7 @@ CommandLine::CommandLine(table_type table):_table(table){
 
 }
 void CommandLine::run(){
-    for ever
-    {
+    while(true) {
         bool found = false;
         fb.printf("$ ");
         auto input = readCommand();
@@ -49,8 +46,7 @@ void CommandLine::run(){
 std::string CommandLine::readCommandText(){
     std::string res;
     //fb.printf("hey ! \n");
-    for ever
-    {
+    while(true) {
         Keycode kc = kbd.poll();
         //fb.printf("Reading Command");
         if(!kc.isRelease && kc.symbol > 0) {
