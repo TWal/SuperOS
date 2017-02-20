@@ -64,7 +64,7 @@ void bsod(const char* s, ...) {
 }
 
 
-vector<string> split(std::string str,char separator){
+vector<string> split(std::string str,char separator,bool keepEmpty){
     vector<string> res ;
     size_t pos = 0;
     while (pos < str.size()){
@@ -73,7 +73,9 @@ vector<string> split(std::string str,char separator){
             res.push_back(str.substr(pos));
             break;
         }
-        res.push_back(str.substr(pos,pos2 - pos));
+        if (keepEmpty || pos2 > pos +1){
+            res.push_back(str.substr(pos,pos2 - pos));
+        }
         pos = pos2 +1;
     }
     return res;

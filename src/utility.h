@@ -65,7 +65,7 @@ extern "C" void bsod(const char* s, ...);
 #define cli asm volatile("cli");
 #define sti asm volatile("sti");
 
-std::vector<std::string> split(std::string str,char separator);
+std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
 std::string concat(std::vector<std::string> strs,char separator);
 
 #define WAIT(time) do { \

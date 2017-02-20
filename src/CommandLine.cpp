@@ -72,7 +72,7 @@ std::string CommandLine::readCommandText(){
     return res;
 }
 std::vector<std::string> CommandLine::readCommand(){
-    return split(readCommandText(),' '); // may be more complicated later.
+    return split(readCommandText(),' ',false); // may be more complicated later.
 }
 
 void CommandLine::add(std::string name,command_func func){
