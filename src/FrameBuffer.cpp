@@ -78,11 +78,11 @@ void FrameBuffer::scroll(uint n, bool updateCurs) {
 void FrameBuffer::putc(char c, bool updateCurs) {
     switch(c) {
         case '\n':
-            _cursCol = 0;
+            _cursCol = _margLeft;
             _cursRow++;
             break;
         case '\r':
-            _cursCol = 0;
+            _cursCol = _margLeft;
             break;
         case '\f':
             _cursRow++;
@@ -91,7 +91,14 @@ void FrameBuffer::putc(char c, bool updateCurs) {
             _cursCol += 4-(_cursCol%4);
             break;
         case '\b':
-            _cursCol = max(0, _cursCol-1);
+            if(_cursCol <= _margLeft) {
+                if(_cursRow != 0) {
+                    _cursCol = _margRight-1;
+                    --_cursRow;
+                }
+            } else {
+                --_cursCol;
+            }
             break;
         default:
             writeChar(c, _cursCol, _cursRow, _fg, _bg);
