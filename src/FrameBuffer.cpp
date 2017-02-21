@@ -215,3 +215,10 @@ void FrameBuffer::printf(const char* s, ...) {
     va_end(ap);
 }
 
+void printf(const char* s, ...) {
+    va_list ap;
+    va_start(ap, s);
+    fb.vprintf(s, ap);
+    va_end(ap);
+}
+

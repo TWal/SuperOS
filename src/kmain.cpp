@@ -40,7 +40,9 @@ void doublefault(int a, int b){
 void pagefault(int a, int b){
     (void)a;
     (void)b;
-    bsod("Page fault! (aka. segmentation fault)");
+    printf("Page fault\n");
+    while(true) asm volatile("cli;hlt");
+    //bsod("Page fault! (aka. segmentation fault)");
 // TODO get address from CR2 + read error code
 }
 
@@ -70,6 +72,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     PDE[0].present = false;
     cli;
     init(); //C++ global contructors should not change machine state.
+    initkmalloc();
     gdt.init();
     idt.init();
     idt.addInt(0,div0);
@@ -77,15 +80,18 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(14,pagefault);
     sti;
 
-#define BLA 4
+#define BLA 3
 #if BLA == 0
-    fb.printf("Memory available: %dkb\n", multiboot.mem_upper);
-    for(int i = 0; i < 0x1000; ++i) {
-        (void)malloc(1);
-    }
-    char* p = (char*)malloc(1);
-    p[0] = 0;
-    bsod("Coucou %x", p);
+
+    char* p1 = (char*)malloc(13);
+    char* p2 = (char*)malloc(19);
+    char* p3 = (char*)malloc(23);
+    char* p4 = (char*)malloc(27);
+    fb.printf("%x %x %x %x\n", p1, p2, p3, p4);
+    free(p2);
+    char* p5 = (char*)malloc(21);
+    fb.printf("%x\n", p5);
+    while(1) asm volatile ("cli;hlt");
 
 #elif BLA == 1
     HDD first(1,true);
@@ -112,21 +118,8 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     volatile lint j = 10000000000;
     int res = i/j; // testing libgcc
     fb.printf ("val :%d ",res);
+
 #elif BLA == 3
-    std::string s = "/prout/caca/hey";
-    std::string s2 = s;
-    fb.printf("%s\n",s2.c_str());
-    auto v = split(s,'/');
-    for(auto s : v){
-        fb.printf("%s\n",s.c_str());
-    }
-    fb.printf("%u\n",v.size());
-
-    fb.printf("%s\n",concat(v,'/').c_str());
-
-    //v.at(45);
-
-#elif BLA == 4
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
 
@@ -144,29 +137,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
 
 #else
-    volatile int  j =42;
-    breakpoint;
-    j-=42;
-    //volatile int i = 1/j;
-    idt.addInt(0x21,keyboard);
-    pic.activate(Pic::KEYBOARD);
-
-    kbd.setKeymap(&azertyKeymap);
-
-    while(true) {
-        breakpoint;
-        breakpoint;
-        Keycode kc = kbd.poll();
-        breakpoint;
-        if(!kc.isRelease && kc.symbol > 0) {
-            if(kc.symbol == '\b') {
-                fb.puts("\b \b");
-            } else {
-                fb.putc(kc.symbol);
-            }
-            }
-        //fb.printf("Key pressed! %x %x %c %x %d\n", kc.scanCode, kc.symbol, kc.symbol, kc.flags, kc.isRelease);
-    }
+    //[insert here useful kernel code]
 #endif
 }
 

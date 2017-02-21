@@ -74,7 +74,6 @@ namespace std {
 
     public :
 
-
         basic_string (const allocator_type& alloc = allocator_type())
             : _alloc(alloc),_data(nullptr),_size(0),_capacity(0){
         }

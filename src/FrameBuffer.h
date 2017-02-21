@@ -50,5 +50,7 @@ class FrameBuffer {
         int _margRight;
 };
 
+extern "C" void printf(const char* s, ...);
+
 #endif
 

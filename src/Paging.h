@@ -52,6 +52,21 @@ class Paging {
         uint _truebrk;
 };
 
+struct MallocHeader {
+    uint size : 30;
+    uint flags : 2;
+    inline int getSize() {
+        return size << 2;
+    }
+    inline void setSize(int sz) {
+        assert((sz & ((1<<2)-1)) == 0);
+        size = sz >> 2;
+    }
+};
+
+static_assert(sizeof(MallocHeader) == 4, "MallocHeader has the wrong size");
+
+void initkmalloc();
 void* kmalloc(uint size);
 void kfree(void* ptr);
 

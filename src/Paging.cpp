@@ -114,12 +114,58 @@ void* Paging::sbrk(int inc) {
     return res;
 }
 
+static MallocHeader* firstHeader;
+
+void initkmalloc() {
+    MallocHeader* head = (MallocHeader*)paging.sbrk(4);
+    head->size = 0;
+    head->flags = 0;
+    firstHeader = head;
+}
+
+static inline void* headerToPtr(MallocHeader* head) {
+    return (void*)((char*)head + sizeof(MallocHeader));
+}
+
+static inline MallocHeader* ptrToHeader(void* ptr) {
+    return (MallocHeader*)((char*)ptr - sizeof(MallocHeader));
+}
+
+static inline MallocHeader* nextHeader(MallocHeader* head) {
+    return (MallocHeader*)((char*)head + head->getSize() + 4);
+}
+
+static inline uint align4(uint n) {
+    return n + 4 - (n%4);
+}
+
+static const int ALLOCATED = 1;
+
 void* kmalloc(uint size) {
-    return paging.sbrk(size);
+    MallocHeader* head = firstHeader;
+    while(true) {
+        if(head->size == 0) {
+            uint trueSize = align4(size);
+            assert(headerToPtr(head) == paging.sbrk(4+trueSize));
+            head->setSize(trueSize);
+            head->flags |= ALLOCATED;
+            MallocHeader* nextHead = nextHeader(head);
+            nextHead->size = 0;
+            nextHead->flags = 0;
+            return headerToPtr(head);
+        }
+        if((head->flags & ALLOCATED) == 0 && head->getSize() >= size) {
+            head->flags |= ALLOCATED;
+            return headerToPtr(head);
+        }
+        head = nextHeader(head);
+    }
 }
 
 void kfree(void* ptr) {
-    (void)ptr;
+    MallocHeader* head = ptrToHeader(ptr);
+    assert((head->flags & ALLOCATED) != 0);
+    head->flags &= ~ALLOCATED;
 }
 
 

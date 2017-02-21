@@ -5,6 +5,7 @@
 #include <memory>
 #include <assert.h>
 #include <utility>
+#include <new>
 
 namespace std{
     template < class T, class Alloc = allocator<T> >
@@ -113,7 +114,7 @@ namespace std{
         }
         void push_back (const value_type& val){
             reserve(_size+1);
-            _data[_size] = val;
+            new(&_data[_size]) T(val);
             ++_size;
         }
         iterator begin(){
