@@ -74,13 +74,14 @@ vector<string> split(std::string str,char separator,bool keepEmpty){
             res.push_back(str.substr(pos));
             break;
         }
-        if (keepEmpty || pos2 > pos +1){
+        if (keepEmpty || pos2 > pos){
             res.push_back(str.substr(pos,pos2 - pos));
         }
         pos = pos2 +1;
     }
     return res;
 }
+
 std::string concat(std::vector<std::string> strs,char separator){
     string res;
     for(auto s : strs){

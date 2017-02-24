@@ -24,10 +24,10 @@ CommandLine::CommandLine(table_type table):_table(table){
 }
 void CommandLine::run(){
     while(true) {
-        bool found = false;
         fb.printf("$ ");
         auto input = readCommand();
         if(input.size() == 0) continue;
+        bool found = false;
         for(auto p : _table){
             if(p.first == input[0]){
                 //fb.printf("executing command : %s\n",p.first.c_str());
