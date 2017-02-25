@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <stdio.h>
 
 namespace std {
     template < class Key,                                     // map::key_type
@@ -14,7 +15,7 @@ namespace std {
                class Compare = less<Key>,                     // map::key_compare
                class Alloc = allocator<pair<const Key,T> >    // map::allocator_type
                >
-    class map : private vector<pair<const Key,T>>  {
+    class map : private vector<pair<Key,T>>  {
     public:
         typedef Key key_type;
         typedef T mapped_type;
@@ -33,9 +34,9 @@ namespace std {
     public:
 
         map(){}
-        explicit map(const allocator_type& alloc):vector<value_type>(alloc),_comp(){}
-        map(const map& oth):vector<value_type>(oth),_comp(){}
-        map(map&& oth):vector<value_type>(move(oth)),_comp(){}
+        explicit map(const allocator_type& alloc):vector<pair<Key,T>>(alloc),_comp(){}
+        map(const map& oth):vector<pair<Key,T>>(oth),_comp(){}
+        map(map&& oth):vector<pair<Key,T>>(move(oth)),_comp(){}
         //default ~map is Ok.
         /*map& operator= (const map& x){
             _data = x._data;
@@ -45,21 +46,91 @@ namespace std {
             _data = move(x._data);
             return *this;
             }*/
-        using vector<value_type>::operator=;
-        using vector<value_type>::begin;
-        using vector<value_type>::end;
-        using vector<value_type>::erase;
-        using vector<value_type>::empty;
+        using vector<pair<Key,T>>::operator=;
+        using vector<pair<Key,T>>::erase;
+        using vector<pair<Key,T>>::empty;
+
+        iterator begin(){
+            return reinterpret_cast<iterator>(vector<pair<Key,T>>::begin());
+        }
+        iterator end(){
+            return reinterpret_cast<iterator>(vector<pair<Key,T>>::end());
+        }
+        const_iterator begin() const{
+            return reinterpret_cast<const_iterator>(vector<pair<Key,T>>::begin());
+        }
+        const_iterator end()const {
+            return reinterpret_cast<const_iterator>(vector<pair<Key,T>>::end());
+        }
+        const_iterator cbegin()const{
+            return reinterpret_cast<const_iterator>(vector<pair<Key,T>>::cbegin());
+        }
+        const_iterator cend()const{
+            return reinterpret_cast<const_iterator>(vector<pair<Key,T>>::cend());
+        }
+
+
+        iterator lower_bound (const key_type& k){
+            bool(*func)(const value_type,const value_type)=
+                [](const value_type p1,const value_type p2)-> bool {
+                //printf("lambda ! ");
+                return p1.first < p2.first;};
+            //printf("map lower_bound");
+            return reinterpret_cast<iterator>(std::lower_bound(begin(),end(),
+                                                               make_pair(k,mapped_type()),func));
+        }
+        /*const_iterator lower_bound (const key_type& k) const{
+            return std::lower_bound(begin(),end(),k,_comp);
+            }*/
+
         iterator find (const key_type& k){
-            auto it = lower_bound(begin(),end());
-            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            auto it = lower_bound(k);
+            if (!_comp(it->first,k) && !_comp(k,it->first)) return it;
             else return end();
         }
         const_iterator find (const key_type& k) const{
-            auto it = lower_bound(begin(),end());
-            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            auto it = lower_bound(k);
+            if (!_comp(it->first,k) && !_comp(k,it->first)) return it;
             else return end();
         }
+        size_type count (const key_type& k) const{
+            return find(k) == end() ? 0 : 1;
+        }
+        mapped_type& at (const key_type& k){
+            auto it = find(k);
+            assert(it != end() && "map at");
+            return *it;
+        }
+        const mapped_type& at (const key_type& k) const{
+            auto it = find(k);
+            assert(it != end() && "map at");
+            return *it;
+        }
+        pair<iterator,bool> insert (const value_type& val){
+            //printf("map insert  beg : %p, end : %p!\n",begin(),end());
+            iterator it = lower_bound(val.first);
+            //printf("lower bound done %p \n",it);
+            //for(volatile int i = 0 ; i < 100000000 ; ++i);
+            if (it == end()){
+                vector<pair<Key,T>>::push_back(val);
+                return make_pair(end()-1,true);
+            }
+            if (!_comp(it->first,val.first) && !_comp(val.first,it->first)){
+                return make_pair(it,false);
+            }
+            else{
+              //++it;
+                return make_pair(
+                    reinterpret_cast<iterator>(
+                        vector<pair<Key,T>>::insert(
+                            reinterpret_cast<pair<Key,T>*>(it),val)),true);
+            }
+        }
+        mapped_type& operator[] (const key_type& k){
+            //printf("map operator[] !\n");
+            return (*((insert(make_pair(k,mapped_type()))).first)).second;
+        }
+
 
     };
 }

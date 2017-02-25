@@ -22,5 +22,7 @@ EXTERN void free (void* ptr);
 }
 #endif
 
+#undef EXTERN
+
 
 #endif

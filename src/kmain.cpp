@@ -23,6 +23,8 @@ extern "C" {
     extern funcp __init_array_end;
 }
 
+extern "C" void* kernel_code_end;
+
 void init(){
     funcp *beg = & __init_array_start, *end = & __init_array_end;
     for (funcp*p = beg; p < end; ++p){
@@ -35,6 +37,12 @@ void doublefault(int a, int b){
     (void)a;
     (void)b;
     bsod("Double fault !! It may be an uncaught interruption.");
+}
+
+void gpfault(int a, int b){
+    (void)a;
+    (void)b;
+    bsod("General Protection fault !!");
 }
 
 void pagefault(int a, int b){
@@ -78,9 +86,10 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(0,div0);
     idt.addInt(8,doublefault);
     idt.addInt(14,pagefault);
+    idt.addInt(13,gpfault);
     sti;
 
-#define BLA 3
+#define BLA 5
 #if BLA == 0
 
     char* p1 = (char*)malloc(13);
@@ -104,7 +113,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     fb.printf ("Partition 1 from %8x to %8x \n",part1.begLBA,part1.endLBA);
 
     Partition pa1 (&first,part1);
-    FATFS fs (&pa1);
+    //fat::FS fs (&pa1);
 
     fb.printf("\n");
     while(true){
@@ -125,6 +134,16 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     kbd.setKeymap(&azertyKeymap);
 
+    printf("%p",&kernel_code_end);
+    map<std::string,int> m;
+    m["un"] = 1;
+    char s[] = "hey !fsqfsdsf";
+
+    fb.puts(s);
+    s[6] = 0;
+    fb.puts(s);
+    breakpoint;
+
     CommandLine cl;
 
     // proof of concept for command
@@ -134,6 +153,27 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     //running command line
     cl.run();
+#elif BLA == 5
+    map<std::string,int> m;
+    m["z"] = 1;
+    //char s[] = "hey !fsqfsdsf";
+
+    //fb.puts(s);
+    //s[6] = 0;
+    //fb.puts(s);
+    //breakpoint;
+    m["y"] = 0;
+    m["x"] = 2;
+    m["w"] = 3;
+    m["v"] = 4;
+    m["g"] = 4;
+    m["d"] = 4;
+    m["b"] = 4;
+    m["aaz"] = 42;
+    //breakpoint;
+    for(auto p : m){
+        fb.printf("(%s,%d)",p.first.c_str(),p.second);
+        }
 
 
 #else

@@ -6,6 +6,9 @@
 #include <assert.h>
 #include <utility>
 #include <new>
+#include <algorithm>
+#include <stdio.h>
+#include <string>
 
 namespace std{
     template < class T, class Alloc = allocator<T> >
@@ -14,6 +17,7 @@ namespace std{
         typedef T value_type;
         typedef Alloc allocator_type;
         typedef T* pointer;
+        typedef const T* const_pointer;
         typedef T& reference;
         typedef size_t size_type;
         typedef pointer iterator;
@@ -30,10 +34,14 @@ namespace std{
             if(res) return res;
             else return s;
         }
+        inline void destroy(pointer input,size_t nb){
+            for(size_t i = 0 ; i < nb ; ++i){
+                input[i].~value_type();
+            }
+        }
 
 
     public :
-
         explicit vector (const allocator_type& alloc = allocator_type())
             :_alloc(alloc),_data(nullptr),_size(0),_capacity(0){
         }
@@ -138,10 +146,9 @@ namespace std{
         iterator erase (iterator first, iterator last){
             size_type diff = last - first;
             if(!diff)return end();
-            for (int i = first - _data ; i < _size ; ++i){
-                _data[i] = move(_data[i + diff]);
-            }
+            move(last,_data+_size,first);
             _size -= diff;
+            return first;
 
         }
         iterator erase (iterator position){
@@ -155,7 +162,45 @@ namespace std{
         bool empty(){
             return _size == 0;
         }
-
+        iterator insert (const_iterator position, const value_type& val){
+            //printf("vector insert %p %p!\n",position,end());
+            //for(volatile int i = 0 ; i < 100000000 ; ++i);
+            if(position == end()){
+                push_back(val);
+                return end()-1;
+            }
+            if(_capacity == _size){
+                //printf("way 1");
+                size_t capacity = strategy(_size +1);
+                size_t diff = position-_data;
+                pointer data = _alloc.allocate(capacity);
+                for(pointer it = _data ; it < position ; ++it){
+                    new (data + (it-_data)) T(move(*it));
+                }
+                //move(const_iterator(_data),position,data);
+                for(const_pointer it = position ; it < _data + _size ; ++it){
+                    new (data + (it-_data)+1) T(move(*it));
+                }
+                //move(position,const_iterator(_data + _size),data + diff +1);
+                new (data + diff) T(val);
+                _capacity = capacity;
+                _data = data;
+                ++_size;
+                return _data + diff;
+            }
+            else{
+                assert(_capacity > _size);
+                iterator newpos = const_cast<iterator>(position);
+                //printf("way 2 %d %d %p %p\n",_capacity, _size , newpos,_data + _capacity);
+                new(_data +_size) T();
+                move_backward(newpos,_data + _size,_data + _size +1);
+                *newpos = val;
+                ++_size;
+                //printf ("Yeah !\n");
+                return newpos;
+            }
+            //return begin();
+        }
     };
 }
 #endif

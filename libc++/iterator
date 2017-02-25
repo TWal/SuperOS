@@ -2,6 +2,7 @@
 #define __SUPOS_CPP_ITERATOR
 
 #include<cstddef>
+#include<stdio.h>
 
 namespace std{
 
@@ -57,10 +58,9 @@ namespace std{
     template<class InputIterator>
     typename iterator_traits<InputIterator>::difference_type
     distance (InputIterator first, InputIterator last){
-        return distance(first,last,iterator_traits<InputIterator>::iterator_category);
+        return distance(first,last,typename iterator_traits<InputIterator>::iterator_category());
     }
 
-    
     template <class InputIterator, class Distance>
     void advance (InputIterator& it, Distance n,input_iterator_tag){
         for(Distance i = 0 ; i < n ; ++i){
@@ -73,7 +73,7 @@ namespace std{
     }
     template <class InputIterator, class Distance>
     void advance (InputIterator& it, Distance n){
-        return advance(it,iterator_traits<InputIterator>::iterator_category);
+        return advance(it,n,typename iterator_traits<InputIterator>::iterator_category());
     }
 
 }

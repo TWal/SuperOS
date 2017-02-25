@@ -2,6 +2,7 @@
 #define __SUPOS_CPP_ALGORITHM
 
 #include<iterator>
+#include <stdio.h>
 
 namespace std {
     template <class ForwardIterator, class T>
@@ -31,7 +32,9 @@ namespace std {
         while (count>0)
         {
             it = first; step=count/2; advance (it,step);
+            //printf("Compare in lb ");
             if (comp(*it,val)){
+                printf ( "in ");
                 first=++it;
                 count-=step+1;
             }
@@ -39,7 +42,41 @@ namespace std {
         }
         return first;
     }
+    template<class InputIterator, class OutputIterator>
+    OutputIterator move (InputIterator first, InputIterator last, OutputIterator result)
+    {
+        while (first!=last) {
+            *result = std::move(*first);
+            ++result; ++first;
+        }
+        return result;
+    }
 
+    template<class BidirectionalIterator1, class BidirectionalIterator2>
+    BidirectionalIterator2 move_backward ( BidirectionalIterator1 first,
+                                           BidirectionalIterator1 last,
+                                           BidirectionalIterator2 result )
+    {
+        while (last!=first) *(--result) = std::move(*(--last));
+        return result;
+    }
+    template<class InputIterator, class OutputIterator>
+    OutputIterator copy (InputIterator first, InputIterator last, OutputIterator result)
+    {
+        while (first!=last) {
+            *result = *first;
+            ++result; ++first;
+        }
+        return result;
+    }
+    template<class BidirectionalIterator1, class BidirectionalIterator2>
+    BidirectionalIterator2 copy_backward ( BidirectionalIterator1 first,
+                                           BidirectionalIterator1 last,
+                                           BidirectionalIterator2 result )
+    {
+        while (last!=first) *(--result) = *(--last);
+        return result;
+    }
 }
 
 #endif
