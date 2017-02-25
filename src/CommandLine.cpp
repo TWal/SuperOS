@@ -6,13 +6,13 @@ using namespace std;
 CommandLine::CommandLine(table_type table):_table(table){
 
     //builtin commands here
-    _table.push_back(make_pair("echo",[](const vector<string>& args){
+    _table.insert(make_pair("echo",[](const vector<string>& args){
                 for(auto s : args){
                     fb.printf("%s ",s.c_str());
                 }
                 fb.printf("\n");
             }));
-    _table.push_back(make_pair("help",[](const vector<string>& args){
+    _table.insert(make_pair("help",[](const vector<string>& args){
                 (void)args;
                 fb.printf(
                     "Help of Super OS (tm) : \n"
@@ -27,19 +27,13 @@ void CommandLine::run(){
         fb.printf("$ ");
         auto input = readCommand();
         if(input.size() == 0) continue;
-        bool found = false;
-        for(auto p : _table){
-            if(p.first == input[0]){
-                //fb.printf("executing command : %s\n",p.first.c_str());
-                input.erase(input.begin());
-                p.second(input);
-                found = true;
-                break;
-            }
-        }
-        if(!found){
+        auto it = _table.find(input[0]);
+        if(it == _table.end()){
             fb.printf("Command %s not found\n",input[0].c_str());
+            continue;
         }
+        input.erase(input.begin());
+        it->second(input);
     }
 }
 
@@ -76,10 +70,5 @@ std::vector<std::string> CommandLine::readCommand(){
 }
 
 void CommandLine::add(std::string name,command_func func){
-    for(auto p : _table){
-        if(p.first == name){
-            return;
-        }
-    }
-    _table.push_back(make_pair(name,func));
+    _table[name] = func;
 }

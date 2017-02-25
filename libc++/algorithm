@@ -34,7 +34,7 @@ namespace std {
             it = first; step=count/2; advance (it,step);
             //printf("Compare in lb ");
             if (comp(*it,val)){
-                printf ( "in ");
+                //printf ( "in ");
                 first=++it;
                 count-=step+1;
             }

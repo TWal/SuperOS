@@ -89,7 +89,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(13,gpfault);
     sti;
 
-#define BLA 5
+#define BLA 3
 #if BLA == 0
 
     char* p1 = (char*)malloc(13);
@@ -133,16 +133,6 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     pic.activate(Pic::KEYBOARD);
 
     kbd.setKeymap(&azertyKeymap);
-
-    printf("%p",&kernel_code_end);
-    map<std::string,int> m;
-    m["un"] = 1;
-    char s[] = "hey !fsqfsdsf";
-
-    fb.puts(s);
-    s[6] = 0;
-    fb.puts(s);
-    breakpoint;
 
     CommandLine cl;
 

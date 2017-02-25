@@ -1,5 +1,5 @@
 #ifndef __SUPOS_CPP_MAP
-#define __SUPOS_SPP_MAP
+#define __SUPOS_CPP_MAP
 
 #include <cstddef>
 #include <memory>
