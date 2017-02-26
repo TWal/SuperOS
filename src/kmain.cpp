@@ -89,7 +89,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(13,gpfault);
     sti;
 
-#define BLA 3
+#define BLA 1
 #if BLA == 0
 
     char* p1 = (char*)malloc(13);
@@ -106,15 +106,40 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     HDD first(1,true);
     first.init();
 
-    first.writeaddr(0xf0095,"random data !",13);
+    //first.writeaddr(0xf0095,"random data !",13);
+    /*char text [15] = {};
+    first.readaddr (0xf0095,text,13);
+
+    printf("Read text %s \n",text);*/
 
     PartitionTableEntry part1 = first[1];
 
     fb.printf ("Partition 1 from %8x to %8x \n",part1.begLBA,part1.endLBA);
 
     Partition pa1 (&first,part1);
-    //fat::FS fs (&pa1);
 
+    /*uchar buffer[512];
+    pa1.readlba(0,buffer,1);
+
+    for(int i = 0 ; i < 512 ; ++ i){
+        printf("%x ",buffer[i]);
+    }
+    printf("\n");*/
+
+    fat::FS fs (&pa1);
+
+    fat::Directory* root = fs.getRootFat();
+    root->load();
+    Directory * boot = (*root)["boot"]->dir();
+    assert(boot);
+    //printf("%p\n",boot);
+    Directory* grub = (*boot)["grub"]->dir();
+    assert(grub);
+    auto v  = grub->getFilesName();
+    printf("Filenames : \n");
+    for(auto s : v){
+        printf("-%s;\n",s.c_str());
+    }
     fb.printf("\n");
     while(true){
         for(int i = 0 ; i < 1000000 ; ++i);

@@ -72,6 +72,7 @@ void HDD::writelba (ulint LBA , const void* data, uint nbsector){
 
 
 void HDD::readlba (ulint LBA, void * data, uint nbsector){
+    //printf("HDD reading sector %u\n",LBA);
     readaddr(LBA*512,data,nbsector*512);
 
 }
@@ -104,11 +105,13 @@ void HDD::writeaddr (ulint addr , const void* data, uint size){
 
 }
 void HDD::readaddr (ulint addr, void * data, uint size){
-    assert(size > 0 && size < (512*512) && ((size %2) == 0));
+    assert(size > 0 && size < (512*512));
     activate();
-    ushort nbsector = (size + 511) / 512;
-    lint LBA = addr/512;
+    ulint LBA = addr/512;
     uint offset = addr %512;
+    ulint endLBA = (addr + size + 511)/512;
+    ushort nbsector = endLBA - LBA;
+    uint count = 0;
     outb (_basePort + 2, nbsector >> 8);
     outb (_basePort + 3, (LBA >> 24) & 0xFF);
     outb (_basePort + 4, (LBA >> 32) & 0xFF);
@@ -126,20 +129,25 @@ void HDD::readaddr (ulint addr, void * data, uint size){
     }
     if(offset == 1){
         ushort d = inw(_basePort);
+        ++count;
         *reinterpret_cast<uchar*>(data) = d >> 8;
         data = reinterpret_cast<uchar*>(data) +1;
         size--;
     }
-    for(volatile int i = 0 ; i < 100000000 ; ++i);
-    for( ;size > 0; size -=2 ){
-
+    for( ;size > 1; size -=2 ){
+        ++count;
         *reinterpret_cast<ushort*>(data) = inw(_basePort);
         data = reinterpret_cast<ushort*>(data) +1;
     }
-    size +=2;
+    //size +=2;
     if (size == 1){
+        ++count;
         ushort d = inw(_basePort);
         *reinterpret_cast<uchar*>(data) = uchar(d);
+    }
+    while(count < nbsector * 256){ //finish to read useless data.
+        ++count;
+        inw(_basePort);
     }
 
 }
