@@ -49,6 +49,7 @@ namespace std {
         using vector<pair<Key,T>>::operator=;
         using vector<pair<Key,T>>::erase;
         using vector<pair<Key,T>>::empty;
+        using vector<pair<Key,T>>::clear;
 
         iterator begin(){
             return reinterpret_cast<iterator>(vector<pair<Key,T>>::begin());
@@ -85,6 +86,7 @@ namespace std {
 
         iterator find (const key_type& k){
             auto it = lower_bound(k);
+            if (it == end()) return end();
             if (!_comp(it->first,k) && !_comp(k,it->first)) return it;
             else return end();
         }

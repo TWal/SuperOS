@@ -75,7 +75,9 @@ namespace std {
 
     public :
 
-        basic_string (const allocator_type& alloc = allocator_type())
+        basic_string()
+            : _alloc(),_data(nullptr),_size(0),_capacity(0){}
+        explicit basic_string (const allocator_type& alloc)
             : _alloc(alloc),_data(nullptr),_size(0),_capacity(0){
         }
         basic_string (const charT* s, const allocator_type& alloc = allocator_type())
@@ -85,6 +87,14 @@ namespace std {
            _capacity = strategy(_size+1);
            _data = _alloc.allocate(_capacity);
            traits_type::copy(_data,s,_size +1);
+        }
+        basic_string (const charT* s,size_type n, const allocator_type& alloc = allocator_type())
+            :_alloc(alloc){
+            //printf("constr %s \n",s);
+            _size = n;
+            _capacity = strategy(_size+1);
+            _data = _alloc.allocate(_capacity);
+            traits_type::copy(_data,s,_size);
         }
         ~basic_string(){
             if(_data) _alloc.deallocate(_data,_capacity);
@@ -170,6 +180,13 @@ namespace std {
             return _data + _size;
         }
 
+        value_type& front(){
+            return *begin();
+        }
+        value_type& back(){
+            return *(end()-1);
+        }
+
         iterator erase (iterator first, iterator last){
             size_type diff = last - first;
             if(!diff)return end();
@@ -209,6 +226,9 @@ namespace std {
             reserve(_size + str.size()+1);
             traits_type::copy(_data+_size,str._data,str._size);
             _size += str._size;
+        }
+        basic_string& operator += (const basic_string& ref){
+            append(ref);
         }
         void pop_back(){
             assert(_size > 0 && "pop_back on empty basic_string");
