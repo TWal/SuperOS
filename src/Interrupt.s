@@ -3,32 +3,44 @@
 intIDT:
   .space 4*256
 
-  .global doReturn
-doReturn:
+  .global params
+params:
   .space 256
 
 
 
 .text
   .global geneInt
-geneInt:
-  push %ecx
-  push %edx
-  push %esi
+geneInt: #;by default interruption on user stack.
   push %ebp
+  push %esi
   push %edi
+  push %edx
+  push %ecx
   push %ebx
   push %eax
   call *intIDT(%edi)
-  mov 8(%esp),%edi
+  mov 16(%esp),%edi
+  shrl $2,%edi
   pop %ecx
-  testb $1,doReturn(%edi)
+  testb $2,params(%edi)
   cmovz %ecx,%eax
   pop %ebx
-  pop %edi
-  pop %ebp
-  pop %esi
-  pop %edx
   pop %ecx
+  pop %edx
+  testb $4,params(%edi)
+	jnz errEnd
   pop %edi
+  pop %esi
+  pop %ebp
+  pop %edi
+  xchg %bx,%bx
   iret
+
+errEnd:
+  pop %edi
+  pop %esi
+	pop %ebp
+	pop %edi
+  add $4,%esp
+	iret

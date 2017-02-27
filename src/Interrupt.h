@@ -26,18 +26,61 @@ extern InterruptEntry IDT[256];
 
 void lidt();
 
-typedef int (*interFuncR)(const int,const int);
-typedef void (*interFunc)(const int,const int);
+struct InterruptParams{
+    uint32 eax;
+    uint32 ebx;
+    uint32 ecx;
+    uint32 edx;
+    uint32 interNumTimes4;
+    uint32 esi;
+    uint32 ebp;
+    uint32 edi;
+    void*  eip;
+    uint32 cs;
+    uint32 flags;
+}__attribute__((packed));
+
+struct InterruptParamsErr{
+    uint32 eax;
+    uint32 ebx;
+    uint32 ecx;
+    uint32 edx;
+    uint32 interNumTimes4;
+    uint32 esi;
+    uint32 ebp;
+    uint32 edi;
+    uint32 errorCode;
+    void*  eip;
+    uint32 cs;
+    uint32 flags;
+}__attribute__((packed));
+
+struct IntParams{
+    bool isAssembly : 1;
+    bool doReturn : 1;
+    bool hasErrorCode : 1;
+    IntParams(): isAssembly(false),doReturn(false),hasErrorCode(false){};
+
+}__attribute__((packed));
+
+
+typedef uint (*interFuncR)(const InterruptParams);
+typedef void (*interFunc)(const InterruptParams);
+typedef uint (*interFuncER)(const InterruptParamsErr);
+typedef void (*interFuncE)(const InterruptParamsErr);
 
 extern "C" interFunc intIDT[256];
 extern "C" void initIntIDT ();
-extern "C" bool doReturn [256]; // switch when libc++ is avaible
+extern "C" IntParams params [256]; // switch to bitset when libc++ is avaible
 
 class InterruptTable {
 public:
     void init();
     void addInt(int i,interFunc f);
     void addInt(int i,interFuncR f);
+    void addInt(int i,interFuncE f);
+    void addInt(int i,interFuncER f);
+    void addIntAsm(int i, void* f);// asm handler
     InterruptTable();
     void allPresent();// only for debugging purpose
 };

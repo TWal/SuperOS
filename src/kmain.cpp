@@ -33,47 +33,47 @@ void init(){
     }
 }
 
-
-void doublefault(int a, int b){
-    (void)a;
-    (void)b;
-    bsod("Double fault !! It may be an uncaught interruption.");
+void* getCR2(){
+    void* res;
+    asm("mov %%cr2,%0" :
+        "=r"(res)
+        :
+        :
+        );
+    return res;
 }
 
-void gpfault(int a, int b){
-    (void)a;
-    (void)b;
-    bsod("General Protection fault !!");
+
+void doublefault(InterruptParamsErr par){
+    bsod("Double fault at %p !! It may be an uncaught interruption.",par.eip);
+    //should not return eip is UB.
 }
 
-void pagefault(int a, int b){
-    (void)a;
-    (void)b;
-    printf("Page fault\n");
+void gpfault(InterruptParamsErr par){
+    bsod("General Protection fault at %p with code %x!!",par.eip,par.errorCode);
+}
+
+void pagefault(InterruptParamsErr par){
+    printf("Page fault at %p with code %x accesing %p\n",par.eip,par.errorCode,getCR2());
     while(true) asm volatile("cli;hlt");
     //bsod("Page fault! (aka. segmentation fault)");
-// TODO get address from CR2 + read error code
 }
 
-void printer (int a,int b){
-    fb.printf ("a is : %d, b is %d\n",a,b);
+void printer (InterruptParams par){
+    fb.printf ("a is : %d, b is %d\n",par.eax,par.ebx);
 }
 
-void keyboard(int a, int b) {
-    (void)a;
-    (void)b;
+void keyboard(InterruptParams) {
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
 }
 
-void div0 (int a, int b){
-    (void)a;
-    (void)b;
-    bsod(" 1/0 is not infinity !");
+void div0 (InterruptParams par){
+    bsod(" 1/0 is not infinity at %p !",par.eip);
 }
 
-int sum (int a, int b){
-    return a+b;
+uint32 sum (InterruptParams par){
+    return par.eax + par.ebx;
 }
 
 extern "C" void kmain(multibootInfo* multibootinfo) {
@@ -90,8 +90,12 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(13,gpfault);
     sti;
 
-#define BLA 3
-#if BLA == 0
+#define BLA -1
+#if BLA == -1
+    volatile int i = ((int*)(nullptr))[42];
+
+    return;
+#elif BLA == 0
 
     char* p1 = (char*)malloc(13);
     char* p2 = (char*)malloc(19);

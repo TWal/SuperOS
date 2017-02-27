@@ -47,13 +47,28 @@ void InterruptTable::init(){
 
 void InterruptTable::addInt(int i,interFunc f){
     intIDT[i] = f;
-    doReturn[i] = false;
     IDT[i].present =true;
 }
 void InterruptTable::addInt(int i,interFuncR f){
     intIDT[i] = reinterpret_cast<interFunc>(f);
-    doReturn[i] = true;
+    params[i].doReturn = true;
     IDT[i].present = true;
+}
+void InterruptTable::addInt(int i,interFuncE f){
+    intIDT[i] = reinterpret_cast<interFunc>(f);
+    params[i].hasErrorCode = true;
+    IDT[i].present = true;
+}
+void InterruptTable::addInt(int i,interFuncER f){
+    intIDT[i] = reinterpret_cast<interFunc>(f);
+    params[i].doReturn = true;
+    params[i].hasErrorCode = true;
+    IDT[i].present = true;
+}
+void InterruptTable::addIntAsm(int i,void* f){
+    params[i].isAssembly = true;
+    IDT[i].present = true;
+    IDT[i].setAddr(f);
 }
 
 void InterruptTable::allPresent(){
