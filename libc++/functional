@@ -1,6 +1,8 @@
 #ifndef __SUPOS_CPP_FUNCTIONAL
 #define __SUPOS_CPP_FUNCTIONAL
 
+#include<assert.h>
+
 namespace std {
     template <class T> struct less {
         bool operator() (const T& x, const T& y) const {return x<y;}
@@ -8,6 +10,119 @@ namespace std {
         typedef T second_argument_type;
         typedef bool result_type;
     };
+
+
+    template <typename>
+    class function; // no definition
+
+    template <typename ReturnValue, typename ... Args>
+    class function<ReturnValue(Args...)> {
+
+        typedef ReturnValue(*pointer)(Args...);
+        pointer* _data;
+
+        struct Interface{
+            virtual ReturnValue call(Args ...) = 0;
+            virtual ~Interface (){}
+            virtual Interface* getCopy() = 0;
+        };
+        Interface* _inter;
+        template<typename T>
+        struct Concret : public Interface{
+            T _t;
+            explicit Concret (const T& t): _t(t){}
+            explicit Concret (T&& t): _t(t){}
+            ReturnValue call(Args... args){
+                return _t(args...);
+            }
+            Interface* getCopy(){
+                return new Concret<T>(_t);
+            }
+            virtual ~Concret(){}
+        };
+    public :
+
+        function() : _data(nullptr),_inter(nullptr){}
+
+        function(pointer p) : _data(p),_inter(nullptr){}
+
+        template<typename T>
+        function(const T& t) : _data(nullptr),_inter(new Concret<T>(t)){}
+
+        template<typename T>
+        function( T&& t) : _data(nullptr),_inter(new Concret<T>(move(t))){}
+
+        function(const function& oth): _data(oth._data){
+            if (oth._inter){
+                _inter = oth._inter.getCopy();
+            }
+        }
+        function(function&& oth): _data(oth._data),_inter(oth._inter){
+            oth._data = nullptr;
+            oth._inter = nullptr;
+        }
+        ~function(){
+            if(_inter) delete _inter;
+        }
+
+        function& operator=(pointer p){
+            if(_inter) delete _inter;
+            _data = p;
+            return *this;
+        }
+
+        template<typename T>
+        function& operator= (const T& t){
+            if(_inter) delete _inter;
+            _data = nullptr;
+            _inter = new Concret<T>(t);
+            return *this;
+        }
+
+        template<typename T>
+        function& operator= (T&& t){
+            if(_inter) delete _inter;
+            _data = nullptr;
+            _inter = new Concret<T>(move(t));
+            return *this;
+        }
+
+
+        function& operator=(const function& oth){
+            if(&oth == this)return *this;
+            if(_inter) delete _inter;
+            _data = oth._data;
+            if (oth._inter){
+                _inter = oth._inter.getCopy();
+            }
+            return *this;
+        }
+        function& operator=(function&& oth){
+            if(&oth == this)return *this;
+            if(_inter) delete _inter;
+            _data = oth._data;
+            _inter = oth._inter;
+            oth._data = nullptr;
+            oth._inter = nullptr;
+            return *this;
+        }
+
+        explicit operator bool(){
+            return _data || _inter;
+        }
+
+        ReturnValue operator()(Args... args){
+            if(_data){
+                printf("Calling %p",_data);
+                return ((*_data)(args...));
+            }
+            if(_inter){
+                return _inter->call(args...);
+            }
+            assert(!"Bad function call");
+        }
+    };
+
 }
 
 #endif

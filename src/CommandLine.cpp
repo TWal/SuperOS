@@ -6,19 +6,46 @@ using namespace std;
 CommandLine::CommandLine(table_type table):_table(table){
 
     //builtin commands here
-    _table.insert(make_pair("echo",[](const vector<string>& args){
+    _table.insert(make_pair("echo",[](CommandLine*,const vector<string>& args){
                 for(auto s : args){
                     fb.printf("%s ",s.c_str());
                 }
                 fb.printf("\n");
             }));
-    _table.insert(make_pair("help",[](const vector<string>& args){
-                (void)args;
+    _table.insert(make_pair("help",[](CommandLine*,const vector<string>&){
                 fb.printf(
                     "Help of Super OS (tm) : \n"
                     "Builtin Commands :\n"
                     "  echo <arg> : print argument <arg>\n"
                     );
+            }));
+    _table.insert(make_pair("ls",[](CommandLine*cl ,const vector<string>&){
+                if(!cl->pwd) {
+                    printf("fatal error : no pwd set\n");
+                    return;
+                }
+                auto v = cl->pwd->getFilesName();
+                for(auto f : v) printf("%s ",f.c_str());
+                printf("\n");
+        }));
+
+    _table.insert(make_pair("cd",[](CommandLine*cl ,const vector<string>&args ){
+                if(!cl->pwd) {
+                    printf("fatal error : no pwd set\n");
+                    return;
+                }
+                if(args.empty()) return;
+                File* f = (*cl->pwd)[args[0]];
+                if(f == nullptr) {
+                    printf("%s doesn't exist in current directory\n",args[0].c_str());
+                    return;
+                }
+                Directory * d = f->dir();
+                if(d == nullptr){
+                    printf("%s is not a directory\n",args[0].c_str());
+                    return;
+                }
+                cl->pwd = d;
             }));
 
 }
@@ -33,7 +60,7 @@ void CommandLine::run(){
             continue;
         }
         input.erase(input.begin());
-        it->second(input);
+        it->second(this,input);
     }
 }
 

@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <memory>
 #include "CommandLine.h"
+#include <functional>
 
 using namespace std;
 
@@ -89,7 +90,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(13,gpfault);
     sti;
 
-#define BLA 1
+#define BLA 3
 #if BLA == 0
 
     char* p1 = (char*)malloc(13);
@@ -159,37 +160,31 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     kbd.setKeymap(&azertyKeymap);
 
+    HDD first(1,true);
+    first.init();
+
+    PartitionTableEntry part1 = first[1];
+
+    Partition pa1 (&first,part1);
+
+    fat::FS fs (&pa1);
     CommandLine cl;
 
+    cl.pwd = fs.getRootFat();
+
+
     // proof of concept for command
-    cl.add("test",[](const vector<string>& args){
+    cl.add("test",[](CommandLine*,const vector<string>&){
                 fb.printf("test Command in kmain\n");
             });
 
     //running command line
     cl.run();
 #elif BLA == 5
-    map<std::string,int> m;
-    m["z"] = 1;
-    //char s[] = "hey !fsqfsdsf";
-
-    //fb.puts(s);
-    //s[6] = 0;
-    //fb.puts(s);
-    //breakpoint;
-    m["y"] = 0;
-    m["x"] = 2;
-    m["w"] = 3;
-    m["v"] = 4;
-    m["g"] = 4;
-    m["d"] = 4;
-    m["b"] = 4;
-    m["aaz"] = 42;
-    //breakpoint;
-    for(auto p : m){
-        fb.printf("(%s,%d)",p.first.c_str(),p.second);
-        }
-
+    int j = 5;
+    std::function<int(int)> func = [&j](int i){return  i +j;};
+    j = 38;
+    printf("%d", func(4));
 
 #else
     //[insert here useful kernel code]

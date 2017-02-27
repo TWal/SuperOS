@@ -19,6 +19,7 @@ namespace std{
         typedef T* pointer;
         typedef const T* const_pointer;
         typedef T& reference;
+        typedef const T& const_reference;
         typedef size_t size_type;
         typedef pointer iterator;
         typedef const T* const_iterator;
@@ -105,6 +106,9 @@ namespace std{
         reference operator [](size_type i){
             return _data[i];
         }
+        const_reference operator [](size_type i)const{
+            return _data[i];
+        }
         reference at(size_type i){
             assert(i < _size && "At assert failed");
             return _data[i];
@@ -164,7 +168,7 @@ namespace std{
             --_size;
             _data[_size].~value_type();
         }
-        bool empty(){
+        bool empty() const{
             return _size == 0;
         }
         iterator insert (const_iterator position, const value_type& val){
