@@ -90,7 +90,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(13,gpfault);
     sti;
 
-#define BLA -1
+#define BLA 3
 #if BLA == -1
     volatile int i = ((int*)(nullptr))[42];
 

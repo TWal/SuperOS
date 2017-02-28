@@ -14,8 +14,15 @@ PhysicalMemoryAllocator::PhysicalMemoryAllocator() :
         _size = multiboot.mem_upper / (4*8) - ((uint)(&kernel_code_end)+_size-0x00100000)/(4*1024*8);
     }
 
+    for(uint i = 0; i < _size; ++i) {
+        _bitset[i] = 0;
+    }
+
     uint memStart = (uint)&kernel_code_end + _size;
     memStart += 0x1000 - (memStart%0x1000);
+    //the start of the memory "overlaps" the first 8MB initially, but that shouldn't be a problem.
+    //sometimes adding this line may "fix" a bug, but it is probably somewhere else.
+    //memStart += 0x1000000;
     _memoryStart = (char*)memStart;
 }
 

@@ -54,11 +54,12 @@ class Paging {
 
 struct MallocHeader {
     uint size : 30;
-    uint flags : 2;
-    inline int getSize() {
+    bool prevFree : 1;
+    bool free : 1;
+    inline uint getSize() {
         return size << 2;
     }
-    inline void setSize(int sz) {
+    inline void setSize(uint sz) {
         assert((sz & ((1<<2)-1)) == 0);
         size = sz >> 2;
     }

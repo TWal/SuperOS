@@ -2,13 +2,10 @@
 #include "utility.h"
 #include "globals.h"
 
-const uint HF_BEGIN = THREEGB;
-
-
 PageDirectoryEntry PDElower[1024];
-PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + HF_BEGIN);
+PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + THREEGB);
 PageTable PT[1<<20];
-const int MAX_INIT_PAGE = 2;
+const uint MAX_INIT_PAGE = 2;
 
 void PageDirectoryEntry::setAddr(void* a) {
     setAddr((uint)a);
@@ -51,21 +48,21 @@ void setupBasicPaging() {
     PDElower[0].PTaddr = 0;
 
     //For the higher half kernel
-    for(int i = 0; i < MAX_INIT_PAGE; ++i) {
+    for(uint i = 0; i < MAX_INIT_PAGE; ++i) {
         PDElower[768+i].present = true;
         PDElower[768+i].isSizeMega = true;
         PDElower[768+i].PTaddr = i<<10;
     }
 }
 
-Paging::Paging() : _brk(HF_BEGIN + MAX_INIT_PAGE*4*1024*1024), _truebrk(_brk) {
-    for(int i = MAX_INIT_PAGE; i < 256; ++i) {
-        PDE[768+i].PTaddr = (((uint)&PT[1024*i])-HF_BEGIN) >> 12;
+Paging::Paging() : _brk(THREEGB + (MAX_INIT_PAGE+4)*4*1024*1024), _truebrk(_brk) {
+    for(uint i = (MAX_INIT_PAGE+4); i < 256; ++i) {
+        PDE[768+i].setAddr((((uint)&PT[1024*i])-THREEGB));
     }
 }
 
 static inline PageTable* getPT(uint addr) {
-    return &PT[(addr-HF_BEGIN)>>12];
+    return &PT[(addr-THREEGB)>>12];
 }
 
 static inline PageDirectoryEntry* getPDE(uint addr) {
@@ -120,10 +117,10 @@ static const int FREE = 1;
 static const int PREV_FREE = 2;
 
 void initkmalloc() {
-    MallocHeader* head = (MallocHeader*)paging.sbrk(4);
-    head->size = 0;
-    head->flags = 0;
-    firstHeader = head;
+    firstHeader = (MallocHeader*)paging.sbrk(4);
+    firstHeader->size = 0;
+    firstHeader->prevFree = false;
+    firstHeader->free = false;
 }
 
 static inline void* headerToPtr(MallocHeader* head) {
@@ -160,20 +157,21 @@ void* kmalloc(uint size) {
             assert(headerToPtr(head) == paging.sbrk(4+size));
             //setup header
             head->setSize(size);
-            head->flags &= ~FREE;
+            head->free = false;
             //setup the next "end of list" header
             MallocHeader* nextHead = nextHeader(head);
             nextHead->size = 0;
-            nextHead->flags = 0;
+            nextHead->prevFree = false;
+            nextHead->free = false;
             //return result
             return headerToPtr(head);
             //we didn't do anything with boundary tags because there is nothing to do.
-            //(if the previous block is free, head->flags already contains PREV_FREE)
+            //(if the previous block is free, head->prevFree is already true)
         }
         //if there is a free block with enough space
-        if((head->flags & FREE) != 0 && head->getSize() >= size) {
+        if(head->free && head->getSize() >= size) {
             //change the flag
-            head->flags &= ~FREE;
+            head->free = false;
             //if there is enough space to split this block in two
             if(head->getSize() - size >= 2*sizeof(MallocHeader)) {
                 MallocHeader* oldNxtHead = nextHeader(head); //only used in the assert
@@ -183,15 +181,18 @@ void* kmalloc(uint size) {
                 MallocHeader* nxtHead = nextHeader(head);
                 //setup the header of the next block
                 nxtHead->setSize(oldSize - size - sizeof(MallocHeader));
-                nxtHead->flags = 0; //it's free and its previous block is allocated
+                //it's free and its previous block is allocated
+                nxtHead->free = true;
+                nxtHead->prevFree = false;
                 assert(oldNxtHead == nextHeader(nxtHead));
                 //nxtHead is free: copy its boundary tag
                 *getNextBoundaryTag(nxtHead) = *nxtHead;
-                //oldNxtHead->flags already contains PREV_FREE
-                assert((oldNxtHead->flags & PREV_FREE) != 0);
+                assert(getNextBoundaryTag(nxtHead) == getPrevBoundaryTag(nextHeader(nxtHead)));
+                //oldNxtHead->prevFree is true
+                assert(oldNxtHead->prevFree);
             }
             //remove the PREV_FREE flag of next block
-            nextHeader(head)->flags &= ~PREV_FREE;
+            nextHeader(head)->prevFree = false;
             return headerToPtr(head);
         }
         head = nextHeader(head);
@@ -201,25 +202,23 @@ void* kmalloc(uint size) {
 void kfree(void* ptr) {
     MallocHeader* head = ptrToHeader(ptr);
     //free the block
-    assert((head->flags & FREE) == 0);
-    head->flags |= FREE;
+    assert(!head->free && "This is probably a double free!");
+    head->free = true;
 
     //set the PREV_FREE flag on the next block
-    nextHeader(head)->flags |= PREV_FREE;
+    nextHeader(head)->prevFree = true;
 
     //try to merge with the next block
     MallocHeader* nxtHead = nextHeader(head);
-    if(nxtHead->size != 0 && (nxtHead->flags & FREE) != 0) {
+    if(nxtHead->size != 0 && nxtHead->free) {
         MallocHeader* oldNxtNxtHead = nextHeader(nxtHead); //only used in the assert
         //merge
         head->setSize(head->getSize() + nxtHead->getSize() + sizeof(MallocHeader));
         assert(oldNxtNxtHead == nextHeader(head));
-        //copy boundary tag
-        *getNextBoundaryTag(head) = *head;
     }
 
     //try to merge with the previous block
-    if((head->flags & PREV_FREE) != 0) {
+    if(head->prevFree) {
         MallocHeader* oldNxtHead = nextHeader(head); //only used in the assert
         //retrieve the previous header using the boundary tag
         MallocHeader* boundTag = getPrevBoundaryTag(head);
@@ -230,6 +229,9 @@ void kfree(void* ptr) {
         assert(nextHeader(prevHead) == oldNxtHead);
         //copy boundary tag
         *getNextBoundaryTag(prevHead) = *prevHead;
+    } else {
+        //copy boundary tag
+        *getNextBoundaryTag(head) = *head;
     }
 }
 

@@ -34,7 +34,7 @@ geneInt: #;by default interruption on user stack.
   pop %esi
   pop %ebp
   pop %edi
-  xchg %bx,%bx
+  #xchg %bx,%bx
   iret
 
 errEnd:
