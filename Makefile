@@ -150,7 +150,7 @@ ulm: umount unload
 
 
 grubinst:
-	sudo grub-install --root-directory=$(MNTPATH) --no-floppy --modules="normal part_msdos fat multiboot" $(LOOPDEV)
+	sudo grub-install --root-directory=$(MNTPATH) --no-floppy --modules="normal part_msdos fat multiboot" --target=i386-pc $(LOOPDEV)
 
 mvtoimg: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
