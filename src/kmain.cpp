@@ -54,7 +54,7 @@ void gpfault(InterruptParamsErr par){
 }
 
 void pagefault(InterruptParamsErr par){
-    printf("Page fault at %p with code %x accesing %p\n",par.eip,par.errorCode,getCR2());
+    printf("Page fault at %p with code %x accessing %p\n",par.eip,par.errorCode,getCR2());
     while(true) asm volatile("cli;hlt");
     //bsod("Page fault! (aka. segmentation fault)");
 }
