@@ -12,7 +12,7 @@ LIBCXX = libc++
 
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 
-OPTILVL = -O1
+OPTILVL = -O1 -mno-sse
 
 ASFLAGS = --32
 CFLAGS = -m32  -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
@@ -72,46 +72,46 @@ runqemu: os.iso
 runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a Makefile
 	@mkdir -p $(OUTDIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a Makefile
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CC) $(CFLAGS)  -c $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
 	@mkdir -p $(OUTDIR)
 	@mkdir -p $(DEPDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	@$(CXX) -isystem libc -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
 
-$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py
+$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py Makefile
 	python3 $(SRCDIR)/Interrupt.py > $(OUTDIR)/InterruptInt.s
 	$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
 
 
 
 
-$(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c
+$(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c Makefile
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
 	$(CC) $(CFLAGS)  -c $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
 
-libc.a: $(LIBCOBJ) $(LIBCH)
+libc.a: $(LIBCOBJ) $(LIBCH) Makefile
 	ar rcs libc.a $(LIBCOBJ)
 
 
-$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a
+$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a Makefile
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	@$(CXX) -MM -MT '$@' -MF $(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<)  $<
 
-libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a
+libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a Makefile
 	ar rcs libc++.a $(LIBCXXOBJ)
 
 
