@@ -61,11 +61,11 @@ class Deque {
         }
 
         T& back() {
-            return _array[_end-1];
+            return _array[(_end+N-1)%N];
         }
 
         const T& back() const {
-            return _array[_end-1];
+            return _array[(_end+N-1)%N];
         }
 
         uint size() const {
