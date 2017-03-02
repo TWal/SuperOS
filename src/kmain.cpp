@@ -33,17 +33,6 @@ void init(){
     }
 }
 
-void* getCR2(){
-    void* res;
-    asm("mov %%cr2,%0" :
-        "=r"(res)
-        :
-        :
-        );
-    return res;
-}
-
-
 void doublefault(InterruptParamsErr par){
     bsod("Double fault at %p !! It may be an uncaught interruption.",par.eip);
     //should not return eip is UB.
@@ -59,10 +48,6 @@ void pagefault(InterruptParamsErr par){
     //bsod("Page fault! (aka. segmentation fault)");
 }
 
-void printer (InterruptParams par){
-    fb.printf ("a is : %d, b is %d\n",par.eax,par.ebx);
-}
-
 void keyboard(InterruptParams) {
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
@@ -70,10 +55,6 @@ void keyboard(InterruptParams) {
 
 void div0 (InterruptParams par){
     bsod(" 1/0 is not infinity at %p !",par.eip);
-}
-
-uint32 sum (InterruptParams par){
-    return par.eax + par.ebx;
 }
 
 extern "C" void kmain(multibootInfo* multibootinfo) {
@@ -91,23 +72,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     sti;
 
 #define BLA 3
-#if BLA == -1
-    volatile int i = ((int*)(nullptr))[42];
-
-    return;
-#elif BLA == 0
-
-    char* p1 = (char*)malloc(13);
-    char* p2 = (char*)malloc(19);
-    char* p3 = (char*)malloc(23);
-    char* p4 = (char*)malloc(27);
-    fb.printf("%x %x %x %x\n", p1, p2, p3, p4);
-    free(p2);
-    char* p5 = (char*)malloc(21);
-    fb.printf("%x\n", p5);
-    while(1) asm volatile ("cli;hlt");
-
-#elif BLA == 1
+#if BLA == 1
     HDD first(1,true);
     first.init();
 
@@ -152,12 +117,6 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
         fb.printf("\r");
     }
 
-#elif BLA == 2
-    volatile lint i = 42000000000000;
-    volatile lint j = 10000000000;
-    int res = i/j; // testing libgcc
-    fb.printf ("val :%d ",res);
-
 #elif BLA == 3
     idt.addInt(0x21,keyboard);
     pic.activate(Pic::KEYBOARD);
@@ -184,12 +143,6 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     //running command line
     cl.run();
-#elif BLA == 5
-    int j = 5;
-    std::function<int(int)> func = [&j](int i){return  i +j;};
-    j = 38;
-    printf("%d", func(4));
-
 #else
     //[insert here useful kernel code]
 #endif

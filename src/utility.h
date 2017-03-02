@@ -63,6 +63,16 @@ template<typename T> T max(const T& a, const T& b) {
     }
 }
 
+inline void* getCR2(){
+    void* res;
+    asm("mov %%cr2,%0" :
+        "=r"(res)
+        :
+        :
+        );
+    return res;
+}
+
 
 
 void vbsod(const char* s, va_list ap);
