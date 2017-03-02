@@ -33,29 +33,40 @@ void init(){
     }
 }
 
+//int 0
+void div0 (InterruptParams par){
+    bsod("1/0 is not infinity at %p", par.eip);
+}
+
+//int 6
+void invalidOpcode(InterruptParams par) {
+    bsod("Invalid opcode at %p", par.eip);
+}
+
+//int 8
 void doublefault(InterruptParamsErr par){
-    bsod("Double fault at %p !! It may be an uncaught interruption.",par.eip);
+    bsod("Double fault at %p\nIt may be an uncaught interruption.", par.eip);
     //should not return eip is UB.
 }
 
+//int 13
 void gpfault(InterruptParamsErr par){
-    bsod("General Protection fault at %p with code %x!!",par.eip,par.errorCode);
+    bsod("General Protection fault at %p with code %x", par.eip, par.errorCode);
 }
 
+//int 14
 void pagefault(InterruptParamsErr par){
-    printf("Page fault at %p with code %x accessing %p\n",par.eip,par.errorCode,getCR2());
+    printf("Page fault at %p with code %x accessing %p\n", par.eip, par.errorCode, getCR2());
+    breakpoint;
     while(true) asm volatile("cli;hlt");
-    //bsod("Page fault! (aka. segmentation fault)");
 }
 
+//int 0x21
 void keyboard(InterruptParams) {
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
 }
 
-void div0 (InterruptParams par){
-    bsod(" 1/0 is not infinity at %p !",par.eip);
-}
 
 extern "C" void kmain(multibootInfo* multibootinfo) {
     multiboot = *multibootinfo;
@@ -65,10 +76,11 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     initkmalloc();
     gdt.init();
     idt.init();
-    idt.addInt(0,div0);
-    idt.addInt(8,doublefault);
-    idt.addInt(14,pagefault);
-    idt.addInt(13,gpfault);
+    idt.addInt(0, div0);
+    idt.addInt(6, invalidOpcode);
+    idt.addInt(8, doublefault);
+    idt.addInt(13, gpfault);
+    idt.addInt(14, pagefault);
     sti;
 
 #define BLA 3
