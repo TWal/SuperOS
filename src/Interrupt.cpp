@@ -19,7 +19,7 @@ void* InterruptEntry::getAddr(){
 }
 
 struct IDTLoader{
-    ushort size;
+    u16 size;
     InterruptEntry * IDT;
 }__attribute__((packed));
 
@@ -38,41 +38,41 @@ InterruptTable::InterruptTable(){
 }
 
 void InterruptTable::init(){
-    for(int i = 0 ; i < 256 ; ++i){
+    for(u16 i = 0 ; i < 256 ; ++i){
         IDT[i].setAddr(reinterpret_cast<void*>(intIDT[i]));
         intIDT[i] = nullptr;
     }
     lidt();
 }
 
-void InterruptTable::addInt(int i,interFunc f){
+void InterruptTable::addInt(u8 i,interFunc f){
     intIDT[i] = f;
     IDT[i].present =true;
 }
-void InterruptTable::addInt(int i,interFuncR f){
+void InterruptTable::addInt(u8 i,interFuncR f){
     intIDT[i] = reinterpret_cast<interFunc>(f);
     params[i].doReturn = true;
     IDT[i].present = true;
 }
-void InterruptTable::addInt(int i,interFuncE f){
+void InterruptTable::addInt(u8 i,interFuncE f){
     intIDT[i] = reinterpret_cast<interFunc>(f);
     params[i].hasErrorCode = true;
     IDT[i].present = true;
 }
-void InterruptTable::addInt(int i,interFuncER f){
+void InterruptTable::addInt(u8 i,interFuncER f){
     intIDT[i] = reinterpret_cast<interFunc>(f);
     params[i].doReturn = true;
     params[i].hasErrorCode = true;
     IDT[i].present = true;
 }
-void InterruptTable::addIntAsm(int i,void* f){
+void InterruptTable::addIntAsm(u8 i,void* f){
     params[i].isAssembly = true;
     IDT[i].present = true;
     IDT[i].setAddr(f);
 }
 
 void InterruptTable::allPresent(){
-    for(int i = 0 ; i < 256 ; ++i){
+    for(u16 i = 0 ; i < 256 ; ++i){
         IDT[i].present =true;
     }
 }

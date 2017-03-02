@@ -34,35 +34,35 @@ void init(){
 }
 
 //int 0
-void div0 (InterruptParams par){
+void div0 (const InterruptParams& par){
     bsod("1/0 is not infinity at %p", par.eip);
 }
 
 //int 6
-void invalidOpcode(InterruptParams par) {
+void invalidOpcode(const InterruptParams& par) {
     bsod("Invalid opcode at %p", par.eip);
 }
 
 //int 8
-void doublefault(InterruptParamsErr par){
+void doublefault(const InterruptParamsErr& par){
     bsod("Double fault at %p\nIt may be an uncaught interruption.", par.eip);
     //should not return eip is UB.
 }
 
 //int 13
-void gpfault(InterruptParamsErr par){
+void gpfault(const InterruptParamsErr& par){
     bsod("General Protection fault at %p with code %x", par.eip, par.errorCode);
 }
 
 //int 14
-void pagefault(InterruptParamsErr par){
+void pagefault(const InterruptParamsErr& par){
     printf("Page fault at %p with code %x accessing %p\n", par.eip, par.errorCode, getCR2());
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
 
 //int 0x21
-void keyboard(InterruptParams) {
+void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
 }
@@ -84,7 +84,23 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     sti;
 
 #define BLA 3
-#if BLA == 1
+#if BLA == -1
+    volatile int i = ((int*)(nullptr))[42];
+
+    return;
+#elif BLA == 0
+
+    char* p1 = (char*)malloc(13);
+    char* p2 = (char*)malloc(19);
+    char* p3 = (char*)malloc(23);
+    char* p4 = (char*)malloc(27);
+    fb.printf("%x %x %x %x\n", p1, p2, p3, p4);
+    free(p2);
+    char* p5 = (char*)malloc(21);
+    fb.printf("%x\n", p5);
+    while(1) asm volatile ("cli;hlt");
+
+#elif BLA == 1
     HDD first(1,true);
     first.init();
 

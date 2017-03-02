@@ -8,47 +8,47 @@
 namespace fat {
 
     struct MBR {
-        uchar startCode [3];
+        u8 startCode [3];
         char OEMIdent [8];
-        ushort BytesPerSector;
-        uchar SectorPerCluster;
-        ushort nbofReservedSectors;
-        uchar nbofFAT;
-        ushort nbofDirEntries;
-        ushort smallSize;
-        uchar mediaDescriptor;
-        uchar legacyGarbage [6];
-        uint nbHidden;
-        uint largeSize;
-        uint FATSize;
-        ushort Flags;
-        ushort FATVersion;
-        uint RootCluster;
-        ushort FSInfoSector;
-        ushort BackupSector;
-        uchar reserved[12];
-        uchar DriveNumber;
-        uchar reserved2;
-        uchar Signature;
-        uint SerialNumber;
+        u16 BytesPerSector;
+        u8 SectorPerCluster;
+        u16 nbofReservedSectors;
+        u8 nbofFAT;
+        u16 nbofDirEntries;
+        u16 smallSize;
+        u8 mediaDescriptor;
+        u8 legacyGarbage [6];
+        u32 nbHidden;
+        u32 largeSize;
+        u32 FATSize;
+        u16 Flags;
+        u16 FATVersion;
+        u32 RootCluster;
+        u16 FSInfoSector;
+        u16 BackupSector;
+        u8 reserved[12];
+        u8 DriveNumber;
+        u8 reserved2;
+        u8 Signature;
+        u32 SerialNumber;
         char Label[11];
         char Ident [8];
 
-    }__attribute((packed));
+    }__attribute__((packed));
 
 
     static_assert(sizeof(MBR)==90,"Wrong size for FATMBR");
 
     struct Date {
-        uchar year : 7; // since 1980
-        uchar month : 4;
-        uchar day : 5;
-    }__attribute((packed));
+        u8 year : 7; // since 1980
+        u8 month : 4;
+        u8 day : 5;
+    }__attribute__((packed));
     struct Hour {
-        uchar hour : 5;
-        uchar min : 6;
-        uchar dblSec : 5; // 2* seconds
-    }__attribute((packed));
+        u8 hour : 5;
+        u8 min : 6;
+        u8 dblSec : 5; // 2* seconds
+    }__attribute__((packed));
 
 
     struct DirectoryEntry {
@@ -59,37 +59,37 @@ namespace fat {
         bool volume_id : 1;
         bool directory : 1;
         bool archive : 1;
-        uchar nothing :2;
-        uchar reserved;
-        uchar creationDuration;
+        u8 nothing : 2;
+        u8 reserved;
+        u8 creationDuration;
         Hour creationHour;
         Date creationDate;
         Date lastAccessed;
-        ushort clusterHigh;
+        u16 clusterHigh;
         Hour lastModifHour;
         Date lastModifDate;
-        ushort clusterLow;
-        uint size;
-        uint getCluster(){return (uint(clusterHigh) << 16)+ clusterLow;}
-        void setCluster(uint cluster)
+        u16 clusterLow;
+        u32 size;
+        u32 getCluster(){return (u32(clusterHigh) << 16)+ clusterLow;}
+        void setCluster(u32 cluster)
             {clusterLow = cluster & 0xFFFF; clusterHigh = cluster >> 16;}
         std::string getName();
-    }__attribute((packed));
+    }__attribute__((packed));
 
     static_assert(sizeof(DirectoryEntry) == 32, "Wrong size for DirectoryEntry");
 
 
     struct LongFileName{
-        uchar order;
-        ushort first5[5];
-        uchar attribute; // should be 0x0F
-        uchar longEntryType;
-        uchar checksum;
-        ushort second6[6];
-        uchar zero[2];
-        ushort third2[2];
+        u8 order;
+        u16 first5[5];
+        u8 attribute; // should be 0x0F
+        u8 longEntryType;
+        u8 checksum;
+        u16 second6[6];
+        u8 zero[2];
+        u16 third2[2];
         std::string getName();
-    }__attribute((packed));
+    }__attribute__((packed));
     static_assert(sizeof(LongFileName) == 32, "Wrong size for LongFileName");
 
     class FS;
@@ -99,43 +99,32 @@ namespace fat {
     protected :
         Directory* _parent;
         FS* _fs;
-        uint _cluster;
-        uint _clusterSize;
-        ulint _size;
+        u32 _cluster;
+        u32 _clusterSize;
+        u32 _size;
     public :
-        ulint getSize();
+        size_t getSize();
         bool isInRAM(){return false;}
         void* getData(){return nullptr;}
-        void writeaddr (ulint addr,const void * data, uint size);
-        void readaddr (ulint addr, void * data, uint size);
-        void writelba (ulint LBA , const void* data, uint nbsector);
-        void readlba (ulint LBA, void * data, uint nbsector);
+        void writeaddr (uptr addr,const void * data, size_t size);
+        void readaddr (uptr addr, void * data, size_t size);
+        void writelba (u32 LBA , const void* data, u32 nbsector);
+        void readlba (u32 LBA, void * data, u32 nbsector);
 
-        explicit File(FS* fs, uint cluster,ulint size, Directory* parent = nullptr);
+        explicit File(FS* fs, u32 cluster,size_t size, Directory* parent = nullptr);
         void setName(const std::string& name);
         virtual ::Directory * getParent(); // null => root directory
 
     };
 
 
-    /*class DATAFile : public virtual File, public virtual ::DATAFile {
-    public :
-        using File::getSize;
-        using File::isInRAM;
-        using File::getData;
-        using File::writeaddr;
-        using File::writelba;
-        using File::readaddr;
-        using File::readlba;
-        DATAFile(FS* fs, uint cluster, ulint size,Directory* parent = nullptr);
-        };*/
 
     class Directory : public File, public ::Directory{
         std::map<std::string,fat::File*> _content;
-        std::string fusion(const std::map<uchar,LongFileName>& longName);
+        std::string fusion(const std::map<u8,LongFileName>& longName);
         bool _loaded;
     public :
-        Directory(FS* fs, uint cluster, ulint size,Directory* parent = nullptr);
+        Directory(FS* fs, u32 cluster, size_t size,Directory* parent = nullptr);
         void load(); // load directory in RAM.
         std::vector<std::string> getFilesName ();
         File * operator[](const std::string& name);
@@ -143,14 +132,13 @@ namespace fat {
 
     class FS : public FileSystem {
         friend class File;
-        friend class DATAFile;
         friend class Directory;
         MBR _fmbr;
     public:
         explicit FS (Partition* part);
-        uint getFATEntry(uint cluster);
-        uint clusterToLBA(uint cluster,uint offset);
-        uint nbRemainingCluster(uint cluster);
+        u32 getFATEntry(u32 cluster);
+        u32 clusterToLBA(u32 cluster,u32 offset);
+        u32 nbRemainingCluster(u32 cluster);
         ::Directory* getRoot();
         Directory* getRootFat();
     };

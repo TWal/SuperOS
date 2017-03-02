@@ -5,8 +5,8 @@
 #include "Deque.h"
 
 struct Keycode {
-    uint flags;
-    uchar scanCode;
+    u32 flags;
+    u8 scanCode;
     char symbol;
     bool isRelease;
 };
@@ -37,7 +37,7 @@ class Keyboard {
         };
     private:
         Deque<uchar, 16> _deque;
-        uint _flags;
+        u32 _flags;
         bool _lastIsE0;
         const Keymap* _keymap;
 };

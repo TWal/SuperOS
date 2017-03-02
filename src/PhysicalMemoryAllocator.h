@@ -9,9 +9,9 @@ class PhysicalMemoryAllocator {
         void* alloc();
         void free(void* page);
     private:
-        uint* _bitset;
-        char* _memoryStart;
-        uint _size;
+        u32* _bitset;
+        u8* _memoryStart;
+        size_t _size;
 };
 
 #endif

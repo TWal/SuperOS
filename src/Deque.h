@@ -34,20 +34,20 @@ class Deque {
             _size -= 1;
         }
 
-        T& operator[](uint n) {
+        T& operator[](size_t n) {
             return _array[(_begin+n)%N];
         }
 
-        const T& operator[](uint n) const {
+        const T& operator[](size_t n) const {
             return _array[(_begin+n)%N];
         }
 
-        T& at(uint n) {
+        T& at(size_t n) {
             assert(n < _size);
             return _array[(_begin+n)%N];
         }
 
-        const T& at(uint n) const {
+        const T& at(size_t n) const {
             assert(n < _size);
             return _array[(_begin+n)%N];
         }
@@ -68,7 +68,7 @@ class Deque {
             return _array[(_end+N-1)%N];
         }
 
-        uint size() const {
+        size_t size() const {
             return _size;
         }
 
@@ -77,9 +77,9 @@ class Deque {
         }
 
     private:
-        uint _begin;
-        uint _end;
-        uint _size;
+        size_t _begin;
+        size_t _end;
+        size_t _size;
         T _array[N];
 };
 

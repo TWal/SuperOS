@@ -13,9 +13,9 @@ struct PageDirectoryEntry {
     bool zero : 1;
     bool isSizeMega : 1;
     int nothing : 4;
-    uint PTaddr : 20;
+    u32 PTaddr : 20;
     void setAddr(void* a);
-    void setAddr(uint a);
+    void setAddr(uptr a);
 } __attribute__((packed));
 
 static_assert(sizeof(PageDirectoryEntry) == 4, "PageDirectoryEntry has the wrong size");
@@ -32,9 +32,9 @@ struct PageTable {
     bool zero : 1;
     bool global : 1;
     int nothing : 3;
-    uint addr : 20;
+    u32 addr : 20;
     void setAddr(void* a);
-    void setAddr(uint a);
+    void setAddr(uptr a);
     void* getAddr();
 } __attribute__((packed));
 
@@ -46,20 +46,20 @@ class Paging {
     public:
         Paging();
         int brk(void* paddr);
-        void* sbrk(int inc);
+        void* sbrk(size_t inc); // i64 ?
     private:
-        uint _brk;
-        uint _truebrk;
+        uptr _brk;
+        uptr _truebrk;
 };
 
 struct MallocHeader {
-    uint size : 30;
+    size_t size : 30;
     bool prevFree : 1;
     bool free : 1;
-    inline uint getSize() {
+    inline size_t getSize() {
         return size << 2;
     }
-    inline void setSize(uint sz) {
+    inline void setSize(size_t sz) {
         assert((sz & ((1<<2)-1)) == 0);
         size = sz >> 2;
     }
@@ -68,7 +68,7 @@ struct MallocHeader {
 static_assert(sizeof(MallocHeader) == 4, "MallocHeader has the wrong size");
 
 void initkmalloc();
-void* kmalloc(uint size);
+void* kmalloc(size_t size);
 void kfree(void* ptr);
 
 extern "C" PageDirectoryEntry PDElower[1024] __attribute__((section(".data.lower")));

@@ -5,15 +5,15 @@
 
 
 struct InterruptEntry {
-    ushort offLow;
-    ushort segSelector;
+    u16 offLow;
+    u16 segSelector;
     char reserved0;
     char reserved1 :3;
     bool is32bits : 1;
     char reserved2 :1;
     char privilegeLvl :2;
     bool present : 1;
-    ushort offHigh;
+    u16 offHigh;
 
     InterruptEntry();
     void setAddr(void* addr);
@@ -27,32 +27,32 @@ extern InterruptEntry IDT[256];
 void lidt();
 
 struct InterruptParams{
-    uint32 eax;
-    uint32 ebx;
-    uint32 ecx;
-    uint32 edx;
-    uint32 interNumTimes4;
-    uint32 esi;
-    uint32 ebp;
-    uint32 edi;
+    u32 eax;
+    u32 ebx;
+    u32 ecx;
+    u32 edx;
+    u32 interNumTimes4;
+    u32 esi;
+    u32 ebp;
+    u32 edi;
     void*  eip;
-    uint32 cs;
-    uint32 flags;
+    u32 cs;
+    u32 flags;
 }__attribute__((packed));
 
 struct InterruptParamsErr{
-    uint32 eax;
-    uint32 ebx;
-    uint32 ecx;
-    uint32 edx;
-    uint32 interNumTimes4;
-    uint32 esi;
-    uint32 ebp;
-    uint32 edi;
-    uint32 errorCode;
+    u32 eax;
+    u32 ebx;
+    u32 ecx;
+    u32 edx;
+    u32 interNumTimes4;
+    u32 esi;
+    u32 ebp;
+    u32 edi;
+    u32 errorCode;
     void*  eip;
-    uint32 cs;
-    uint32 flags;
+    u32 cs;
+    u32 flags;
 }__attribute__((packed));
 
 struct IntParams{
@@ -64,10 +64,10 @@ struct IntParams{
 }__attribute__((packed));
 
 
-typedef uint (*interFuncR)(const InterruptParams);
-typedef void (*interFunc)(const InterruptParams);
-typedef uint (*interFuncER)(const InterruptParamsErr);
-typedef void (*interFuncE)(const InterruptParamsErr);
+typedef u32 (*interFuncR)(const InterruptParams&);
+typedef void (*interFunc)(const InterruptParams&);
+typedef u32 (*interFuncER)(const InterruptParamsErr&);
+typedef void (*interFuncE)(const InterruptParamsErr&);
 
 extern "C" interFunc intIDT[256];
 extern "C" void initIntIDT ();
@@ -76,18 +76,18 @@ extern "C" IntParams params [256]; // switch to bitset when libc++ is avaible
 class InterruptTable {
 public:
     void init();
-    void addInt(int i,interFunc f);
-    void addInt(int i,interFuncR f);
-    void addInt(int i,interFuncE f);
-    void addInt(int i,interFuncER f);
-    void addIntAsm(int i, void* f);// asm handler
+    void addInt(u8 i,interFunc f);
+    void addInt(u8 i,interFuncR f);
+    void addInt(u8 i,interFuncE f);
+    void addInt(u8 i,interFuncER f);
+    void addIntAsm(u8 i, void* f);// asm handler
     InterruptTable();
     void allPresent();// only for debugging purpose
 };
 
 
 
-template<uchar num>
+template<u8 num>
 void interrupt(){
     asm volatile(
         "int %0;" :
@@ -95,8 +95,8 @@ void interrupt(){
         );
 }
 
-template<uchar num>
-void interrupt(int eax){
+template<u8 num>
+void interrupt(u32 eax){
     asm volatile(
         "mov %1,%%eax;"
         "int %0;" :
@@ -104,8 +104,8 @@ void interrupt(int eax){
         );
 }
 
-template<uchar num>
-void interrupt(int eax,int ebx){
+template<u8 num>
+void interrupt(u32 eax,u32 ebx){
     asm volatile(
         "mov %1,%%eax;"
         "mov %2,%%ebx;"
@@ -115,9 +115,9 @@ void interrupt(int eax,int ebx){
         );
 }
 
-template<uchar num>
-int interruptr(){
-    int res;
+template<u8 num>
+u32 interruptr(){
+    u32 res;
     asm volatile(
         "int %1;"
         "mov %%eax,%0;"
@@ -128,9 +128,9 @@ int interruptr(){
     return res;
 }
 
-template<uchar num>
-int interruptr(int eax){
-    int res;
+template<u8 num>
+u32 interruptr(u32 eax){
+    u32 res;
     asm volatile(
         "mov %2,%%eax;"
         "int %1;"
@@ -142,9 +142,9 @@ int interruptr(int eax){
     return res;
 }
 
-template<uchar num>
-int interruptr(int eax,int ebx){
-    int res;
+template<u8 num>
+u32 interruptr(u32 eax,u32 ebx){
+    u32 res;
     asm volatile(
         "mov %2,%%eax;"
         "mov %3,%%ebx;"

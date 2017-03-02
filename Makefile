@@ -12,7 +12,7 @@ LIBCXX = libc++
 
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 
-OPTILVL = -O1 -mno-sse
+OPTILVL = -O3 -mno-sse
 
 ASFLAGS = --32
 CFLAGS = -m32  -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \

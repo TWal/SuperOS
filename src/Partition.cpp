@@ -6,23 +6,23 @@ Partition::Partition (HDD*HDD,PartitionTableEntry descriptor):_descriptor(descri
     assert(HDD != nullptr);
 }
 
-ulint Partition::getSize(){
+size_t Partition::getSize(){
     return (_descriptor.endLBA - _descriptor.begLBA)*512;
 }
 
-void Partition::writelba (ulint LBA , const void* data, uint nbsector){
+void Partition::writelba (u32 LBA , const void* data, u32 nbsector){
     assert (LBA + nbsector < _descriptor.endLBA - _descriptor.begLBA);
     _HDD->writelba(LBA + _descriptor.begLBA,data,nbsector);
 }
-void Partition::readlba (ulint LBA, void * data, uint nbsector){
+void Partition::readlba (u32 LBA, void * data, u32 nbsector){
     assert (LBA + nbsector < _descriptor.endLBA - _descriptor.begLBA);
     _HDD->readlba(LBA + _descriptor.begLBA,data,nbsector);
 }
-void Partition::writeaddr (ulint addr , const void* data, uint size){
+void Partition::writeaddr (uptr addr , const void* data, size_t size){
     assert (addr + size < getSize());
     _HDD->writeaddr(addr + _descriptor.begLBA*512,data,size);
 }
-void Partition::readaddr (ulint addr, void * data, uint size){
+void Partition::readaddr (uptr addr, void * data, size_t size){
     assert (addr + size < getSize());
     _HDD->readaddr(addr + _descriptor.begLBA*512,data,size);
 }

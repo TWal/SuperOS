@@ -8,42 +8,42 @@ namespace fat {
 
     //-------------------------File---------------------------------------------
 
-    File::File(FS* fs, uint cluster,ulint size,Directory* parent)
+    File::File(FS* fs, u32 cluster,size_t size, Directory* parent)
         :_parent(parent), _fs(fs),_cluster(cluster),_size(size){
         _clusterSize = _fs->_fmbr.SectorPerCluster;
     }
-    ulint File::getSize(){
+    size_t File::getSize(){
         if(!_size) _size = 512* _clusterSize
                        * _fs ->nbRemainingCluster(_cluster);
         return _size;
     }
 
-    void File::writeaddr (ulint addr,const void * data, uint size){
+    void File::writeaddr (uptr addr,const void * data, size_t size){
         assert (size <= 512);// will take care of larger write later
-        uint clusterOffset = addr / (512*_clusterSize);
-        uint offset = addr - clusterOffset *512 * _clusterSize;
-        uint LBA = _fs->clusterToLBA(_cluster,clusterOffset);
+        u32 clusterOffset = addr / (512*_clusterSize);
+        u32 offset = addr - clusterOffset *512 * _clusterSize;
+        u32 LBA = _fs->clusterToLBA(_cluster,clusterOffset);
         _fs->_part->writeaddr(LBA*512 + offset,data,size);
     }
-    void File::readaddr (ulint addr, void * data, uint size){
+    void File::readaddr (uptr addr, void * data, size_t size){
         assert (size <= 512);// will take care of larger read later
-        uint clusterOffset = addr / (512*_clusterSize);
-        uint offset = addr - clusterOffset *512 * _clusterSize;
-        uint LBA = _fs->clusterToLBA(_cluster,clusterOffset);
+        u32 clusterOffset = addr / (512*_clusterSize);
+        u32 offset = addr - clusterOffset *512 * _clusterSize;
+        u32 LBA = _fs->clusterToLBA(_cluster,clusterOffset);
         _fs->_part->readaddr(LBA*512 + offset,data,size);
     }
-    void File::writelba (ulint LBA , const void* data, uint nbsector){
+    void File::writelba (u32 LBA , const void* data, u32 nbsector){
         assert (nbsector == 1);// will take care of larger write later
-        uint clusterOffset = LBA / _clusterSize;
-        uint offset = LBA - clusterOffset * _clusterSize;
-        uint LBAo = _fs->clusterToLBA(_cluster,clusterOffset);
+        u32 clusterOffset = LBA / _clusterSize;
+        u32 offset = LBA - clusterOffset * _clusterSize;
+        u32 LBAo = _fs->clusterToLBA(_cluster,clusterOffset);
         _fs->_part->writelba(LBAo+ offset,data,nbsector);
     }
-    void File::readlba (ulint LBA, void * data, uint nbsector){
+    void File::readlba (u32 LBA, void * data, u32 nbsector){
         assert (nbsector == 1);// will take care of larger read later
-        uint clusterOffset = LBA / _clusterSize;
-        uint offset = LBA - clusterOffset * _clusterSize;
-        uint LBAo = _fs->clusterToLBA(_cluster,clusterOffset);
+        u32 clusterOffset = LBA / _clusterSize;
+        u32 offset = LBA - clusterOffset * _clusterSize;
+        u32 LBAo = _fs->clusterToLBA(_cluster,clusterOffset);
         //printf("file reading at %u \n",LBAo + offset);
         _fs->_part->readlba(LBAo+ offset,data,nbsector);
     }
@@ -54,12 +54,6 @@ namespace fat {
         return _parent;
     }
 
-
-    /*//-------------------------------DATAFile-----------------------------------
-
-    DATAFile::DATAFile(FS* fs, uint cluster, ulint size,Directory* parent)
-        :File(fs,cluster,size,parent){}
-    */
 
     //-------------------------------Directory----------------------------------
 
@@ -88,7 +82,7 @@ namespace fat {
         return beg;
     }
 
-    std::string Directory::fusion(const std::map<uchar,LongFileName>& longName){
+    std::string Directory::fusion(const std::map<u8,LongFileName>& longName){
         std::string res;
         for(auto p : longName){
             res += p.second.getName();
@@ -96,19 +90,19 @@ namespace fat {
         return res;
     }
 
-    Directory::Directory(FS* fs, uint cluster, ulint size,Directory* parent)
+    Directory::Directory(FS* fs, u32 cluster, size_t size,Directory* parent)
         :fat::File(fs,cluster,size,parent),_loaded(false){}
 
     void Directory::load(){
         if(_loaded) return;
         _loaded = true;
         static LongFileName buffer[16];
-        std::map<uchar,LongFileName> longName;
+        std::map<u8,LongFileName> longName;
         for(size_t i = 0 ; i < getLBASize() ; ++i){
             readlba(i,buffer,1);
             for(int j = 0 ; j < 16 ; ++j){
                 /*printf("treating area :");
-                uchar * buf = reinterpret_cast<uchar*> (&buffer[j]);
+                u8 * buf = reinterpret_cast<u8*> (&buffer[j]);
                 for(int k = 0 ;k < 32 ; ++k){
                     printf("%2x",buf[k]);
                     }printf("\n");*/
@@ -179,7 +173,7 @@ namespace fat {
 
     FS::FS (Partition* part) : FileSystem(part){
         //assert(_fmbr.BytesPerSector == 512); // TODO generic sector size. 
-        //uint clusterOffset = LBA / _clusterSize;
+        //u32 clusterOffset = LBA / _clusterSize;
         _part->readaddr(0,&_fmbr,sizeof(_fmbr));
         char name [12] = {};
         memcpy(name,_fmbr.Label,11);
@@ -190,12 +184,12 @@ namespace fat {
 
     }
 
-    uint FS::getFATEntry(uint cluster){
-        uint res;
+    u32 FS::getFATEntry(u32 cluster){
+        u32 res;
         _part->readaddr(_fmbr.nbofReservedSectors *512 + cluster *4,&res,4);
         return res;
     }
-    uint FS::clusterToLBA(uint cluster,uint offset){
+    u32 FS::clusterToLBA(u32 cluster,u32 offset){
         cluster &= 0x0FFFFFFF;
         assert (cluster != 0x0FFFFFF7);
         if (cluster > 0x0FFFFFF7) return -1;
@@ -209,7 +203,7 @@ namespace fat {
             return clusterToLBA(getFATEntry(cluster),offset-1);
         }
     }
-    uint FS::nbRemainingCluster(uint cluster){
+    u32 FS::nbRemainingCluster(u32 cluster){
         int res =0;
         cluster &= 0x0FFFFFFF;
 

@@ -70,7 +70,7 @@ void GDTDescriptor::lgdt(){
         : "r"(this):
         );
 }
-void GDTDescriptor::switchSegReg(){
+void __attribute__((optimize("O0"))) GDTDescriptor::switchSegReg(){
     asm volatile (
         "ljmp $0x08 , $switchSegRes_rec;"
         "switchSegRes_rec : \n"

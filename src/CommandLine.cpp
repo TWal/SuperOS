@@ -46,7 +46,7 @@ CommandLine::CommandLine(table_type table):_table(table){
                     return;
                 }
                 cl->pwd = d;
-            }));
+                }));
 
 }
 void CommandLine::run(){

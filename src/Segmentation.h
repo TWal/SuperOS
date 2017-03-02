@@ -8,23 +8,23 @@
 
 struct GDTEntry{
     GDTEntry();
-    ushort limitLow;
-    uint baseLow : 24;
+    u16 limitLow;
+    u32 baseLow : 24;
     bool accessed : 1;
     bool RW : 1;
     bool directionDown : 1;
     bool executable : 1;
-    uchar one : 1;
-    uchar privilege : 2;
+    u8 one : 1;
+    u8 privilege : 2;
     bool present : 1;
-    uchar limitHigh : 4;
-    uchar zero : 2;
+    u8 limitHigh : 4;
+    u8 zero : 2;
     bool is32bits : 1;
     bool is4KB : 1;
-    uchar baseHigh;
+    u8 baseHigh;
 
     void setBase(void* base);
-    void setLimit(uint limit);
+    void setLimit(u32 limit);
     void clear();
     void setFullDataSegment();
     void setFullExecSegment();
@@ -44,7 +44,7 @@ public :
     void lgdt();
     void switchSegReg();
 private:
-    ushort _size;
+    u16 _size;
     GDTEntry* _GDT;
 
 }__attribute__((packed));

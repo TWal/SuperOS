@@ -2,14 +2,14 @@
 #include "HardDrive.h"
 #include "globals.h"
 
-static const uint bus1BasePort = 0x1F0;
-static const uint bus1SpecialPort = 0x3F6;
-static const uint bus2BasePort = 0x170;
-static const uint bus2SpecialPort = 0x376;
+static const u16 bus1BasePort = 0x1F0;
+static const u16 bus1SpecialPort = 0x3F6;
+static const u16 bus2BasePort = 0x170;
+static const u16 bus2SpecialPort = 0x376;
 
 
-StatusByte::StatusByte(uchar byte){
-    *reinterpret_cast<uchar*>(this) = byte;
+StatusByte::StatusByte(u8 byte){
+    *reinterpret_cast<u8*>(this) = byte;
 }
 
 void StatusByte::printStatus(){
@@ -30,7 +30,7 @@ void HDD::init(){
     memcpy(table,MBR+0x1be,4*sizeof(PartitionTableEntry));
 }
 
-HDD::HDD(uchar bus,bool master) : _master(master),active(false),table{},MBR{}
+HDD::HDD(u8 bus,bool master) : _master(master),active(false),table{},MBR{}
 {
     switch(bus){
         case 1:
@@ -45,13 +45,13 @@ HDD::HDD(uchar bus,bool master) : _master(master),active(false),table{},MBR{}
 }
 
 
-void HDD::writelba (ulint LBA , const void* data, uint nbsector){
+void HDD::writelba (u32 LBA , const void* data, u32 nbsector){
     assert(nbsector > 0 && nbsector < 512 && data != nullptr);
     activate();
     outb (_basePort + 2, nbsector >> 8);
     outb (_basePort + 3, (LBA >> 24) & 0xFF);
-    outb (_basePort + 4, (LBA >> 32) & 0xFF);
-    outb (_basePort + 5, (LBA >> 40) & 0xFF);
+    outb (_basePort + 4, 0/*(LBA >> 32) & 0xFF*/);
+    outb (_basePort + 5, 0/*(LBA >> 40) & 0xFF*/);
     outb (_basePort + 2, nbsector & 0xFF);
     outb (_basePort + 3, LBA & 0xFF);
     outb (_basePort + 4, (LBA >> 8) & 0xFF);
@@ -59,7 +59,7 @@ void HDD::writelba (ulint LBA , const void* data, uint nbsector){
     outb (_basePort + 7,0x34);
     while(!getStatus().isReadyOrFailed()){}
     assert(getStatus().isOk());
-    for(uint i = 0 ; i < nbsector*256 ; ++ i ){
+    for(u64 i = 0 ; i < nbsector*256 ; ++ i ){
         outw(_basePort,reinterpret_cast<const ushort*>(data)[i]);
     }
 
@@ -71,31 +71,33 @@ void HDD::writelba (ulint LBA , const void* data, uint nbsector){
 }
 
 
-void HDD::readlba (ulint LBA, void * data, uint nbsector){
+void HDD::readlba (u32 LBA, void * data, u32 nbsector){
     //printf("HDD reading sector %u\n",LBA);
     readaddr(LBA*512,data,nbsector*512);
 
 }
 
-void HDD::writeaddr (ulint addr , const void* data, uint size){
+void HDD::writeaddr (uptr addr , const void* data, size_t size){
+    assert(size < 512*512);
     static uchar buffer[512];
-    lint LBA = addr/512;
-    uint offset = addr %512;
+    u32 LBA = addr/512L;
+    size_t offset = addr %512L;
     if (offset != 0){
         readlba(LBA,buffer,1);
-        uint toCopy = min(512-offset,size);
+        size_t toCopy = min(512-offset,size);
         memcpy(buffer+offset,data,toCopy);
         writelba(LBA,buffer,1);
-        if(toCopy == size) return;
+        if(toCopy == size) return; // TODO not tested from this point
         ++LBA;
         data = reinterpret_cast<const uchar*>(data) + toCopy;
         size -= (512-offset);
     }
-    uint toWriteSectors = size /512;
+    u32 toWriteSectors = size /512L;
     if(toWriteSectors > 0){
         writelba(LBA,data,toWriteSectors);
         size -= toWriteSectors * 512;
         data = reinterpret_cast<const uchar*>(data) + 512 * toWriteSectors;
+        LBA+=toWriteSectors;
     }
     if (size > 0){
         readlba(LBA,buffer,1);
@@ -104,14 +106,14 @@ void HDD::writeaddr (ulint addr , const void* data, uint size){
     }
 
 }
-void HDD::readaddr (ulint addr, void * data, uint size){
+void HDD::readaddr (uptr addr, void * data, size_t size){
     assert(size > 0 && size < (512*512));
     activate();
-    ulint LBA = addr/512;
-    uint offset = addr %512;
-    ulint endLBA = (addr + size + 511)/512;
-    ushort nbsector = endLBA - LBA;
-    uint count = 0;
+    u64 LBA = addr/512;
+    u32 offset = addr %512;
+    u64 endLBA = (addr + size + 511)/512;
+    u64 nbsector = endLBA - LBA;
+    u64 count = 0; // in words not bytes !!!
     outb (_basePort + 2, nbsector >> 8);
     outb (_basePort + 3, (LBA >> 24) & 0xFF);
     outb (_basePort + 4, (LBA >> 32) & 0xFF);
@@ -123,27 +125,29 @@ void HDD::readaddr (ulint addr, void * data, uint size){
     outb (_basePort + 7,0x24);
     while(!getStatus().isReadyOrFailed()){}
     assert(getStatus().isOk());
+
     while (offset >=2){
         inw(_basePort);
         offset -=2;
+        count ++;
     }
     if(offset == 1){
-        ushort d = inw(_basePort);
+        u16 d = inw(_basePort);
         ++count;
-        *reinterpret_cast<uchar*>(data) = d >> 8;
-        data = reinterpret_cast<uchar*>(data) +1;
+        *reinterpret_cast<u8*>(data) = d >> 8;
+        data = reinterpret_cast<u8*>(data) +1;
         size--;
     }
     for( ;size > 1; size -=2 ){
         ++count;
-        *reinterpret_cast<ushort*>(data) = inw(_basePort);
-        data = reinterpret_cast<ushort*>(data) +1;
+        *reinterpret_cast<u16*>(data) = inw(_basePort);
+        data = reinterpret_cast<u16*>(data) +1;
     }
     //size +=2;
     if (size == 1){
         ++count;
-        ushort d = inw(_basePort);
-        *reinterpret_cast<uchar*>(data) = uchar(d);
+        u16 d = inw(_basePort);
+        *reinterpret_cast<u8*>(data) = u8(d);
     }
     while(count < nbsector * 256){ //finish to read useless data.
         ++count;
@@ -152,7 +156,7 @@ void HDD::readaddr (ulint addr, void * data, uint size){
 
 }
 
-PartitionTableEntry HDD::operator[](int i){
+PartitionTableEntry HDD::operator[](u8 i){
     assert(i>0 && i <=4);
     return table[i-1];
 }

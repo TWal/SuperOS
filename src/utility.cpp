@@ -4,20 +4,20 @@
 
 using namespace std;
 
-void outb(ushort port, uchar data) {
+void outb(u16 port, u8 data) {
     asm volatile("outb %0, %1" : : "r"(data), "r"(port));
 }
 
-uchar inb(ushort port) {
-    uchar res;
+u8 inb(u16 port) {
+    u8 res;
     asm volatile("inb %1; movb %%al, %0" : "=r"(res) : "r"(port) : "%al");
     return res;
 }
-void outw(ushort port, ushort data){
+void outw(u16 port, u16 data){
     asm volatile("outw %0, %1" : : "r"(data), "r"(port));
 }
-ushort inw(ushort port){
-    ushort res;
+u16 inw(u16 port){
+    u16 res;
     asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "r"(port) : "%al");
     return res;
 }

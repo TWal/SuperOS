@@ -6,11 +6,11 @@
 class Pic {
     public:
         Pic();
-        void endOfInterrupt(uchar irq);
-        ushort getMask();
-        void setMask(ushort mask);
-        void activate(uchar irq);
-        void desactivate(uchar irq);
+        void endOfInterrupt(u8 irq);
+        u16 getMask();
+        void setMask(u16 mask);
+        void activate(u8 irq);
+        void desactivate(u8 irq);
         //From http://wiki.osdev.org/Interrupts#Standard_ISA_IRQs
         enum IRQ {
             TIMER = 0,

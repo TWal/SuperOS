@@ -19,9 +19,11 @@ geneInt: #;by default interruption on user stack.
   push %ecx
   push %ebx
   push %eax
+  push %esp
   call *intIDT(%edi)
-  mov 16(%esp),%edi
+  mov 20(%esp),%edi
   shrl $2,%edi
+  add $4,%esp
   pop %ecx
   testb $2,params(%edi)
   cmovz %ecx,%eax
@@ -34,7 +36,6 @@ geneInt: #;by default interruption on user stack.
   pop %esi
   pop %ebp
   pop %edi
-  #xchg %bx,%bx
   iret
 
 errEnd:

@@ -8,19 +8,19 @@ PageTable PT[1<<20];
 const uint MAX_INIT_PAGE = 2;
 
 void PageDirectoryEntry::setAddr(void* a) {
-    setAddr((uint)a);
+    setAddr((uptr)a);
 }
 
-void PageDirectoryEntry::setAddr(uint a) {
+void PageDirectoryEntry::setAddr(uptr a) {
     assert((a & ((1<<12)-1)) == 0);
     PTaddr = a >> 12;
 }
 
 void PageTable::setAddr(void* a) {
-    setAddr((uint)a);
+    setAddr((uptr)a);
 }
 
-void PageTable::setAddr(uint a) {
+void PageTable::setAddr(uptr a) {
     assert((a & ((1<<12)-1)) == 0);
     addr = a >> 12;
 }
@@ -48,7 +48,7 @@ void setupBasicPaging() {
     PDElower[0].PTaddr = 0;
 
     //For the higher half kernel
-    for(uint i = 0; i < MAX_INIT_PAGE; ++i) {
+    for(u32 i = 0; i < MAX_INIT_PAGE; ++i) {
         PDElower[768+i].present = true;
         PDElower[768+i].isSizeMega = true;
         PDElower[768+i].PTaddr = i<<10;
@@ -56,25 +56,25 @@ void setupBasicPaging() {
 }
 
 Paging::Paging() : _brk(THREEGB + (MAX_INIT_PAGE+4)*4*1024*1024), _truebrk(_brk) {
-    for(uint i = (MAX_INIT_PAGE+4); i < 256; ++i) {
+    for(u32 i = (MAX_INIT_PAGE+4); i < 256; ++i) {
         PDE[768+i].setAddr((((uint)&PT[1024*i])-THREEGB));
     }
 }
 
-static inline PageTable* getPT(uint addr) {
+static inline PageTable* getPT(uptr addr) {
     return &PT[(addr-THREEGB)>>12];
 }
 
-static inline PageDirectoryEntry* getPDE(uint addr) {
+static inline PageDirectoryEntry* getPDE(uptr addr) {
     return &PDE[addr >> 22];
 }
 
-static inline void invlpg(uint addr) {
+static inline void invlpg(uptr addr) {
     asm volatile("invlpg (%0)" ::"r" (addr) : "memory");
 }
 
 int Paging::brk(void* paddr) {
-    uint addr = (uint)paddr;
+    uptr addr = (uptr)paddr;
     if(addr > _truebrk) {
         while(addr > _truebrk) {
             if((_truebrk & ((1<<22)-1)) == 0) {
@@ -83,7 +83,7 @@ int Paging::brk(void* paddr) {
                 }
                 getPDE(_truebrk)->present = true;
             }
-            getPT(_truebrk)->setAddr((uint)physmemalloc.alloc());
+            getPT(_truebrk)->setAddr((uptr)physmemalloc.alloc());
             getPT(_truebrk)->present = true;
             invlpg(_truebrk);
             _truebrk += 0x1000;
@@ -105,7 +105,7 @@ int Paging::brk(void* paddr) {
     return 0;
 }
 
-void* Paging::sbrk(int inc) {
+void* Paging::sbrk(size_t inc) {
     void* res = (void*)_brk;
     brk(((char*)_brk) + inc);
     return res;
@@ -113,8 +113,8 @@ void* Paging::sbrk(int inc) {
 
 static MallocHeader* firstHeader;
 
-static const int FREE = 1;
-static const int PREV_FREE = 2;
+//static const int FREE = 1;
+//static const int PREV_FREE = 2;
 
 void initkmalloc() {
     firstHeader = (MallocHeader*)paging.sbrk(4);
@@ -143,11 +143,11 @@ static inline MallocHeader* nextHeader(MallocHeader* head) {
     return (MallocHeader*)((char*)head + head->getSize() + sizeof(MallocHeader));
 }
 
-static inline uint align4(uint n) {
+static inline size_t align4(size_t n) {
     return n + 4 - (n%4);
 }
 
-void* kmalloc(uint size) {
+void* kmalloc(size_t size) {
     size = align4(size);
     MallocHeader* head = firstHeader;
     while(true) {
@@ -175,7 +175,7 @@ void* kmalloc(uint size) {
             //if there is enough space to split this block in two
             if(head->getSize() - size >= 2*sizeof(MallocHeader)) {
                 MallocHeader* oldNxtHead = nextHeader(head); //only used in the assert
-                uint oldSize = head->getSize();
+                size_t oldSize = head->getSize();
                 //setup the current header
                 head->setSize(size);
                 MallocHeader* nxtHead = nextHeader(head);

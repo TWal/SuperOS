@@ -48,7 +48,7 @@ size_t strcspn ( const char * str1, const char * str2 ){
     return __builtin_strcspn(str1,str2);
 }
 
-size_t strlen ( const char * str ){
+size_t __attribute__((optimize("O0"))) strlen ( const char * str ){
     return __builtin_strlen(str);
 }
 
