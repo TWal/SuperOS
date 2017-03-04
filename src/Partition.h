@@ -22,7 +22,7 @@ struct PartitionTableEntry{
     u8 systemID;
     CHS endchs;
     u32 begLBA;
-    u32 endLBA;
+    u32 size;
 } __attribute((packed));
 
 
@@ -33,13 +33,13 @@ class Partition : public HDDBytes {
     HDD*_HDD;
 public:
     explicit Partition (HDD*HDD,PartitionTableEntry descriptor);
-    size_t getSize(); // for now I don't know how to get this information
-    bool isInRAM() {return false ;}
+    size_t getSize()const;
+    bool isInRAM()const {return false ;}
     void* getData(){return nullptr;}
     void writelba (u32 LBA , const void* data, u32 nbsector);
-    void readlba (u32 LBA, void * data, u32 nbsector);
-    void writeaddr (uptr addr , const void* data, size_t size);
-    void readaddr (uptr addr, void * data, size_t size);
+    void readlba (u32 LBA, void * data, u32 nbsector) const;
+    void writeaddr (u64 addr , const void* data, size_t size);
+    void readaddr (u64 addr, void * data, size_t size) const;
 };
 
 

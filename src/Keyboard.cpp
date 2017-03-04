@@ -81,13 +81,9 @@ uchar __attribute__((optimize("O0"))) Keyboard::pollSC(){
 
 Keycode Keyboard::poll() {
     //TODO: handle e0
-    breakpoint;
     while(true) {
 
         uchar sc = pollSC();
-
-        breakpoint;
-
 
         const uchar RELEASE = 0x80;
         const uchar CTRL_SC = 0x1d;
@@ -125,7 +121,6 @@ Keycode Keyboard::poll() {
                 symbol = _keymap->noShift[sc & ~RELEASE];
             }
         }
-        breakpoint;
 
         Keycode res;
         res.flags = _flags;

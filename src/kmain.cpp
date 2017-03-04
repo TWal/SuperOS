@@ -70,20 +70,21 @@ void keyboard(const InterruptParams&){
 
 extern "C" void kmain(multibootInfo* multibootinfo) {
     multiboot = *multibootinfo;
-    PDE[0].present = false;
-    cli;
+    PDE[0].present = false; // desactivate identity mapping;
+    cli; // clear interruption
     init(); //C++ global contructors should not change machine state.
-    initkmalloc();
-    gdt.init();
-    idt.init();
-    idt.addInt(0, div0);
+    initkmalloc(); // malloc initialisation
+    gdt.init(); // segmentation initialisation
+    idt.init(); // interruption initialisation
+    idt.addInt(0, div0); // adding various interruption handlers
     idt.addInt(6, invalidOpcode);
     idt.addInt(8, doublefault);
     idt.addInt(13, gpfault);
     idt.addInt(14, pagefault);
-    sti;
+    sti; // enable interruption
 
-#define BLA 3
+#define BLA 42
+#define EMUL // comment for LORDI version
 #if BLA == -1
     volatile int i = ((int*)(nullptr))[42];
 
@@ -145,34 +146,38 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
         fb.printf("\r");
     }
 
-#elif BLA == 3
-    idt.addInt(0x21,keyboard);
-    pic.activate(Pic::KEYBOARD);
 
-    kbd.setKeymap(&azertyKeymap);
 
-    HDD first(1,true);
-    first.init();
+#else // ---------------NON-TEST CODE----------------------
+
+    idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
+
+    HDD first(1,true); // load HHD manlipulation structure
+    first.init(); // load MBR and partitions
+
+#ifdef EMUL
 
     PartitionTableEntry part1 = first[1];
+    Partition pa1 (&first,part1); // load first partition
 
-    Partition pa1 (&first,part1);
-
-    fat::FS fs (&pa1);
-    CommandLine cl;
-
-    cl.pwd = fs.getRootFat();
-
-
-    // proof of concept for command
-    cl.add("test",[](CommandLine*,const vector<string>&){
-                fb.printf("test Command in kmain\n");
-            });
-
-    //running command line
-    cl.run();
 #else
-    //[insert here useful kernel code]
+
+    const PartitionTableEntry *part1 = first.partWithPred([](const Partition&part){
+            return fat::CheckUUID(0x04728457,part);
+            });
+    if(part1 == nullptr)bsod("Main partition not found");
+    Partition pa1 (&first,*part1); // load partition with FAT UUID 04728457
+
+#endif
+
+    fat::FS fs (&pa1); // load file system FAT on the opened partition
+    CommandLine cl; // load Command line
+
+    cl.pwd = fs.getRootFat(); // set root directory as pwd on boot.
+
+    cl.run(); //run command line
 #endif
 }
 

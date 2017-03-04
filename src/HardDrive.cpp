@@ -13,11 +13,11 @@ StatusByte::StatusByte(u8 byte){
 }
 
 void StatusByte::printStatus(){
-    fb.printf("byte: %u,error : %d, ready : %d, busy : %d ",
+    fb.printf("byte: %u,error : %d, ready : %d, busy : %d\n",
               *reinterpret_cast<uchar*>(this),error,ready,busy);
 }
 
-StatusByte HDD::getStatus(){
+StatusByte HDD::getStatus() const{
     return inb(_basePort + 7);
 }
 
@@ -71,13 +71,13 @@ void HDD::writelba (u32 LBA , const void* data, u32 nbsector){
 }
 
 
-void HDD::readlba (u32 LBA, void * data, u32 nbsector){
+void HDD::readlba (u32 LBA, void * data, u32 nbsector)const {
     //printf("HDD reading sector %u\n",LBA);
-    readaddr(LBA*512,data,nbsector*512);
+    readaddr(u64(LBA)*u64(512),data,u64(nbsector)*u64(512));
 
 }
 
-void HDD::writeaddr (uptr addr , const void* data, size_t size){
+void HDD::writeaddr (u64 addr , const void* data, size_t size){
     assert(size < 512*512);
     static uchar buffer[512];
     u32 LBA = addr/512L;
@@ -106,18 +106,19 @@ void HDD::writeaddr (uptr addr , const void* data, size_t size){
     }
 
 }
-void HDD::readaddr (uptr addr, void * data, size_t size){
-    assert(size > 0 && size < (512*512));
+void HDD::readaddr (u64 addr, void * data, size_t size) const{
+    assert(size > 0 && size < (512*512) && addr < (u64(1) << (32+9)));
     activate();
-    u64 LBA = addr/512;
+    u32 LBA = addr/512;
     u32 offset = addr %512;
     u64 endLBA = (addr + size + 511)/512;
     u64 nbsector = endLBA - LBA;
     u64 count = 0; // in words not bytes !!!
+    outb (_basePort + 6, 0x40 |((!_master)<<4));
     outb (_basePort + 2, nbsector >> 8);
     outb (_basePort + 3, (LBA >> 24) & 0xFF);
-    outb (_basePort + 4, (LBA >> 32) & 0xFF);
-    outb (_basePort + 5, (LBA >> 40) & 0xFF);
+    outb (_basePort + 4, 0/*(LBA >> 32) & 0xFF*/);
+    outb (_basePort + 5, 0/*(LBA >> 40) & 0xFF*/);
     outb (_basePort + 2, nbsector & 0xFF);
     outb (_basePort + 3, LBA & 0xFF);
     outb (_basePort + 4, (LBA >> 8) & 0xFF);
@@ -125,7 +126,6 @@ void HDD::readaddr (uptr addr, void * data, size_t size){
     outb (_basePort + 7,0x24);
     while(!getStatus().isReadyOrFailed()){}
     assert(getStatus().isOk());
-
     while (offset >=2){
         inw(_basePort);
         offset -=2;
@@ -156,7 +156,16 @@ void HDD::readaddr (uptr addr, void * data, size_t size){
 
 }
 
-PartitionTableEntry HDD::operator[](u8 i){
+PartitionTableEntry HDD::operator[](u8 i) const{
     assert(i>0 && i <=4);
     return table[i-1];
 }
+
+const PartitionTableEntry*  HDD::partWithPred(std::function<bool(const Partition&)> pred){
+    for(int i =0 ; i < 4 ; ++i){
+        if(table[i].size == 0 || table[i].systemID == 0) continue;
+        if(pred(Partition(this,table[i]))) return &table[i];
+    }
+    return nullptr;
+}
+

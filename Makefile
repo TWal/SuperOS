@@ -125,6 +125,7 @@ disk.img :
 
 load: disk.img
 	sudo losetup $(LOOPDEV) disk.img
+	sudo partprobe $(LOOPDEV)
 
 partition:
 	sudo echo "," | sudo sfdisk $(LOOPDEV)
@@ -137,7 +138,6 @@ unload:
 
 mount:
 	sudo mkdir -p $(MNTPATH)
-	sudo partprobe $(LOOPDEV)
 	sudo mount $(LOOPDEV)p1 $(MNTPATH)
 
 umount:

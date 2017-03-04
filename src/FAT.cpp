@@ -12,20 +12,20 @@ namespace fat {
         :_parent(parent), _fs(fs),_cluster(cluster),_size(size){
         _clusterSize = _fs->_fmbr.SectorPerCluster;
     }
-    size_t File::getSize(){
-        if(!_size) _size = 512* _clusterSize
+    size_t File::getSize() const{
+        if(!_size) const_cast<File*>(this)->_size = 512* _clusterSize
                        * _fs ->nbRemainingCluster(_cluster);
         return _size;
     }
 
-    void File::writeaddr (uptr addr,const void * data, size_t size){
+    void File::writeaddr (u64 addr,const void * data, size_t size){
         assert (size <= 512);// will take care of larger write later
         u32 clusterOffset = addr / (512*_clusterSize);
         u32 offset = addr - clusterOffset *512 * _clusterSize;
         u32 LBA = _fs->clusterToLBA(_cluster,clusterOffset);
         _fs->_part->writeaddr(LBA*512 + offset,data,size);
     }
-    void File::readaddr (uptr addr, void * data, size_t size){
+    void File::readaddr (u64 addr, void * data, size_t size) const {
         assert (size <= 512);// will take care of larger read later
         u32 clusterOffset = addr / (512*_clusterSize);
         u32 offset = addr - clusterOffset *512 * _clusterSize;
@@ -39,7 +39,7 @@ namespace fat {
         u32 LBAo = _fs->clusterToLBA(_cluster,clusterOffset);
         _fs->_part->writelba(LBAo+ offset,data,nbsector);
     }
-    void File::readlba (u32 LBA, void * data, u32 nbsector){
+    void File::readlba (u32 LBA, void * data, u32 nbsector)const {
         assert (nbsector == 1);// will take care of larger read later
         u32 clusterOffset = LBA / _clusterSize;
         u32 offset = LBA - clusterOffset * _clusterSize;
@@ -177,33 +177,33 @@ namespace fat {
         _part->readaddr(0,&_fmbr,sizeof(_fmbr));
         char name [12] = {};
         memcpy(name,_fmbr.Label,11);
-        printf("Opening FAT32 filesystem : %s; with Size of %u with reserved sectors %d\n"
-                  ,name,_fmbr.FATSize,_fmbr.nbofReservedSectors);
+        /*printf("Opening FAT32 filesystem : %s; with FAT Size of %u\n",name,_fmbr.FATSize);
+        printf("with %d reserved sectors and %d sectors per cluster\n",
+               _fmbr.nbofReservedSectors, _fmbr.SectorPerCluster);
         printf("FAT at sector %d\n",_fmbr.nbofReservedSectors);
-        printf("Root Directory at sector %u\n",clusterToLBA(_fmbr.RootCluster,0));
+        printf("Root Directory at sector %u\n",clusterToLBA(_fmbr.RootCluster,0));*/
 
     }
 
-    u32 FS::getFATEntry(u32 cluster){
+    u32 FS::getFATEntry(u32 cluster)const{
         u32 res;
         _part->readaddr(_fmbr.nbofReservedSectors *512 + cluster *4,&res,4);
         return res;
     }
-    u32 FS::clusterToLBA(u32 cluster,u32 offset){
+    u32 FS::clusterToLBA(u32 cluster,u32 offset)const{
         cluster &= 0x0FFFFFFF;
         assert (cluster != 0x0FFFFFF7);
         if (cluster > 0x0FFFFFF7) return -1;
         if(offset == 0){
             return _fmbr.nbofReservedSectors
-                + _fmbr.nbofFAT*_fmbr.FATSize-2
-                + cluster*_fmbr.SectorPerCluster;
-            //-2 is because the first 2 entries of the FAT are unused
+                + _fmbr.nbofFAT*_fmbr.FATSize
+                + (cluster-2)*_fmbr.SectorPerCluster;
         }
         else {
             return clusterToLBA(getFATEntry(cluster),offset-1);
         }
     }
-    u32 FS::nbRemainingCluster(u32 cluster){
+    u32 FS::nbRemainingCluster(u32 cluster)const{
         int res =0;
         cluster &= 0x0FFFFFFF;
 
