@@ -1,7 +1,7 @@
 #ifndef PHYSICALMEMORYALLOCATOR
 #define PHYSICALMEMORYALLOCATOR
 
-#include "utility.h"
+#include "../utility.h"
 
 class PhysicalMemoryAllocator {
     public:
@@ -13,6 +13,8 @@ class PhysicalMemoryAllocator {
         u8* _memoryStart;
         size_t _size;
 };
+
+extern PhysicalMemoryAllocator physmemalloc;
 
 #endif
 

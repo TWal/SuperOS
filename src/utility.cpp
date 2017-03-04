@@ -1,6 +1,5 @@
 #include "utility.h"
-#include "FrameBuffer.h"
-#include "globals.h"
+#include "IO/FrameBuffer.h"
 
 using namespace std;
 

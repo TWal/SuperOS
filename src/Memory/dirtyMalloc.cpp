@@ -1,7 +1,7 @@
 #include "dirtyMalloc.h"
+#include "Paging.h"
 
-#include "utility.h"
-#include "globals.h"
+#include "../utility.h"
 
 extern "C" uchar kernel_heapstack[];
 

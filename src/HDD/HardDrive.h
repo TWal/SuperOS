@@ -1,8 +1,8 @@
 #ifndef HARDDRIVE_H
 #define HARDDRIVE_H
 
-#include "utility.h"
-#include "Bytes.h"
+#include "../utility.h"
+#include "../Bytes.h"
 #include "Partition.h"
 #include <functional>
 

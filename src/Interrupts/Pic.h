@@ -1,7 +1,7 @@
 #ifndef PIC_H
 #define PIC_H
 
-#include "utility.h"
+#include "../utility.h"
 
 class Pic {
     public:
@@ -33,6 +33,9 @@ class Pic {
     private:
         ushort _mask;
 };
+
+extern Pic pic;
+
 
 #endif
 

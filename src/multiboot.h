@@ -11,5 +11,7 @@ struct multibootInfo {
 
 static_assert(sizeof(multibootInfo) == 3*4);
 
+extern multibootInfo multiboot;
+
 #endif
 

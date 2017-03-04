@@ -1,5 +1,4 @@
 #include "Keyboard.h"
-#include "globals.h"
 
 
 const Keymap azertyKeymap = {
@@ -133,3 +132,5 @@ Keycode Keyboard::poll() {
 void Keyboard::setKeymap(const Keymap* km) {
     _keymap = km;
 }
+
+Keyboard kbd;

@@ -1,5 +1,4 @@
 #include "FrameBuffer.h"
-#include "globals.h"
 
 static char* const FB = (char*) (0xB8000 + THREEGB);
 
@@ -254,6 +253,8 @@ void FrameBuffer::printf(const char* s, ...) {
     vprintf(s, ap);
     va_end(ap);
 }
+
+FrameBuffer fb;
 
 void printf(const char* s, ...) {
     va_list ap;

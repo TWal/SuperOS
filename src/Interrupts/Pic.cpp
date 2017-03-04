@@ -65,3 +65,6 @@ void Pic::activate(u8 irq) {
 void Pic::desactivate(u8 irq) {
     setMask(getMask() | (1<<irq));
 }
+
+Pic pic;
+

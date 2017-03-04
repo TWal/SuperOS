@@ -4,7 +4,7 @@
 #define CODE_SEGMENT 0x08
 #define DATA_SEGMENT 0x10
 
-#include "utility.h"
+#include "../utility.h"
 
 struct GDTEntry{
     GDTEntry();
@@ -49,7 +49,7 @@ private:
 
 }__attribute__((packed));
 
-
+extern GDTDescriptor gdt;
 
 
 #endif

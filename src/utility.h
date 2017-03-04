@@ -107,5 +107,7 @@ std::string concat(std::vector<std::string> strs,char separator);
         for(volatile u64 i = 0 ; i < time ; ++i); \
     } while(false)
 
+const uptr THREEGB = 0xC0000000;
+
 #endif
 

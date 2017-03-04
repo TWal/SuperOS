@@ -1,21 +1,24 @@
 
-#include "FrameBuffer.h"
+#include "IO/FrameBuffer.h"
 #include "utility.h"
-#include "globals.h"
-#include "Interrupt.h"
-#include "Segmentation.h"
-#include "Keyboard.h"
-#include "Paging.h"
-#include "HardDrive.h"
-#include "PhysicalMemoryAllocator.h"
-#include "FAT.h"
-#include "dirtyMalloc.h"
+#include "Interrupts/Interrupt.h"
+#include "Memory/Segmentation.h"
+#include "IO/Keyboard.h"
+#include "Memory/Paging.h"
+#include "HDD/HardDrive.h"
+#include "Memory/PhysicalMemoryAllocator.h"
+#include "HDD/FAT.h"
+#include "Memory/dirtyMalloc.h"
 #include <stdarg.h>
 #include <memory>
-#include "CommandLine.h"
+#include "IO/CommandLine.h"
 #include <functional>
+#include "multiboot.h"
+#include "Interrupts/Pic.h"
 
 using namespace std;
+
+multibootInfo multiboot;
 
 typedef void(*funcp)();
 

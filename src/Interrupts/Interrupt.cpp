@@ -77,3 +77,4 @@ void InterruptTable::allPresent(){
     }
 }
 
+InterruptTable idt;

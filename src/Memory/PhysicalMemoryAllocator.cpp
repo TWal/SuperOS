@@ -1,6 +1,5 @@
 #include "PhysicalMemoryAllocator.h"
-
-#include "globals.h"
+#include "../multiboot.h"
 
 extern "C" void* kernel_code_end;
 
@@ -56,3 +55,4 @@ void PhysicalMemoryAllocator::free(void* page) {
     _bitset[i] &= ~(1 << pos);
 }
 
+PhysicalMemoryAllocator physmemalloc;

@@ -26,11 +26,14 @@ CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 LDFLAGS = -T $(SRCDIR)/link.ld -Wl,-melf_i386 -nostdlib -Wl,--build-id=none
 LIBS = -L. -L $(LIB32GCC) -lc -lgcc -lc++
 
-SRCASM = $(wildcard $(SRCDIR)/*.s)
-SRCC = $(wildcard $(SRCDIR)/*.c)
-SRCCXX = $(wildcard $(SRCDIR)/*.cpp)
-DEPF = $(wildcard $(DEPDIR)/*.d) $(wildcard $(DEPDIR)/$(LIBC)/*.d)
 
+SRCCONTENT = $(shell find src -type f)
+
+SRCASM = $(filter %.s,$(SRCCONTENT))
+SRCC = $(filter %.c,$(SRCCONTENT))
+SRCCXX = $(filter %.cpp,$(SRCCONTENT))
+
+DEPF = $(wildcard $(DEPDIR)/*.d) $(wildcard $(DEPDIR)/$(LIBC)/*.d)
 
 OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
       $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCC))   \
@@ -73,23 +76,23 @@ runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
 
 $(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a Makefile
-	@mkdir -p $(OUTDIR)
+	@mkdir -p `dirname $@`
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a Makefile
-	@mkdir -p $(OUTDIR)
-	@mkdir -p $(DEPDIR)
+	@mkdir -p `dirname $@`
+	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)`
 	$(CC) $(CFLAGS)  -c $< -o $@
 	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
 
 $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
-	@mkdir -p $(OUTDIR)
-	@mkdir -p $(DEPDIR)
+	@mkdir -p `dirname $@`
+	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)`
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	@$(CXX) -isystem libc -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
 
-$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupt.py Makefile
-	python3 $(SRCDIR)/Interrupt.py > $(OUTDIR)/InterruptInt.s
+$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupts/Interrupt.py Makefile
+	python3 $(SRCDIR)/Interrupts/Interrupt.py > $(OUTDIR)/InterruptInt.s
 	$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
 
 

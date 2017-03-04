@@ -1,8 +1,8 @@
 #ifndef PARTITION_H
 #define PARTITION_H
 
-#include "utility.h"
-#include "Bytes.h"
+#include "../utility.h"
+#include "../Bytes.h"
 
 class HDD;
 

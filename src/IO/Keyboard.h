@@ -1,8 +1,8 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#include "utility.h"
-#include "Deque.h"
+#include "../utility.h"
+#include "../Deque.h"
 
 struct Keycode {
     u32 flags;
@@ -41,6 +41,9 @@ class Keyboard {
         bool _lastIsE0;
         const Keymap* _keymap;
 };
+
+
+extern Keyboard kbd;
 
 #endif
 

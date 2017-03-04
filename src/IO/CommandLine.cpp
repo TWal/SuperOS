@@ -1,5 +1,6 @@
 #include "CommandLine.h"
-#include "globals.h"
+#include "FrameBuffer.h"
+#include "Keyboard.h"
 
 using namespace std;
 
@@ -8,12 +9,12 @@ CommandLine::CommandLine(table_type table):_table(table){
     //builtin commands here
     _table.insert(make_pair("echo",[](CommandLine*,const vector<string>& args){
                 for(auto s : args){
-                    fb.printf("%s ",s.c_str());
+                    printf("%s ",s.c_str());
                 }
                 fb.printf("\n");
             }));
     _table.insert(make_pair("help",[](CommandLine*,const vector<string>&){
-                fb.printf(
+                printf(
                     "Help of Super OS (tm) : \n"
                     "Builtin Commands :\n"
                     "  echo <arg> : print argument <arg>\n"
@@ -51,12 +52,12 @@ CommandLine::CommandLine(table_type table):_table(table){
 }
 void CommandLine::run(){
     while(true) {
-        fb.printf("$ ");
+        printf("$ ");
         auto input = readCommand();
         if(input.size() == 0) continue;
         auto it = _table.find(input[0]);
         if(it == _table.end()){
-            fb.printf("Command %s not found\n",input[0].c_str());
+            printf("Command %s not found\n",input[0].c_str());
             continue;
         }
         input.erase(input.begin());

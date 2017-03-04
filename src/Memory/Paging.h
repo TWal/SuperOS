@@ -1,7 +1,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "utility.h"
+#include "../utility.h"
 
 struct PageDirectoryEntry {
     bool present : 1;
@@ -74,5 +74,7 @@ void kfree(void* ptr);
 extern "C" PageDirectoryEntry PDElower[1024] __attribute__((section(".data.lower")));
 extern "C" PageDirectoryEntry* PDE;
 extern "C" PageTable PT[1<<20] __attribute__((section(".data.PT")));
+
+extern Paging paging;
 
 #endif

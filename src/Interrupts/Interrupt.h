@@ -1,7 +1,7 @@
 #ifndef INTERRUPT_H
 #define INTERRUPT_H
 
-#include"utility.h"
+#include "../utility.h"
 
 
 struct InterruptEntry {
@@ -156,6 +156,8 @@ u32 interruptr(u32 eax,u32 ebx){
         );
     return res;
 }
+
+extern InterruptTable idt;
 
 
 

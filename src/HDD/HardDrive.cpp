@@ -1,6 +1,5 @@
 #include <string.h>
 #include "HardDrive.h"
-#include "globals.h"
 
 static const u16 bus1BasePort = 0x1F0;
 static const u16 bus1SpecialPort = 0x3F6;
@@ -13,7 +12,7 @@ StatusByte::StatusByte(u8 byte){
 }
 
 void StatusByte::printStatus(){
-    fb.printf("byte: %u,error : %d, ready : %d, busy : %d\n",
+    printf("byte: %u,error : %d, ready : %d, busy : %d\n",
               *reinterpret_cast<uchar*>(this),error,ready,busy);
 }
 

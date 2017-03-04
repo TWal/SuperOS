@@ -81,3 +81,5 @@ void __attribute__((optimize("O0"))) GDTDescriptor::switchSegReg(){
         : : "%eax"
         );
 }
+
+GDTDescriptor gdt;

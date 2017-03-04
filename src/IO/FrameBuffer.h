@@ -1,7 +1,7 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include "utility.h"
+#include "../utility.h"
 
 class FrameBuffer {
     public:
@@ -51,6 +51,9 @@ class FrameBuffer {
 };
 
 extern "C" void printf(const char* s, ...);
+
+extern FrameBuffer fb;
+
 
 #endif
 

@@ -1,6 +1,5 @@
 #include "Paging.h"
-#include "utility.h"
-#include "globals.h"
+#include "PhysicalMemoryAllocator.h"
 
 PageDirectoryEntry PDElower[1024];
 PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + THREEGB);
@@ -234,5 +233,6 @@ void kfree(void* ptr) {
         *getNextBoundaryTag(head) = *head;
     }
 }
+Paging paging;
 
 
