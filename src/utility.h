@@ -98,12 +98,13 @@ extern "C" void bsod(const char* s, ...);
 
 #define cli asm volatile("cli");
 #define sti asm volatile("sti");
+#define stop asm volatile("xchg %bx,%bx ; cli ; hlt");
 
 std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
 std::string concat(std::vector<std::string> strs,char separator);
 
 #define WAIT(time) do { \
-        for(volatile int i = 0 ; i < time ; ++i); \
+        for(volatile u64 i = 0 ; i < time ; ++i); \
     } while(false)
 
 #endif

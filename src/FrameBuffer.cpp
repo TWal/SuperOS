@@ -132,7 +132,7 @@ void FrameBuffer::printDigit(int d, bool updateCurs) {
     if(updateCurs) updateCursor();
 }
 
-void FrameBuffer::printInt(int n, uint base, uint padding, bool updateCurs) {
+void FrameBuffer::printInt(lint n, uint base, uint padding, bool updateCurs) {
     if(n < 0) {
         putc('-', false);
         n = -n;
@@ -140,8 +140,8 @@ void FrameBuffer::printInt(int n, uint base, uint padding, bool updateCurs) {
     printUInt(n,base,padding,updateCurs);
 }
 
-void FrameBuffer::printUInt(uint n, uint base, uint padding, bool updateCurs){
-    uint i = 1;
+void FrameBuffer::printUInt(ulint n, uint base, uint padding, bool updateCurs){
+    ulint i = 1;
     while(n/i >= base) {
         i *= base;
         if(padding > 0) {
@@ -178,19 +178,59 @@ void FrameBuffer::vprintf(const char* s, va_list ap) {
             padding = 10*padding + (*s - '0');
             ++s;
         }
+        int length = 0; // int = 0, long = 1, long long = 2
+        if(*s == 'l'){
+            ++length;
+            ++s;
+        }
+        if(*s == 'l'){
+            ++length;
+            ++s;
+        }
         if(*s == '%') {
             putc('%', false);
             ++s;
         } else if(*s == 'u') {
-            printUInt(va_arg(ap, uint), 10, padding, false);
+            switch(length){
+                case 0:
+                    printUInt(va_arg(ap, uint), 10, padding, false);
+                    break;
+                case 1:
+                    printUInt(va_arg(ap, unsigned long int), 10, padding, false);
+                    break;
+                case 2:
+                    printUInt(va_arg(ap, ulint), 10, padding, false);
+                    break;
+            }
             ++s;
         } else if(*s == 'd') {
-            printInt(va_arg(ap, int), 10, padding, false);
+            switch(length){
+                case 0:
+                    printInt(va_arg(ap, int), 10, padding, false);
+                    break;
+                case 1:
+                    printInt(va_arg(ap, long int), 10, padding, false);
+                    break;
+                case 2:
+                    printInt(va_arg(ap, lint), 10, padding, false);
+                    break;
+            }
             ++s;
-        } else if(*s == 'x'|| *s == 'p') {
-            //putc('0', false); // wrong relatively to the standard
-            //putc('x', false);
-            printUInt(va_arg(ap, int), 16, padding, false);
+        } else if(*s == 'x') {
+            switch(length){
+                case 0:
+                    printUInt(va_arg(ap, uint), 16, padding, false);
+                    break;
+                case 1:
+                    printUInt(va_arg(ap, unsigned long int), 16, padding, false);
+                    break;
+                case 2:
+                    printUInt(va_arg(ap, ulint), 16, padding, false);
+                    break;
+            }
+            ++s;
+        } else if(*s == 'p') {
+            printUInt(va_arg(ap, uptr), 16, padding, false);
             ++s;
         } else if(*s == 's') {
             puts(va_arg(ap, char*), false);
