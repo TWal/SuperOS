@@ -138,6 +138,10 @@ void HDD::readaddr (u64 addr, void * data, size_t size) const{
         size--;
     }
     for( ;size > 1; size -=2 ){
+        if(count % 256 == 0) {
+            while(!getStatus().isReadyOrFailed()){}
+            assert(getStatus().isOk());
+        }
         ++count;
         *reinterpret_cast<u16*>(data) = inw(_basePort);
         data = reinterpret_cast<u16*>(data) +1;
@@ -152,7 +156,6 @@ void HDD::readaddr (u64 addr, void * data, size_t size) const{
         ++count;
         inw(_basePort);
     }
-
 }
 
 PartitionTableEntry HDD::operator[](u8 i) const{

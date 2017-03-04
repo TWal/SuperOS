@@ -52,6 +52,10 @@ LIBCXXSRC = $(wildcard $(LIBCXX)/src/*.cpp)
 LIBCXXOBJ = $(patsubst $(LIBCXX)/src/%.cpp,$(OUTDIR)/$(LIBCXX)/%.o,$(LIBCXXSRC))
 LIBCXXH = $(wildcard $(LIBCXX)/*) $(wildcard $(LIBCXX)/include/*.h)
 
+FSTYPE = ext2
+MKFSARGS = -b 2048
+#FSTYPE = fat
+#MKFSARGS = -F 32
 
 all: kernel.elf
 
@@ -133,7 +137,7 @@ load: disk.img
 partition:
 	sudo echo "," | sudo sfdisk $(LOOPDEV)
 	sudo partprobe $(LOOPDEV)
-	sudo mkfs.fat -F 32 $(LOOPDEV)p1
+	sudo mkfs.$(FSTYPE) $(MKFSARGS) $(LOOPDEV)p1
 
 unload:
 	sudo losetup -d $(LOOPDEV)
@@ -153,7 +157,7 @@ ulm: umount unload
 
 
 grubinst:
-	sudo grub-install --root-directory=$(MNTPATH) --no-floppy --modules="normal part_msdos fat multiboot" --target=i386-pc $(LOOPDEV)
+	sudo grub-install --root-directory=$(MNTPATH) --no-floppy --modules="normal part_msdos $(FSTYPE) multiboot" --target=i386-pc $(LOOPDEV)
 
 mvtoimg: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf

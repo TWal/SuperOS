@@ -9,7 +9,7 @@ class Directory;
 
 enum class FileType {
     File, Directory
-        };
+};
 
 class File : public HDDBytes {
     std::string _name;

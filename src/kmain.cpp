@@ -15,6 +15,7 @@
 #include <functional>
 #include "multiboot.h"
 #include "Interrupts/Pic.h"
+#include "HDD/Ext2.h"
 
 using namespace std;
 
@@ -86,23 +87,15 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(14, pagefault);
     sti; // enable interruption
 
-#define BLA 42
+#define BLA 0
 #define EMUL // comment for LORDI version
-#if BLA == -1
-    volatile int i = ((int*)(nullptr))[42];
-
-    return;
-#elif BLA == 0
-
-    char* p1 = (char*)malloc(13);
-    char* p2 = (char*)malloc(19);
-    char* p3 = (char*)malloc(23);
-    char* p4 = (char*)malloc(27);
-    fb.printf("%x %x %x %x\n", p1, p2, p3, p4);
-    free(p2);
-    char* p5 = (char*)malloc(21);
-    fb.printf("%x\n", p5);
-    while(1) asm volatile ("cli;hlt");
+#if BLA == 0
+    HDD first(1,true);
+    first.init();
+    PartitionTableEntry part1 = first[1];
+    fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
+    Partition pa1 (&first,part1);
+    Ext2::FS fs (&pa1);
 
 #elif BLA == 1
     HDD first(1,true);
