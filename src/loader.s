@@ -23,7 +23,19 @@ kernel_stack_lower:
 
 loaderbefore:
     mov $(STACKSIZE + kernel_stack_lower),%esp
-    push %ebx #multiboot info pointer is in %ebx
+    push %ebx # multiboot info pointer is in %ebx
+
+    #setting up long mode
+    mov $0x80000000,%eax      # is there high code request ?
+    cpuid                     # CPU identification.
+    cmp 0x80000001, %eax      # Compare the A-register with 0x80000001.
+    jb invProc
+
+    mov 0x80000001,%eax
+    cpuid
+    test $(1<<29),%edx
+    jz invProc
+
     call setupBasicPaging
     pop %ecx #now it is in %ecx
     #give the address of PDE
@@ -42,6 +54,10 @@ loaderbefore:
     lea loader, %ebx
     jmp *%ebx
 
+invProc:
+    cli
+    hlt
+
 .text
 loader:
     mov $(HEAPSTACKSIZE + kernel_heapstack),%esp
@@ -50,5 +66,6 @@ loader:
     call kmain
     pop %ecx
     xchg %bx,%bx
+
 loop:
     jmp loop
