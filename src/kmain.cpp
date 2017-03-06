@@ -97,6 +97,14 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     Partition pa1 (&first,part1);
     Ext2::FS fs (&pa1);
 
+    idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
+
+    CommandLine cl;
+    cl.pwd = fs.getRoot();
+    cl.run();
+
 #elif BLA == 1
     HDD first(1,true);
     first.init();
@@ -175,6 +183,7 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
 
     cl.run(); //run command line
 #endif
+    while(true) asm volatile("cli;hlt");
 }
 
 extern "C" void __cxa_pure_virtual (){}
