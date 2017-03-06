@@ -199,6 +199,8 @@ void* kmalloc(size_t size) {
 }
 
 void kfree(void* ptr) {
+    if(ptr == nullptr) return;
+
     MallocHeader* head = ptrToHeader(ptr);
     //free the block
     assert(!head->free && "This is probably a double free!");
