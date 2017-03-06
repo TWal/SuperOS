@@ -122,7 +122,7 @@ namespace std{
             pointer data = _alloc.allocate(capacity);
             if(_data){
                 for(int i = 0 ; i < _size ; ++i){
-                    data[i] = move(_data[i]);
+                    new(&data[i]) T(move(_data[i]));
                 }
                 _alloc.deallocate(_data,_capacity);
             }
