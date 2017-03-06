@@ -16,19 +16,10 @@ extern "C" {
     const char * strchr ( const char * str, int character );
     int strcmp ( const char * str1, const char * str2 );
     char * strcpy ( char * destination, const char * source );
+    char * strncpy ( char * destination, const char * source, size_t num);
     size_t strcspn ( const char * str1, const char * str2 );
     size_t strlen ( const char * str );
 
-
-#define strcpy __builtin_strcpy
-#define strcspn __builtin_strcspn
-#define strncat __builtin_strncat
-#define strncmp __builtin_strncmp
-#define strncpy __builtin_strncpy
-#define strpbrk __builtin_strpbrk
-#define strrchr __builtin_strrchr
-#define strspn __builtin_strspn
-#define strstr __builtin_strstr
 
 #ifdef __cplusplus
 }

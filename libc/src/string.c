@@ -44,6 +44,18 @@ char * strcpy ( char * destination, const char * source ){
     return __builtin_strcpy(destination,source);
 }
 
+char* strncpy (char* dest, const char* src, size_t n) {
+    //return __builtin_strncpy(dest, src, n);
+    size_t i;
+    for(i = 0; i < n && src[i] != '\0'; ++i) {
+        dest[i] = src[i];
+    }
+    for(; i < n; ++i) {
+        dest[i] = '\0';
+    }
+    return dest;
+}
+
 size_t strcspn ( const char * str1, const char * str2 ){
     return __builtin_strcspn(str1,str2);
 }
