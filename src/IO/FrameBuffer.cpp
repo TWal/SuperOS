@@ -254,6 +254,38 @@ void FrameBuffer::printf(const char* s, ...) {
     va_end(ap);
 }
 
+void FrameBuffer::hexdump(void* mem, uint len) {
+    const uint HEXDUMP_COLS = 16;
+    for(uint i = 0; i < len + ((len % HEXDUMP_COLS) ? (HEXDUMP_COLS - len % HEXDUMP_COLS) : 0); i++) {
+        if(i % HEXDUMP_COLS == 0) {
+            printf("0x%06x: ", i);
+        }
+
+        if(i < len) {
+            printf("%02x", 0xFF&((char*)mem)[i]);
+            if(i%2 == 1) {
+                putc(' ');
+            }
+        } else {
+            printf("   ");
+        }
+
+        if(i % HEXDUMP_COLS == (HEXDUMP_COLS - 1)) {
+            for(uint j = i - (HEXDUMP_COLS - 1); j <= i; j++) {
+                char c = ((char*)mem)[j];
+                if(j >= len) {
+                    putc(' ');
+                } else if(' ' <= c && c <= '~') {
+                    putc(c);
+                } else {
+                    putc('.');
+                }
+            }
+            putc('\n');
+        }
+    }
+}
+
 FrameBuffer fb;
 
 void printf(const char* s, ...) {

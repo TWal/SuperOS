@@ -21,6 +21,8 @@ class FrameBuffer {
         void printUInt(ulint n, uint base, uint padding=0, bool updateCurs=true);
         void vprintf(const char* s, va_list ap);
         void printf(const char* s, ...);
+        void hexdump(void* mem, uint len);
+
 
         enum Color {
             BLACK = 0,
