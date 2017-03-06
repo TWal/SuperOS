@@ -21,8 +21,8 @@ public :
     inline virtual u32 getLBASize() const{
         return (getSize()+511L)/512L;
     }
-    virtual void writelba (u32 LBA , const void* data, u32 nbsector) = 0;
-    virtual void readlba (u32 LBA, void * data, u32 nbsector) const = 0;
+    virtual void writelba (u32 LBA , const void* data, u32 nbsector);
+    virtual void readlba (u32 LBA, void * data, u32 nbsector) const;
 
 };
 
