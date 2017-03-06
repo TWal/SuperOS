@@ -12,11 +12,7 @@ enum class FileType {
 };
 
 class File : public HDDBytes {
-    std::string _name;
     public:
-    std::string getName(){return _name;}
-    //virtual void setName(const std::string& name) = 0;
-    //virtual Directory * getParent() = 0; // null => root directory
     virtual FileType getType();
     virtual Directory * dir() {return nullptr;};
 };
