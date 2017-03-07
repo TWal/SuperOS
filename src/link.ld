@@ -1,23 +1,7 @@
-ENTRY(loaderbefore)
+ENTRY(kmain)
+
 
 SECTIONS {
-    . = 0x00100000;
-
-    .text.lower ALIGN (0x1000) :
-    {
-        *(.text.lower)
-    }
-
-    .data.lower ALIGN (0x1000) :
-    {
-        *(.data.lower)
-    }
-
-    .bss.lower ALIGN (0x1000) :
-    {
-        *(.bss.lower)
-    }
-
     . = . + 0xC0000000;
 
     .text ALIGN (0x1000) : AT(ADDR(.text)-0xC0000000)
@@ -33,11 +17,6 @@ SECTIONS {
     .data ALIGN (0x1000) : AT(ADDR(.data)-0xC0000000)
     {
         *(.data)
-    }
-
-    .data.PT ALIGN (0x1000) :
-    {
-        *(.data.PT)
     }
 
     .bss ALIGN (0x1000) : AT(ADDR(.bss)-0xC0000000)

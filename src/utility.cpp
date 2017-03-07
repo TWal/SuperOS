@@ -1,23 +1,29 @@
+
+#ifdef SUP_OS_KERNEL
 #include "utility.h"
 #include "IO/FrameBuffer.h"
+#else
+#include "../src/utility.h"
+#include "../src/IO/FrameBuffer.h"
+#endif
 
 using namespace std;
 
 void outb(u16 port, u8 data) {
-    asm volatile("outb %0, %1" : : "r"(data), "r"(port));
+    asm volatile("outb %0, %1" : : "a"(data), "d"(port));
 }
 
 u8 inb(u16 port) {
     u8 res;
-    asm volatile("inb %1; movb %%al, %0" : "=r"(res) : "r"(port) : "%al");
+    asm volatile("inb %1; movb %%al, %0" : "=r"(res) : "d"(port) : "%al");
     return res;
 }
 void outw(u16 port, u16 data){
-    asm volatile("outw %0, %1" : : "r"(data), "r"(port));
+    asm volatile("outw %0, %1" : : "a"(data), "d"(port));
 }
 u16 inw(u16 port){
     u16 res;
-    asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "r"(port) : "%al");
+    asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "d"(port) : "%ax");
     return res;
 }
 
@@ -64,29 +70,3 @@ void bsod(const char* s, ...) {
 }
 
 
-vector<string> split(std::string str,char separator,bool keepEmpty){
-    vector<string> res ;
-    size_t pos = 0;
-    while (pos < str.size()){
-        size_t pos2 = str.find_first_of(separator,pos);
-        if (pos2 == string::npos){
-            res.push_back(str.substr(pos));
-            break;
-        }
-        if (keepEmpty || pos2 > pos){
-            res.push_back(str.substr(pos,pos2 - pos));
-        }
-        pos = pos2 +1;
-    }
-    return res;
-}
-
-std::string concat(std::vector<std::string> strs,char separator){
-    string res;
-    for(auto s : strs){
-        res.append(s);
-        res.push_back(separator);
-    }
-    res.pop_back();
-    return res;
-}

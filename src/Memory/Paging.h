@@ -3,7 +3,10 @@
 
 #include "../utility.h"
 
-struct PageDirectoryEntry {
+
+
+
+struct PageEntry {
     bool present : 1;
     bool readWrite : 1;
     bool user : 1;
@@ -11,14 +14,23 @@ struct PageDirectoryEntry {
     bool cacheDisable : 1;
     bool accessed : 1;
     bool zero : 1;
-    bool isSizeMega : 1;
+    bool isSizeMega : 1; // should be zero in higher level
     int nothing : 4;
-    u32 PTaddr : 20;
-    void setAddr(void* a);
-    void setAddr(uptr a);
+    u64 addr : 40;
+    u16 data : 10;
+    bool zero2 : 1;
+    inline void setAddr(void* a){
+        setAddr((uptr)a);
+    }
+    inline void setAddr(uptr a){
+        assert((a & ((1<<12)-1)) == 0 && a >> 52 == 0);
+        addr = a >> 12;
+    }
+    void setAddr32(void* a);
+    void setAddr32(u32 a);
 } __attribute__((packed));
 
-static_assert(sizeof(PageDirectoryEntry) == 4, "PageDirectoryEntry has the wrong size");
+static_assert(sizeof(PageEntry) == 8, "PageEntry has the wrong size");
 
 
 struct PageTable {
@@ -32,17 +44,26 @@ struct PageTable {
     bool zero : 1;
     bool global : 1;
     int nothing : 3;
-    u32 addr : 20;
-    void setAddr(void* a);
-    void setAddr(uptr a);
-    void* getAddr();
+    u64 addr : 40;
+    u16 data : 10;
+    bool zero2 : 1;
+    inline void setAddr(void* a){
+        setAddr((uptr)a);
+    }
+    inline void setAddr(uptr a){
+        assert((a & ((1<<12)-1)) == 0 && a >> 52 == 0);
+        addr = a >> 12;
+    }
+    inline void* getAddr(){
+        return (void*)(addr << 12);
+    }
 } __attribute__((packed));
 
-static_assert(sizeof(PageTable) == 4, "PageTable has the wrong size");
+static_assert(sizeof(PageTable) == 8, "PageTable has the wrong size");
 
-extern "C" void setupBasicPaging() __attribute__((section(".text.lower")));
+extern "C" void setupBasicPaging();
 
-class Paging {
+/*class Paging {
     public:
         Paging();
         int brk(void* paddr);
@@ -69,12 +90,16 @@ static_assert(sizeof(MallocHeader) == 4, "MallocHeader has the wrong size");
 
 void initkmalloc();
 void* kmalloc(size_t size);
-void kfree(void* ptr);
+void kfree(void* ptr);*/
 
-extern "C" PageDirectoryEntry PDElower[1024] __attribute__((section(".data.lower")));
-extern "C" PageDirectoryEntry* PDE;
-extern "C" PageTable PT[1<<20] __attribute__((section(".data.PT")));
+extern "C" PageEntry PML4lower[512] __attribute__((section(".data.pages")));
+extern "C" PageEntry PDPElower[512] __attribute__((section(".data.pages")));
+extern "C" PageEntry PDElower [512] __attribute__((section(".data.pages")));
+extern "C" PageEntry* PML4;
+extern "C" PageEntry* PDPE;
+extern "C" PageEntry* PDE;
+//extern "C" PageTable PT[1<<20] __attribute__((section(".data.PT")));
 
-extern Paging paging;
+//extern Paging paging;
 
 #endif

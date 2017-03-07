@@ -7,7 +7,7 @@ extern "C" uchar kernel_heapstack[];
 
 static uint heapoffset = 0;
 
-#if 1
+#if 0
 
 void* malloc(size_t size) {
     return kmalloc(size);

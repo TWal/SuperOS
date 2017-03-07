@@ -1,10 +1,14 @@
 kernel.elf
+loader.elf
 os.iso
 bochslog.txt
 iso/boot/kernel.elf
+iso/boot/loader.elf
 out/*
 ld_mapping
 ld_mapping_full
+ld_mapping_loader
+ld_mapping_full_loader
 disassembly
 .dep/*
 disk.img

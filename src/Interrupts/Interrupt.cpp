@@ -9,8 +9,8 @@ InterruptEntry::InterruptEntry() : offLow(0),segSelector(0x08),reserved0(0),
 }
 
 void InterruptEntry::setAddr(void* addr){
-    offLow = static_cast<ushort> (reinterpret_cast<uint>(addr));
-    offHigh = static_cast<ushort>(reinterpret_cast<uint>(addr)>>16);
+    offLow = static_cast<ushort> (reinterpret_cast<uptr>(addr));
+    offHigh = static_cast<ushort>(reinterpret_cast<uptr>(addr)>>16);
 }
 
 void* InterruptEntry::getAddr(){

@@ -3,6 +3,8 @@
 
 #include<iterator>
 #include <stdio.h>
+#include <vector>
+#include <string>
 
 namespace std {
     template <class ForwardIterator, class T>
@@ -77,6 +79,8 @@ namespace std {
         while (last!=first) *(--result) = *(--last);
         return result;
     }
+    std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
+    std::string concat(std::vector<std::string> strs,char separator);
 }
 
 #endif

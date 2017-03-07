@@ -1,6 +1,11 @@
+#ifdef SUP_OS_KERNEL
 #include "FrameBuffer.h"
+static char* const FB = (char*) (0xB8000 + HHOFFSET);
+#elif defined(SUP_OS_LOADER)
+#include "../src/IO/FrameBuffer.h"
+static char* const FB = (char*) (0xB8000);
+#endif
 
-static char* const FB = (char*) (0xB8000 + THREEGB);
 
 inline static char getColor(char fg, char bg) {
     return (fg & 0xF) | ((bg & 0xF) << 4);

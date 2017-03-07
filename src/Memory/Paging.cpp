@@ -1,58 +1,10 @@
 #include "Paging.h"
 #include "PhysicalMemoryAllocator.h"
-
+/*
 PageDirectoryEntry PDElower[1024];
 PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + THREEGB);
 PageTable PT[1<<20];
 const uint MAX_INIT_PAGE = 2;
-
-void PageDirectoryEntry::setAddr(void* a) {
-    setAddr((uptr)a);
-}
-
-void PageDirectoryEntry::setAddr(uptr a) {
-    assert((a & ((1<<12)-1)) == 0);
-    PTaddr = a >> 12;
-}
-
-void PageTable::setAddr(void* a) {
-    setAddr((uptr)a);
-}
-
-void PageTable::setAddr(uptr a) {
-    assert((a & ((1<<12)-1)) == 0);
-    addr = a >> 12;
-}
-
-void* PageTable::getAddr() {
-    return (void*)(addr << 12);
-}
-
-void setupBasicPaging() {
-    for(int i = 0; i < 1024; ++i) {
-        PDElower[i].present = false;
-        PDElower[i].readWrite = true;
-        PDElower[i].user = false;
-        PDElower[i].writeThrough = true;
-        PDElower[i].cacheDisable = false;
-        PDElower[i].accessed = false;
-        PDElower[i].zero = false;
-        PDElower[i].isSizeMega = false;
-        PDElower[i].nothing = 0;
-        PDElower[i].PTaddr = 0;
-    }
-    //Identity map the first 4Mb
-    PDElower[0].present = true;
-    PDElower[0].isSizeMega = true;
-    PDElower[0].PTaddr = 0;
-
-    //For the higher half kernel
-    for(u32 i = 0; i < MAX_INIT_PAGE; ++i) {
-        PDElower[768+i].present = true;
-        PDElower[768+i].isSizeMega = true;
-        PDElower[768+i].PTaddr = i<<10;
-    }
-}
 
 Paging::Paging() : _brk(THREEGB + (MAX_INIT_PAGE+4)*4*1024*1024), _truebrk(_brk) {
     for(u32 i = (MAX_INIT_PAGE+4); i < 256; ++i) {
@@ -233,6 +185,6 @@ void kfree(void* ptr) {
         *getNextBoundaryTag(head) = *head;
     }
 }
-Paging paging;
+    Paging paging;*/
 
 

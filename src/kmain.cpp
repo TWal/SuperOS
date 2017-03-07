@@ -2,7 +2,7 @@
 #include "IO/FrameBuffer.h"
 #include "utility.h"
 #include "Interrupts/Interrupt.h"
-#include "Memory/Segmentation.h"
+//#include "Memory/Segmentation.h"
 #include "IO/Keyboard.h"
 #include "Memory/Paging.h"
 #include "HDD/HardDrive.h"
@@ -13,12 +13,12 @@
 #include <memory>
 #include "IO/CommandLine.h"
 #include <functional>
-#include "multiboot.h"
+//#include "multiboot.h"
 #include "Interrupts/Pic.h"
 
 using namespace std;
 
-multibootInfo multiboot;
+//multibootInfo multiboot;
 
 typedef void(*funcp)();
 
@@ -71,8 +71,8 @@ void keyboard(const InterruptParams&){
 }
 
 
-extern "C" void kmain(multibootInfo* multibootinfo) {
-    multiboot = *multibootinfo;
+extern "C" void kmain(/*multibootInfo* multibootinfo*/) {
+/*    multiboot = *multibootinfo;
     PDE[0].present = false; // desactivate identity mapping;
     cli; // clear interruption
     init(); //C++ global contructors should not change machine state.
@@ -84,12 +84,11 @@ extern "C" void kmain(multibootInfo* multibootinfo) {
     idt.addInt(8, doublefault);
     idt.addInt(13, gpfault);
     idt.addInt(14, pagefault);
-    sti; // enable interruption
+    sti; // enable interruption*/
 
-#define BLA 42
+#define BLA -1
 #define EMUL // comment for LORDI version
 #if BLA == -1
-    volatile int i = ((int*)(nullptr))[42];
 
     return;
 #elif BLA == 0
