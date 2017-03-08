@@ -7,19 +7,6 @@ namespace Elf64 {
 
 class SectionHeader;
 class ProgramHeader;
-class Header;
-
-class Elf64 {
-    public:
-        Elf64(char* data, size_t size);
-        SectionHeader& getSectionHeader(uint i);
-        ProgramHeader& getProgramHeader(uint i);
-        Header& head();
-    private:
-        char* _data;
-        size_t _size;
-        Header* _head;
-};
 
 struct Header {
     u8 ident[16];  // ELF identification 
@@ -36,6 +23,18 @@ struct Header {
     u16 shentsize; // Size of section header entry 
     u16 shnum;     // Number of section header entries 
     u16 shstrndx;  // Section name string table index 
+};
+
+class Elf64 : public Header {
+    public:
+        Elf64(char* data, size_t size);
+        SectionHeader getSectionHeader(uint i);
+        ProgramHeader getProgramHeader(uint i);
+    private:
+        friend class SectionHeader;
+        friend class ProgramHeader;
+        char* _data;
+        size_t _size;
 };
 
 //We shouldn't need __attribute__((packed))
@@ -74,7 +73,11 @@ const u16 ET_HIOS = 0xFEFF;
 const u16 ET_LOPROC = 0xFF00; // Processor-specific use
 const u16 ET_HIPROC = 0xFFFF;
 
-struct SectionHeader {
+// =========================
+// ===== SectionHeader =====
+// =========================
+
+struct SectionHeaderData {
     u32 name;      // Section name 
     u32 type;      // Section type 
     u64 flags;     // Section attributes 
@@ -85,12 +88,21 @@ struct SectionHeader {
     u32 info;      // Miscellaneous information 
     u64 addralign; // Address alignment boundary 
     u64 entsize;   // Size of entries, if section has table 
-    void* getData();
 };
 
-static_assert(sizeof(SectionHeader) == 64);
+static_assert(sizeof(SectionHeaderData) == 64);
 
-//SectionHeader::type values
+class SectionHeader : public SectionHeaderData {
+    public:
+        SectionHeader(Elf64* parent, uint index);
+        char* getName();
+        void* getData();
+    private:
+        Elf64* _parent;
+};
+
+
+//SectionHeaderData::type values
 const u32 SHT_NULL = 0;            // Marks an unused section header
 const u32 SHT_PROGBITS = 1;        // Contains information defined by the program
 const u32 SHT_SYMTAB = 2;          // Contains a linker symbol table
@@ -108,12 +120,16 @@ const u32 SHT_HIOS = 0x6FFFFFFF;
 const u32 SHT_LOPROC = 0x70000000; // Processor-specific use
 const u32 SHT_HIPROC = 0x7FFFFFFF;
 
-//SectionHeader::flags values
+//SectionHeaderData::flags values
 const u64 SHF_WRITE = 0x1;           // Section contains writable data
 const u64 SHF_ALLOC = 0x2;           // Section is allocated in memory image of program
 const u64 SHF_EXECINSTR = 0x4;       // Section contains executable instructions
 const u64 SHF_MASKOS = 0x0F000000;   // Environment-specific use
 const u64 SHF_MASKPROC = 0xF0000000; // Processor-specific use
+
+// ========================
+// ======== Symbol ========
+// ========================
 
 struct Symbol {
     u32 name;  // Symbol name 
@@ -147,7 +163,12 @@ const u8 STT_HIOS = 12;
 const u8 STT_LOPROC = 13; // Processor-specific use
 const u8 STT_HIPROC = 15;
 
-struct ProgramHeader {
+
+// =========================
+// ===== ProgramHeader =====
+// =========================
+
+struct ProgramHeaderData {
     u32 type;   // Type of segment 
     u32 flags;  // Segment attributes 
     u64 offset; // Offset in file 
@@ -156,10 +177,20 @@ struct ProgramHeader {
     u64 filesz; // Size of segment in file 
     u64 memsz;  // Size of segment in memory 
     u64 align;  // Alignment of segment 
-    void* getData();
 };
 
-//ProgramHeader::type
+static_assert(sizeof(ProgramHeaderData) == 56);
+
+class ProgramHeader : public ProgramHeaderData {
+    public:
+        ProgramHeader(Elf64* parent, uint index);
+        void* getData();
+    private:
+        Elf64* _parent;
+};
+
+
+//ProgramHeaderData::type
 const u32 PT_NULL = 0;            // Unused entry
 const u32 PT_LOAD = 1;            // Loadable segment
 const u32 PT_DYNAMIC = 2;         // Dynamic linking tables
@@ -172,13 +203,12 @@ const u32 PT_HIOS = 0x6FFFFFFF;
 const u32 PT_LOPROC = 0x70000000; // Processor-specific use
 const u32 PT_HIPROC = 0x7FFFFFFF;
 
-//ProgramHeader::flags
+//ProgramHeaderData::flags
 const u32 PF_X = 0x1;               // Execute permission
 const u32 PF_W = 0x2;               // Write permission
 const u32 PF_R = 0x4;               // Read permission
 const u32 PF_MASKOS = 0x00FF0000;   // These flag bits are reserved for environment-specific use
 const u32 PF_MASKPROC = 0xFF000000; // These flag bits are reserved for processor-specific use
-
 
 }
 

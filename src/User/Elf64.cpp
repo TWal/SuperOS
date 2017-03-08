@@ -3,41 +3,46 @@
 namespace Elf64 {
 
 Elf64::Elf64(char* data, size_t size) :
-    _data(data), _size(size), _head((Header*)data) {
-    assert(_head->ident[EI_MAG0] == 0x7f);
-    assert(_head->ident[EI_MAG1] == 'E');
-    assert(_head->ident[EI_MAG2] == 'L');
-    assert(_head->ident[EI_MAG3] == 'F');
-    assert(_head->phentsize == sizeof(ProgramHeader));
-    assert(_head->shentsize == sizeof(SectionHeader));
-    for(u16 i = 0; i < _head->shnum; ++i) {
-        getSectionHeader(i).offset += (u64)data;
-    }
-    for(u16 i = 0; i < _head->phnum; ++i) {
-        getProgramHeader(i).offset += (u64)data;
-    }
+    Header(*(Header*)data), _data(data), _size(size) {
+
+    assert(ident[EI_MAG0] == 0x7f);
+    assert(ident[EI_MAG1] == 'E');
+    assert(ident[EI_MAG2] == 'L');
+    assert(ident[EI_MAG3] == 'F');
+    assert(phentsize == sizeof(ProgramHeaderData));
+    assert(shentsize == sizeof(SectionHeaderData));
 }
 
-SectionHeader& Elf64::getSectionHeader(uint i) {
-    assert(i < _head->shnum);
-    return *(SectionHeader*)(_data + _head->shoff + i*_head->shentsize);
+SectionHeader Elf64::getSectionHeader(uint i) {
+    assert(i < shnum);
+    return SectionHeader(this, i);
 }
 
-ProgramHeader& Elf64::getProgramHeader(uint i) {
-    assert(i < _head->phnum);
-    return *(ProgramHeader*)(_data + _head->phoff + i*_head->phentsize);
+ProgramHeader Elf64::getProgramHeader(uint i) {
+    assert(i < phnum);
+    return ProgramHeader(this, i);
 }
 
-Header& Elf64::head() {
-    return *_head;
+
+SectionHeader::SectionHeader(Elf64* parent, uint index) :
+    SectionHeaderData(*(SectionHeaderData*)(parent->_data + parent->shoff + index*parent->shentsize)),
+    _parent(parent) {}
+
+char* SectionHeader::getName() {
+    return (char*)_parent->getSectionHeader(_parent->shstrndx).getData() + name;
 }
 
 void* SectionHeader::getData() {
-    return (void*)offset;
+    return _parent->_data + offset;
 }
 
+
+ProgramHeader::ProgramHeader(Elf64* parent, uint index) :
+    ProgramHeaderData(*(ProgramHeaderData*)(parent->_data + parent->phoff + index*parent->phentsize)),
+    _parent(parent) {}
+
 void* ProgramHeader::getData() {
-    return (void*)offset;
+    return _parent->_data + offset;
 }
 
 }
