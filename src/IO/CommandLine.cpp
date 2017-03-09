@@ -78,7 +78,11 @@ CommandLine::CommandLine(table_type table):_table(table){
             printf("\n");
         }
     }));
+    _table.insert(make_pair("reboot", [](CommandLine*, const vector<string>&) {
+        reboot();
+    }));
 }
+
 void CommandLine::run(){
     while(true) {
         printf("$ ");

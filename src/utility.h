@@ -82,6 +82,8 @@ inline void* getCR2(){
 void vbsod(const char* s, va_list ap);
 extern "C" void bsod(const char* s, ...);
 
+void reboot();
+
 //Trick to have S__LINE _ a string containing the line number
 #define __S(x) #x
 #define __S_(x) __S(x)

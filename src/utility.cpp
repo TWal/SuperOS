@@ -1,5 +1,6 @@
 #include "utility.h"
 #include "IO/FrameBuffer.h"
+#include "Interrupts/Interrupt.h"
 
 using namespace std;
 
@@ -61,6 +62,13 @@ void bsod(const char* s, ...) {
     va_start(ap, s);
     vbsod(s, ap);
     va_end(ap);
+}
+
+void reboot() {
+    IDT[0].present = false; //remove div0
+    IDT[8].present = false; //remove double fault;
+    volatile int i = 0;
+    volatile int j = 42/i;
 }
 
 
