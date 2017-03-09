@@ -7,48 +7,77 @@ using namespace std;
 CommandLine::CommandLine(table_type table):_table(table){
 
     //builtin commands here
-    _table.insert(make_pair("echo",[](CommandLine*,const vector<string>& args){
-                for(auto s : args){
-                    printf("%s ",s.c_str());
-                }
-                fb.printf("\n");
-            }));
-    _table.insert(make_pair("help",[](CommandLine*,const vector<string>&){
-                printf(
-                    "Help of Super OS (tm) : \n"
-                    "Builtin Commands :\n"
-                    "  echo <arg> : print argument <arg>\n"
-                    );
-            }));
-    _table.insert(make_pair("ls",[](CommandLine*cl ,const vector<string>&){
-                if(!cl->pwd) {
-                    printf("fatal error : no pwd set\n");
-                    return;
-                }
-                auto v = cl->pwd->getFilesName();
-                for(auto f : v) printf("%s ",f.c_str());
-                printf("\n");
-        }));
+    _table.insert(make_pair("echo", [](CommandLine*, const vector<string>& args) {
+        for(auto s : args) {
+            printf("%s ", s.c_str());
+        }
+        fb.printf("\n");
+    }));
 
-    _table.insert(make_pair("cd",[](CommandLine*cl ,const vector<string>&args ){
-                if(!cl->pwd) {
-                    printf("fatal error : no pwd set\n");
-                    return;
-                }
-                if(args.empty()) return;
-                File* f = (*cl->pwd)[args[0]];
-                if(f == nullptr) {
-                    printf("%s doesn't exist in current directory\n",args[0].c_str());
-                    return;
-                }
-                Directory * d = f->dir();
-                if(d == nullptr){
-                    printf("%s is not a directory\n",args[0].c_str());
-                    return;
-                }
-                cl->pwd = d;
-                }));
+    _table.insert(make_pair("help",[](CommandLine*, const vector<string>&) {
+        printf(
+            "Help of Super OS (tm) : \n"
+            "Builtin Commands :\n"
+            "  echo <arg> : print argument <arg>\n"
+        );
+    }));
 
+    _table.insert(make_pair("ls", [](CommandLine* cl, const vector<string>&) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        auto v = cl->pwd->getFilesName();
+        for(auto f : v) printf("%s ",f.c_str());
+        printf("\n");
+    }));
+
+    _table.insert(make_pair("cd", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        File* f = (*cl->pwd)[args[0]];
+        if(f == nullptr) {
+            printf("%s doesn't exist in current directory\n",args[0].c_str());
+            return;
+        }
+        Directory* d = f->dir();
+        if(d == nullptr) {
+            printf("%s is not a directory\n",args[0].c_str());
+            return;
+        }
+        cl->pwd = d;
+    }));
+
+    _table.insert(make_pair("cat", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        for(const string& file : args) {
+            File* f = (*cl->pwd)[file];
+            if(f == nullptr) {
+                printf("cat: %s: No such file or directory\n", file.c_str());
+                continue;
+            }
+            if(f->getType() == FileType::Directory) {
+                printf("cat: %s: Is a directory\n", file.c_str());
+                continue;
+            }
+            char buffer[1025];
+            size_t size = f->getSize();
+            for(size_t i = 0; i < size; i += 1024) {
+                size_t count = min((size_t)1024, size-i);
+                f->readaddr(i, buffer, count);
+                buffer[count] = 0;
+                printf("%s", buffer);
+            }
+            printf("\n");
+        }
+    }));
 }
 void CommandLine::run(){
     while(true) {
