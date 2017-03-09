@@ -35,9 +35,12 @@ loaderbefore:
     or $0x10, %ebx
     mov %ebx, %cr4
 
-    #set PG
+    #set PG and CD
     mov %cr0, %ebx
-    or $0x80000000, %ebx
+    or $0x80000000, %ebx #PG
+    mov $0x40000000, %eax
+    not %eax
+    and %eax, %ebx #CD
     mov %ebx, %cr0
     lea loader, %ebx
     jmp *%ebx

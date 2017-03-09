@@ -78,7 +78,18 @@ int Paging::brk(void* paddr) {
         while(addr > _truebrk) {
             if((_truebrk & ((1<<22)-1)) == 0) {
                 for(int i = 0; i < 1024; ++i) {
-                    getPT(_truebrk)[i].present = false;
+                    PageTable* pt = &getPT(_truebrk)[i];
+                    pt->present = false;
+                    pt->readWrite = true;
+                    pt->user = false;
+                    pt->writeThrough = true;
+                    pt->cacheDisable = false;
+                    pt->accessed = false;
+                    pt->dirty = false;
+                    pt->zero = false;
+                    pt->global = false;
+                    pt->nothing = 0;
+                    pt->addr = 0;
                 }
                 getPDE(_truebrk)->present = true;
             }
