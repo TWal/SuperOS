@@ -77,6 +77,8 @@ startKernel:
 .code64
 startKernel64:
     movq 4(%rsp),%rax
+    movl 12(%rsp),%edi
+    movl 12(%rsp),%esp
     jmp *%rax # launching kernel
 
 

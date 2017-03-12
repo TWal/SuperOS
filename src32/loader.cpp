@@ -11,7 +11,7 @@
 
 
 extern "C" void enableLM(void* PML4); // physical adress for PML4
-extern "C" void startKernel(u64 KernelStartPoint, u16 seg64,KArgs* args); // virtual adress
+extern "C" void startKernel(u64 KernelStartPoint,KArgs* args,char* rsp); // virtual adress
 
 typedef void(*funcp)();
 
@@ -27,6 +27,15 @@ void init(){
         (*p)();
     }
 }
+
+template<typename T>
+void push(char*& rsp,T t){
+    rsp -= sizeof(T);
+    *reinterpret_cast<T*>(rsp) = t;
+}
+
+
+
 extern "C" void load(multibootInfo * mb){
     init();
     setupBasicPaging();
@@ -41,6 +50,10 @@ extern "C" void load(multibootInfo * mb){
     char* kernelAddr = (char*)mb->mods_addr[0].startAddr;
     char* kernelEnd = (char*)mb->mods_addr[0].endAddr;
     u32 kernelSize = kernelEnd - kernelAddr;
+    char * kernelStack = (char*)(((u64(kernelEnd) + 0x1000)/0x1000)*0x1000);
+    printf("Stack start %p",kernelStack);
+    char * kernelrsp = kernelStack + 0X1000;
+    int occupAreaSize = 0;
     printf("loader from 1MB to %p\n",&loader_code_end);
 
     printf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
@@ -64,14 +77,18 @@ extern "C" void load(multibootInfo * mb){
         printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
         if(ph.type == Elf64::PT_LOAD){
             createMapping(ph.getData(),ph.vaddr,(ph.filesz + 0x1000-1) / 0x1000);
+            push(kernelrsp,OccupArea{u32(ph.getData()),u32((ph.filesz + 0x1000-1) / 0x1000)});
+            ++occupAreaSize;
         }
 
     }
 
+    KArgs args;
+    args.PML4 = u64(PML4);
+    args.occupAreaSize = occupAreaSize;
+    args.occupArea = u64(kernelrsp);
+    args.stackAddr = u64(kernelStack);
+    push(kernelrsp,args);
 
-    Kernel ker;
-    //stop;
-    // starting kernel
-    //printf("%llx",kernelFile.entry);
-    startKernel(kernelFile.entry,EXEC64BITS,nullptr);
+    startKernel(kernelFile.entry,(KArgs*)kernelrsp,kernelrsp);
 }

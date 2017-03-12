@@ -211,8 +211,11 @@ clean:
 	rm -f disassembly
 	rm -f ld_mapping
 	rm -f ld_mapping_full
+	rm -f ld_mapping_loader
+	rm -f ld_mapping_full_loader
 	rm -f os.iso
 	rm -f kernel.elf
+	rm -f loader.elf
 	rm -f bochslog.txt
 	rm -f libc.a
 	rm -f libc++.a

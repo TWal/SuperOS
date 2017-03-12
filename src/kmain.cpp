@@ -26,14 +26,14 @@ typedef void(*funcp)();
 static_assert(sizeof(funcp) == 8);
 
 extern "C" {
-    extern u64 __init_array_start;
-    extern u64 __init_array_end;
+    extern funcp __init_array_start;
+    extern funcp __init_array_end;
 }
 
 extern "C" void* kernel_code_end;
 
 void init(){
-    funcp *beg = (funcp*)&__init_array_start, *end = (funcp*)& __init_array_end;
+    funcp *beg = &__init_array_start, *end = & __init_array_end;
     for (funcp*p = beg; p < end; ++p){
         (*p)();
     }
@@ -91,8 +91,8 @@ extern "C" void kmain(KArgs* kargs) {
 #define BLA -1
 #define EMUL // comment for LORDI version
 #if BLA == -1
-    //fb.clear();
-    fb.puts("64 bits kernel booted !!");
+    fb.printf("64 bits kernel booted with PML4 at %p and stack at %p!!",
+              kargs->PML4,kargs->stackAddr);
     stop;
 
 #elif BLA == 0
