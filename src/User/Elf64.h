@@ -9,20 +9,20 @@ class SectionHeader;
 class ProgramHeader;
 
 struct Header {
-    u8 ident[16];  // ELF identification 
-    u16 type;      // Object file type 
-    u16 machine;   // Machine type 
-    u32 version;   // Object file version 
-    u64 entry;     // Entry point address 
-    u64 phoff;     // Program header offset 
-    u64 shoff;     // Section header offset 
-    u32 flags;     // Processor-specific flags 
-    u16 ehsize;    // ELF header size 
-    u16 phentsize; // Size of program header entry 
-    u16 phnum;     // Number of program header entries 
-    u16 shentsize; // Size of section header entry 
-    u16 shnum;     // Number of section header entries 
-    u16 shstrndx;  // Section name string table index 
+    u8 ident[16];  // ELF identification
+    u16 type;      // Object file type
+    u16 machine;   // Machine type
+    u32 version;   // Object file version
+    u64 entry;     // Entry point virtual address
+    u64 phoff;     // Program header offset
+    u64 shoff;     // Section header offset
+    u32 flags;     // Processor-specific flags
+    u16 ehsize;    // ELF header size
+    u16 phentsize; // Size of program header entry
+    u16 phnum;     // Number of program header entries
+    u16 shentsize; // Size of section header entry
+    u16 shnum;     // Number of section header entries
+    u16 shstrndx;  // Section name string table index
 };
 
 class Elf64 : public Header {
@@ -78,16 +78,16 @@ const u16 ET_HIPROC = 0xFFFF;
 // =========================
 
 struct SectionHeaderData {
-    u32 name;      // Section name 
-    u32 type;      // Section type 
-    u64 flags;     // Section attributes 
-    u64 addr;      // Virtual address in memory 
-    u64 offset;    // Offset in file 
-    u64 size;      // Size of section 
-    u32 link;      // Link to other section 
-    u32 info;      // Miscellaneous information 
-    u64 addralign; // Address alignment boundary 
-    u64 entsize;   // Size of entries, if section has table 
+    u32 name;      // Section name
+    u32 type;      // Section type
+    u64 flags;     // Section attributes
+    u64 addr;      // Virtual address in memory
+    u64 offset;    // Offset in file
+    u64 size;      // Size of section
+    u32 link;      // Link to other section
+    u32 info;      // Miscellaneous information
+    u64 addralign; // Address alignment boundary
+    u64 entsize;   // Size of entries, if section has table
 };
 
 static_assert(sizeof(SectionHeaderData) == 64);
@@ -132,19 +132,19 @@ const u64 SHF_MASKPROC = 0xF0000000; // Processor-specific use
 // ========================
 
 struct Symbol {
-    u32 name;  // Symbol name 
+    u32 name;  // Symbol name
     int type : 4;
     int binding : 4;
-    u8 other;  // Reserved 
-    u16 shndx; // Section table index 
-    u64 value; // Symbol value 
-    u64 size;  // Size of object (e.g., common) 
+    u8 other;  // Reserved
+    u16 shndx; // Section table index
+    u64 value; // Symbol value
+    u64 size;  // Size of object (e.g., common)
 } __attribute__((packed));
 
 static_assert(sizeof(Symbol) == 24);
 
 //Symbol::binding values
-const u8 STB_LOCAL = 0;   // Not visible outside the object file 
+const u8 STB_LOCAL = 0;   // Not visible outside the object file
 const u8 STB_GLOBAL = 1;  // Global symbol, visible to all object files
 const u8 STB_WEAK = 2;    // Global scope, but with lower precedence than global symbols
 const u8 STB_LOOS = 10;   // Environment-specific use
@@ -169,14 +169,14 @@ const u8 STT_HIPROC = 15;
 // =========================
 
 struct ProgramHeaderData {
-    u32 type;   // Type of segment 
-    u32 flags;  // Segment attributes 
-    u64 offset; // Offset in file 
-    u64 vaddr;  // Virtual address in memory 
-    u64 paddr;  // Reserved 
-    u64 filesz; // Size of segment in file 
-    u64 memsz;  // Size of segment in memory 
-    u64 align;  // Alignment of segment 
+    u32 type;   // Type of segment
+    u32 flags;  // Segment attributes
+    u64 offset; // Offset in file
+    u64 vaddr;  // Virtual address in memory
+    u64 paddr;  // Reserved
+    u64 filesz; // Size of segment in file
+    u64 memsz;  // Size of segment in memory
+    u64 align;  // Alignment of segment
 };
 
 static_assert(sizeof(ProgramHeaderData) == 56);
@@ -211,6 +211,5 @@ const u32 PF_MASKOS = 0x00FF0000;   // These flag bits are reserved for environm
 const u32 PF_MASKPROC = 0xFF000000; // These flag bits are reserved for processor-specific use
 
 }
-
 #endif
 

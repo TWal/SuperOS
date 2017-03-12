@@ -3,11 +3,11 @@
     .global startKernel
 
     .equ MAGIC_NUMBER, 0x1BADB002
-    .equ FLAGS, 0x2 #information about memory
+    .equ FLAGS, 0x3 #information about memory + aligned modules
     .equ CHECKSUM, -MAGIC_NUMBER - FLAGS
     ## MAGICNUMBER + FLAGS + CHECKSUM = 0
 
-    .equ STACKSIZE, 4096
+    .equ STACKSIZE, 1024 * 16   # stack + heap
 
 
 .bss
@@ -23,7 +23,7 @@ loader:
     cli
     mov $(STACKSIZE + loader_stack),%esp
     push %ebx                 # multiboot info pointer is in %ebx
-    ## setting up long mode
+    ## checking long mode
     mov $0x80000000,%eax      # is there high code request ?
     cpuid                     # CPU identification.
     cmp $0x80000001, %eax     # Compare the A-register with 0x80000001.
@@ -36,9 +36,11 @@ loader:
     call load
 
 enableLM:
-    ## give the address of PDE
-                                #mov $PML4lower, %eax
-    mov 4(%esp),%eax
+    push %eax
+    push %ebx
+    push %ecx
+    push %edx
+    mov 20(%esp),%eax           # Argument is PML4 physical address
     mov %eax, %cr3
 
     ## set the PAE bit
@@ -57,20 +59,26 @@ enableLM:
     or $0x80000000, %ebx
     mov %ebx, %cr0
 
+    pop %edx
+    pop %ecx
+    pop %ebx
+    pop %eax
+
     ret
 
+invProc:                        #TODO real error handling (bsod).
+	    cli
+	    hlt
+
+
 startKernel:
-    xchg %bx,%bx
-    ljmp $0x18, $startKernel64
+    ljmp $0x18, $startKernel64  # jumping to 64-bit mode
 
 .code64
 startKernel64:
-    mov $4,%rax
-    shl $40,%rax
-    jmp invProc
+    movq 4(%rsp),%rax
+    jmp *%rax # launching kernel
 
 
 
-invProc:
-    cli
-    hlt
+

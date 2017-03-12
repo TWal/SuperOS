@@ -14,8 +14,9 @@ LIBC = libc
 LIBCXX = libc++
 
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
+LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O3 -mno-sse
+OPTILVL = -O1 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32
@@ -25,7 +26,8 @@ CBASEFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
 C32FLAGS = $(CBASEFLAGS) -m32 -DSUP_OS_LOADER
 CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
 				   -isystem $(LIBCXX)\
-				   -DSUP_OS_KERNEL
+				   -DSUP_OS_KERNEL \
+					 -mcmodel=large # 64 bit high-half kernel
 
 CXXBASEFLAGS = -fno-exceptions -fno-rtti
 CXX32FLAGS = $(C32FLAGS) $(CXXBASEFLAGS)
@@ -35,7 +37,7 @@ LDFLAGS =  -nostdlib -Wl,--build-id=none
 LD32FLAGS = $(LDFLAGS) -m32 -T $(SRC32DIR)/link.ld -Wl,-melf_i386
 LIBS32 = -L $(LIB32GCC) -lgcc
 LD64FLAGS = $(LDFLAGS) -T $(SRCDIR)/link.ld -Wl,-melf_x86_64
-LIBS64 = -L. #-L $(LIB32GCC) -lc -lgcc -lc++
+LIBS64 = -L. -L $(LIBGCC) -lc -lgcc -lc++
 
 SRC32ASM = $(wildcard $(SRC32DIR)/*.s)
 SRC32CXX = $(wildcard $(SRC32DIR)/*.cpp)
@@ -44,7 +46,7 @@ SRCCONTENT = $(shell find src -type f)
 
 SRCCONTENT = $(shell find src -type f)
 
-SRCASM = $(SRCDIR)/Bytes.cpp # hack to avoid having the linker crying
+SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp
 
 #SRCASM = $(filter %.s,$(SRCCONTENT))
 #SRCC = $(filter %.c,$(SRCCONTENT))

@@ -39,5 +39,5 @@ SECTIONS {
     __init_array_end = .;
     }
 
-    loader_code_end = . - 0xC0000000;
+    loader_code_end = .;
 }

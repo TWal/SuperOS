@@ -3,7 +3,9 @@
 
 #include "../utility.h"
 
-
+#define PDP_NUM 2 // Number of preloaded PageDirectoryPointer
+#define PD_NUM 2 // Number of preloaded PageDirectory
+#define PT_NUM 4 // Number of preloaded PageTables
 
 
 struct PageEntry {
@@ -14,7 +16,7 @@ struct PageEntry {
     bool cacheDisable : 1;
     bool accessed : 1;
     bool zero : 1;
-    bool isSizeMega : 1; // should be zero in higher level
+    bool isSizeMega : 1; // should be zero in higher level than PDE
     int nothing : 4;
     u64 addr : 40;
     u16 data : 10;
@@ -25,6 +27,9 @@ struct PageEntry {
     inline void setAddr(uptr a){
         assert((a & ((1<<12)-1)) == 0 && a >> 52 == 0);
         addr = a >> 12;
+    }
+    inline void* getAddr(){
+        return (void*)(addr << 12);
     }
     void setAddr32(void* a);
     void setAddr32(u32 a);
@@ -61,7 +66,35 @@ struct PageTable {
 
 static_assert(sizeof(PageTable) == 8, "PageTable has the wrong size");
 
-extern "C" void setupBasicPaging();
+void setupBasicPaging();
+void createMapping(void* phy,u64 virt);
+void createMapping(void* phy,u64 virt,int numPg);
+
+
+extern "C" PageEntry PML4[512] __attribute__((section(".data.pages")));
+extern "C" PageEntry PDPs[PDP_NUM][512] __attribute__((section(".data.pages")));
+extern "C" PageEntry PDs[PD_NUM][512] __attribute__((section(".data.pages")));
+extern "C" PageTable PTs[PT_NUM][512] __attribute__((section(".data.pages")));
+extern "C" u32 nbPDPused;
+extern "C" u32 nbPDused;
+extern "C" u32 nbPTused;
+
+
+inline int getPML4index(u64 addr){
+    return (addr >> (12+9+9+9)) & ((1 << 9)-1);
+}
+
+inline int getPDPindex(u64 addr){
+    return (addr >> (12+9+9)) & ((1 << 9)-1);
+}
+
+inline int getPDindex(u64 addr){
+    return (addr >> (12+9)) & ((1 << 9)-1);
+}
+
+inline int getPTindex(u64 addr){
+    return (addr >> 12) & ((1 << 9)-1);
+}
 
 /*class Paging {
     public:
@@ -92,13 +125,7 @@ void initkmalloc();
 void* kmalloc(size_t size);
 void kfree(void* ptr);*/
 
-extern "C" PageEntry PML4lower[512] __attribute__((section(".data.pages")));
-extern "C" PageEntry PDPElower[512] __attribute__((section(".data.pages")));
-extern "C" PageEntry PDElower [512] __attribute__((section(".data.pages")));
-extern "C" PageEntry* PML4;
-extern "C" PageEntry* PDPE;
-extern "C" PageEntry* PDE;
-//extern "C" PageTable PT[1<<20] __attribute__((section(".data.PT")));
+
 
 //extern Paging paging;
 

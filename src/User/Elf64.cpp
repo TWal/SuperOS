@@ -1,4 +1,9 @@
+#ifdef SUP_OS_KERNEL
 #include "Elf64.h"
+#else
+#include "../src/User/Elf64.h"
+#endif
+
 
 namespace Elf64 {
 

@@ -7,6 +7,7 @@ SECTIONS {
     .text ALIGN (0x1000) : AT(ADDR(.text)-0xC0000000)
     {
         *(.text)
+        _text_end = .;
     }
 
     .rodata ALIGN (0x1000) : AT(ADDR(.rodata)-0xC0000000)

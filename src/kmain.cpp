@@ -1,7 +1,8 @@
 
 #include "IO/FrameBuffer.h"
 #include "utility.h"
-#include "Interrupts/Interrupt.h"
+#include "../src32/KArgs.h"
+/*#include "Interrupts/Interrupt.h"
 //#include "Memory/Segmentation.h"
 #include "IO/Keyboard.h"
 #include "Memory/Paging.h"
@@ -14,7 +15,7 @@
 #include "IO/CommandLine.h"
 #include <functional>
 //#include "multiboot.h"
-#include "Interrupts/Pic.h"
+#include "Interrupts/Pic.h"*/
 
 using namespace std;
 
@@ -22,22 +23,24 @@ using namespace std;
 
 typedef void(*funcp)();
 
+static_assert(sizeof(funcp) == 8);
+
 extern "C" {
-    extern funcp __init_array_start;
-    extern funcp __init_array_end;
+    extern u64 __init_array_start;
+    extern u64 __init_array_end;
 }
 
 extern "C" void* kernel_code_end;
 
 void init(){
-    funcp *beg = & __init_array_start, *end = & __init_array_end;
+    funcp *beg = (funcp*)&__init_array_start, *end = (funcp*)& __init_array_end;
     for (funcp*p = beg; p < end; ++p){
         (*p)();
     }
 }
 
 //int 0
-void div0 (const InterruptParams& par){
+/*void div0 (const InterruptParams& par){
     bsod("1/0 is not infinity at %p", par.eip);
 }
 
@@ -68,29 +71,30 @@ void pagefault(const InterruptParamsErr& par){
 void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
-}
+    }*/
 
-
-extern "C" void kmain(/*multibootInfo* multibootinfo*/) {
-/*    multiboot = *multibootinfo;
-    PDE[0].present = false; // desactivate identity mapping;
+extern "C" void kmain(KArgs* kargs) {
+    //multiboot = *multibootinfo;
+    //PDE[0].present = false; // desactivate identity mapping;
     cli; // clear interruption
     init(); //C++ global contructors should not change machine state.
-    initkmalloc(); // malloc initialisation
-    gdt.init(); // segmentation initialisation
-    idt.init(); // interruption initialisation
-    idt.addInt(0, div0); // adding various interruption handlers
-    idt.addInt(6, invalidOpcode);
-    idt.addInt(8, doublefault);
-    idt.addInt(13, gpfault);
-    idt.addInt(14, pagefault);
-    sti; // enable interruption*/
+    //initkmalloc(); // malloc initialisation
+    //gdt.init(); // segmentation initialisation
+    //idt.init(); // interruption initialisation
+    //idt.addInt(0, div0); // adding various interruption handlers
+    //idt.addInt(6, invalidOpcode);
+    //idt.addInt(8, doublefault);
+    //idt.addInt(13, gpfault);
+    //idt.addInt(14, pagefault);
+    //sti; // enable interruption*/
 
 #define BLA -1
 #define EMUL // comment for LORDI version
 #if BLA == -1
+    //fb.clear();
+    fb.puts("64 bits kernel booted !!");
+    stop;
 
-    return;
 #elif BLA == 0
 
     char* p1 = (char*)malloc(13);
