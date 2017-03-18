@@ -13,6 +13,8 @@ struct KArgs{ // all addresses are physical
     u64 occupAreaSize;
     u64 stackAddr;
     u64 PML4;
+    u64 freeAddr;
+    u64 RAMSize; // minus 1MB
 }__attribute__((packed));
 
 /* ----------------LOADING SPECIFICATION----------------------------

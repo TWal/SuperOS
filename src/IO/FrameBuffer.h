@@ -49,6 +49,7 @@ class FrameBuffer {
         int _margLeft;
         int _margRight;
 };
+static_assert(sizeof(FrameBuffer) == 20);
 
 extern "C" void printf(const char* s, ...);
 

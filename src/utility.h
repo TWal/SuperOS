@@ -105,7 +105,7 @@ extern "C" void bsod(const char* s, ...);
     } while(false)
 
 
-const u64 HHOFFSET = 0xC0000000; //High half kernel offset ~ 250T
+const u64 HHOFFSET = -0x80000000; //High half kernel offset ~ 250T
 static_assert((HHOFFSET & 0x3FFFFFFF) == 0);
 
 #endif

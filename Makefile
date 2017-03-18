@@ -16,7 +16,7 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O1 -mno-sse
+OPTILVL = -O0 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32
@@ -27,9 +27,9 @@ C32FLAGS = $(CBASEFLAGS) -m32 -DSUP_OS_LOADER
 CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
 				   -isystem $(LIBCXX)\
 				   -DSUP_OS_KERNEL \
-					 -mcmodel=large # 64 bit high-half kernel
+					 -mcmodel=kernel # 64 bit high-half kernel
 
-CXXBASEFLAGS = -fno-exceptions -fno-rtti
+CXXBASEFLAGS = -fno-exceptions -fno-rtti -std=c++14
 CXX32FLAGS = $(C32FLAGS) $(CXXBASEFLAGS)
 CXXFLAGS = $(CFLAGS) $(CXXBASEFLAGS)
 
@@ -46,7 +46,11 @@ SRCCONTENT = $(shell find src -type f)
 
 SRCCONTENT = $(shell find src -type f)
 
-SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp
+SRCASM = $(SRCDIR)/Interrupts/Interrupt.s
+SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp \
+				 $(SRCDIR)/Interrupts/Interrupt.cpp $(SRCDIR)/Interrupts/Pic.cpp \
+				 $(SRCDIR)/Memory/PhysicalMemoryAllocator.cpp \
+				 $(SRCDIR)/Memory/Paging.cpp
 
 #SRCASM = $(filter %.s,$(SRCCONTENT))
 #SRCC = $(filter %.c,$(SRCCONTENT))
@@ -60,7 +64,7 @@ OBJ32 = $(patsubst $(SRC32DIR)/%, $(OUT32DIR)/%.o, $(SRC32ASM)) \
 OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
       $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCC))   \
       $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCCXX)) \
-      #$(OUTDIR)/InterruptInt.o
+      $(OUTDIR)/InterruptInt.o
 
 
 LOOPDEV = /dev/loop0

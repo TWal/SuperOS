@@ -7,52 +7,73 @@
 struct InterruptEntry {
     u16 offLow;
     u16 segSelector;
-    char reserved0;
-    char reserved1 :3;
-    bool is32bits : 1;
-    char reserved2 :1;
+    char ist : 3;
+    char zero :5;
+    bool isTrap : 1;
+    char ones :3;
+    char zero2 : 1;
     char privilegeLvl :2;
     bool present : 1;
-    u16 offHigh;
+    u64 offHigh : 48;
+    u32 zero3;
 
     InterruptEntry();
     void setAddr(void* addr);
     void* getAddr();
 
 }__attribute__((packed));
-static_assert(sizeof(InterruptEntry) == 8 , "InterruptEntry has wrong size");
+
+static_assert(sizeof(InterruptEntry) == 16 , "InterruptEntry has wrong size");
 
 extern InterruptEntry IDT[256];
 
 void lidt();
 
 struct InterruptParams{
-    u32 eax;
-    u32 ebx;
-    u32 ecx;
-    u32 edx;
-    u32 interNumTimes4;
-    u32 esi;
-    u32 ebp;
-    u32 edi;
-    void*  eip;
-    u32 cs;
-    u32 flags;
+    u64 r15;
+    u64 r14;
+    u64 r13;
+    u64 r12;
+    u64 r11;
+    u64 r10;
+    u64 r9;
+    u64 r8;
+    u64 rax;
+    u64 rcx;
+    u64 rdx;
+    u64 rdi;
+    u64 rsi;
+    u64 rbp;
+    u64 rbx;
+    void*  rip;
+    u64 cs;
+    u64 flags;
+    u64 oldrsp;
+    u64 oldss;
 }__attribute__((packed));
 
 struct InterruptParamsErr{
-    u32 eax;
-    u32 ebx;
-    u32 ecx;
-    u32 edx;
-    u32 interNumTimes4;
-    u32 esi;
-    u32 ebp;
-    u32 edi;
-    u32 errorCode;
-    void*  eip;
-    u32 cs;
-    u32 flags;
+    u64 r15;
+    u64 r14;
+    u64 r13;
+    u64 r12;
+    u64 r11;
+    u64 r10;
+    u64 r9;
+    u64 r8;
+    u64 rax;
+    u64 rcx;
+    u64 rdx;
+    u64 rdi;
+    u64 rsi;
+    u64 rbp;
+    u64 rbx;
+    u64 errorCode;
+    void*  rip;
+    u64 cs;
+    u64 flags;
+    u64 oldrsp;
+    u64 oldss;
 }__attribute__((packed));
 
 struct IntParams{
@@ -60,13 +81,12 @@ struct IntParams{
     bool doReturn : 1;
     bool hasErrorCode : 1;
     IntParams(): isAssembly(false),doReturn(false),hasErrorCode(false){};
-
 }__attribute__((packed));
 
 
-typedef u32 (*interFuncR)(const InterruptParams&);
+typedef u64 (*interFuncR)(const InterruptParams&);
 typedef void (*interFunc)(const InterruptParams&);
-typedef u32 (*interFuncER)(const InterruptParamsErr&);
+typedef u64 (*interFuncER)(const InterruptParamsErr&);
 typedef void (*interFuncE)(const InterruptParamsErr&);
 
 extern "C" interFunc intIDT[256];
@@ -96,63 +116,63 @@ void interrupt(){
 }
 
 template<u8 num>
-void interrupt(u32 eax){
+void interrupt(u64 rax){
     asm volatile(
-        "mov %1,%%eax;"
+        "mov %1,%%rax;"
         "int %0;" :
-        : "i"(num) , "r"(eax): "%eax"
+        : "i"(num) , "r"(rax): "%rax"
         );
 }
 
 template<u8 num>
-void interrupt(u32 eax,u32 ebx){
+void interrupt(u64 rax,u64 rbx){
     asm volatile(
-        "mov %1,%%eax;"
-        "mov %2,%%ebx;"
+        "mov %1,%%rax;"
+        "mov %2,%%rbx;"
         "int %0;" :
-        : "i"(num) , "r"(eax),"r"(ebx)
-        : "%eax", "%ebx"
+        : "i"(num) , "r"(rax),"r"(rbx)
+        : "%rax", "%rbx"
         );
 }
 
 template<u8 num>
-u32 interruptr(){
-    u32 res;
+u64 interruptr(){
+    u64 res;
     asm volatile(
         "int %1;"
-        "mov %%eax,%0;"
+        "mov %%rax,%0;"
         :"=r"(res)
         :"i"(num)
-        :"%eax"
+        :"%rax"
         );
     return res;
 }
 
 template<u8 num>
-u32 interruptr(u32 eax){
-    u32 res;
+u64 interruptr(u64 rax){
+    u64 res;
     asm volatile(
-        "mov %2,%%eax;"
+        "mov %2,%%rax;"
         "int %1;"
-        "mov %%eax,%0;"
+        "mov %%rax,%0;"
         :"=r"(res)
-        :"i"(num), "r"(eax)
-        :"%eax"
+        :"i"(num), "r"(rax)
+        :"%rax"
         );
     return res;
 }
 
 template<u8 num>
-u32 interruptr(u32 eax,u32 ebx){
-    u32 res;
+u64 interruptr(u64 rax,u64 rbx){
+    u64 res;
     asm volatile(
-        "mov %2,%%eax;"
-        "mov %3,%%ebx;"
+        "mov %2,%%rax;"
+        "mov %3,%%rbx;"
         "int %1;"
-        "mov %%eax,%0"
+        "mov %%rax,%0"
         :"=r"(res)
-        : "i"(num) , "r"(eax),"r"(ebx)
-        : "%eax", "%ebx"
+        : "i"(num) , "r"(rax),"r"(rbx)
+        : "%rax", "%rbx"
         );
     return res;
 }

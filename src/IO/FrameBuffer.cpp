@@ -15,6 +15,10 @@ FrameBuffer::FrameBuffer() {
 }
 
 void FrameBuffer::clear(char fg, char bg) {
+//#ifdef SUP_OS_KERNEL
+    //      breakpoint;
+//#endif
+
     _fg = fg;
     _bg = bg;
     _cursCol = 0;
@@ -53,6 +57,9 @@ void FrameBuffer::setMargin(int left, int right) {
 }
 
 void FrameBuffer::writeChar(char c, int col, int row, char fg, char bg) {
+//#ifdef SUP_OS_KERNEL
+    //  breakpoint;
+//#endif
     int i = 80*row + col;
     FB[2*i] = c;
     FB[2*i+1] = getColor(fg, bg);
@@ -79,6 +86,9 @@ void FrameBuffer::scroll(uint n, bool updateCurs) {
 }
 
 void FrameBuffer::putc(char c, bool updateCurs) {
+//#ifdef SUP_OS_KERNEL
+//    breakpoint;
+//#endif
     switch(c) {
         case '\n':
             _cursCol = _margLeft;

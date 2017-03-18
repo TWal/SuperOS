@@ -53,7 +53,9 @@ extern "C" void load(multibootInfo * mb){
     char * kernelStack = (char*)(((u64(kernelEnd) + 0x1000)/0x1000)*0x1000);
     printf("Stack start %p",kernelStack);
     char * kernelrsp = kernelStack + 0X1000;
-    int occupAreaSize = 0;
+    char * freeMem = kernelrsp;
+    int occupAreaSize = 1;
+    push(kernelrsp,OccupArea{(u32)kernelStack,1});
     printf("loader from 1MB to %p\n",&loader_code_end);
 
     printf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
@@ -82,12 +84,22 @@ extern "C" void load(multibootInfo * mb){
         }
 
     }
+    push(kernelrsp,OccupArea{(u32)PML4,1});
+    ++occupAreaSize;
+    push(kernelrsp,OccupArea{(u32)PDPs,nbPDPused});
+    ++occupAreaSize;
+    push(kernelrsp,OccupArea{(u32)PDs,nbPDused});
+    ++occupAreaSize;
+    push(kernelrsp,OccupArea{(u32)PTs,nbPTused});
+    ++occupAreaSize;
 
     KArgs args;
     args.PML4 = u64(PML4);
     args.occupAreaSize = occupAreaSize;
     args.occupArea = u64(kernelrsp);
     args.stackAddr = u64(kernelStack);
+    args.freeAddr = u64(freeMem);
+    args.RAMSize = mb->mem_upper * 1024;
     push(kernelrsp,args);
 
     startKernel(kernelFile.entry,(KArgs*)kernelrsp,kernelrsp);

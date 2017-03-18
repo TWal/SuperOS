@@ -2,20 +2,20 @@
 #include "IO/FrameBuffer.h"
 #include "utility.h"
 #include "../src32/KArgs.h"
-/*#include "Interrupts/Interrupt.h"
+#include "Interrupts/Interrupt.h"
 //#include "Memory/Segmentation.h"
-#include "IO/Keyboard.h"
+//#include "IO/Keyboard.h"
 #include "Memory/Paging.h"
-#include "HDD/HardDrive.h"
+//#include "HDD/HardDrive.h"
 #include "Memory/PhysicalMemoryAllocator.h"
-#include "HDD/FAT.h"
-#include "Memory/dirtyMalloc.h"
-#include <stdarg.h>
-#include <memory>
-#include "IO/CommandLine.h"
-#include <functional>
+//#include "HDD/FAT.h"
+//#include "Memory/dirtyMalloc.h"
+//#include <stdarg.h>
+//#include <memory>
+//#include "IO/CommandLine.h"
+//#include <functional>
 //#include "multiboot.h"
-#include "Interrupts/Pic.h"*/
+#include "Interrupts/Pic.h"
 
 using namespace std;
 
@@ -40,59 +40,70 @@ void init(){
 }
 
 //int 0
-/*void div0 (const InterruptParams& par){
-    bsod("1/0 is not infinity at %p", par.eip);
+void div0 (const InterruptParams& par){
+    bsod("1/0 is not infinity at %p", par.rip);
 }
 
 //int 6
 void invalidOpcode(const InterruptParams& par) {
-    bsod("Invalid opcode at %p", par.eip);
+    bsod("Invalid opcode at %p", par.rip);
 }
 
 //int 8
 void doublefault(const InterruptParamsErr& par){
-    bsod("Double fault at %p\nIt may be an uncaught interruption.", par.eip);
-    //should not return eip is UB.
+    bsod("Double fault at %p\nIt may be an uncaught interruption.", par.rip);
+    //should not return, rip is UB.
 }
 
 //int 13
 void gpfault(const InterruptParamsErr& par){
-    bsod("General Protection fault at %p with code %x", par.eip, par.errorCode);
+    bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
 }
 
 //int 14
 void pagefault(const InterruptParamsErr& par){
-    printf("Page fault at %p with code %x accessing %p\n", par.eip, par.errorCode, getCR2());
+    printf("Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
 
 //int 0x21
-void keyboard(const InterruptParams&){
+/*void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
     }*/
 
 extern "C" void kmain(KArgs* kargs) {
-    //multiboot = *multibootinfo;
-    //PDE[0].present = false; // desactivate identity mapping;
     cli; // clear interruption
-    init(); //C++ global contructors should not change machine state.
-    //initkmalloc(); // malloc initialisation
-    //gdt.init(); // segmentation initialisation
-    //idt.init(); // interruption initialisation
-    //idt.addInt(0, div0); // adding various interruption handlers
-    //idt.addInt(6, invalidOpcode);
-    //idt.addInt(8, doublefault);
-    //idt.addInt(13, gpfault);
-    //idt.addInt(14, pagefault);
-    //sti; // enable interruption*/
+    init(); //C++ global constructors should not change machine state.
+    // TODO GDT
+    idt.init(); // interruption initialization
+    idt.addInt(0, div0); // adding various interruption handlers
+    idt.addInt(6, invalidOpcode);
+    idt.addInt(8, doublefault);
+    idt.addInt(13, gpfault);
+    idt.addInt(14, pagefault);
+    sti; // enable interruption
+    // initializing memory allocation by marking occupied Areas (code + stack + paging).
+    physmemalloc.init((void*)kargs->freeAddr,kargs->RAMSize,
+                      (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
+    paging.init((PageEntry*)kargs->PML4); // initializing paging
+    paging.allocStack((void*)kargs->stackAddr,3); // allocation kernel stack (fixed size for now)
+    asm volatile(
+        "and $0xFFF,%rsp; sub $0x1000,%rsp"
+        ); // rsp switch : all stack pointer are invalidated (kargs for example);
+
+
+    //breakpoint;
 
 #define BLA -1
 #define EMUL // comment for LORDI version
 #if BLA == -1
-    fb.printf("64 bits kernel booted with PML4 at %p and stack at %p!!",
-              kargs->PML4,kargs->stackAddr);
+    fb.printf("64 bits kernel booted, paging and stack initialized!!\n");
+
+
+
+
     stop;
 
 #elif BLA == 0

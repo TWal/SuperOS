@@ -82,6 +82,7 @@ void setupBasicPaging() {
     PDs[0][0].present = true;
     PDs[0][0].isSizeMega = true;
     PDs[0][0].addr = 0;
+    ++nbPDused;
     PDs[0][1].present = true;
     PDs[0][1].isSizeMega = true;
     PDs[0][1].setAddr(0x200000);

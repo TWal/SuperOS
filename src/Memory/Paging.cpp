@@ -1,5 +1,108 @@
 #include "Paging.h"
 #include "PhysicalMemoryAllocator.h"
+#include <new>
+
+PageEntry* const virtTables =  (PageEntry*)-0xC0000000ll;
+PageEntry* const PML4 = virtTables;
+PageEntry* const kernelPDP = virtTables + 1*512; // -512G to 0
+PageEntry* const kernelPD = virtTables + 2*512; // -2G to -1G
+PageEntry* const stackPD = virtTables + 3*512; // -1G to 0
+PageEntry* const pagePD = virtTables + 4*512; // -3G to -2G
+PageTable* const pagePT = (PageTable*)virtTables + 5*512; // -3G to -3G + 2M
+PageEntry* const userPDP = virtTables + 6*512; // 0 to 512G
+PageEntry* const firstPD = virtTables + 7*512; // 0 to 1G
+PageTable* const firstPT = (PageTable*)virtTables + 8*512; // 0 to 2M
+PageEntry* const tmpPD = virtTables + 9*512; // temporary manipulation
+#define TMPPDOFF 0x9
+PageTable* const tmpPT = (PageTable*)virtTables + 0xA * 512; // temporary manipulation
+#define TMPPTOFF 0xA
+
+
+PageEntry::PageEntry() : present(false),readWrite(true),user(false),writeThrough(false),
+                         cacheDisable(false),accessed(false),zero(0),isSizeMega(false),
+                         nothing(0),addr(0),data(0),zero2(0) {}
+
+PageTable::PageTable() : present(false),readWrite(true),user(false),writeThrough(false),
+                         cacheDisable(false),accessed(false),dirty(0),zero(0),global(false),
+                         nothing(0),addr(0),data(0),zero2(0) {}
+
+
+
+Paging::Paging(){
+}
+
+void Paging::init(PageEntry * pPML4){ // physical PML4
+    assert(pPML4[511].getAddr());
+    PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
+    PageEntry* PPD = new (physmemalloc.alloc()) PageEntry[512]; // paging page directory
+    KPDP[509].activeAddr(PPD);
+    
+    PageTable* firstPPT = new(physmemalloc.alloc()) PageTable[512]; // first paging page table
+    PPD[0].activeAddr(firstPPT);
+    firstPPT[5].activeAddr(firstPPT);
+
+    // setting up paging tables
+    firstPPT[0].activeAddr(pPML4);
+    firstPPT[1].activeAddr(KPDP); // kernel PDP
+    assert(KPDP[510].getAddr());
+    firstPPT[2].activeAddr(KPDP[510].getAddr()); //kernel PD
+
+    //stack PD
+    PageEntry * stackPDphy = new(physmemalloc.alloc()) PageEntry[512];
+    firstPPT[3].activeAddr(stackPDphy); // stackPD
+    kernelPDP[511].activeAddr(stackPDphy);
+
+    //pagePD
+    firstPPT[4].activeAddr(PPD); // page PD
+
+    assert(PML4[0].getAddr()); // user PDP is already active
+    firstPPT[6].activeAddr(PML4[0].getAddr()); // set user PDP
+    assert(userPDP[0].getAddr()); // first PD is already active and identity map the first 4 Mo
+    firstPPT[7].activeAddr(userPDP[0].getAddr());
+
+    // mapping of physical RAM from 4K to 1M
+    firstPPT[8].activeAddr(new(physmemalloc.alloc()) PageTable[512]);
+    for(int i = 1 ; i < 256 ; ++ i){ // RAM mapping to devices
+        firstPT[i].activeAddr((char*)nullptr + 0x1000 * i);
+        //firstPT[i].writeThrough = true ; // only for device mapping RAM
+    }
+    // we don't activate firstPT i.e removing identity map of RAM begining now.
+
+    // from now all constant address like PML4 or kernelPDP are valid.
+
+
+}
+
+void Paging::allocStack(void*stackPos,size_t nbPages){
+    assert(nbPages < 512); // TODO support more than 2M of stack
+    stackPD[511].activeAddr(new(physmemalloc.alloc()) PageTable[512]);
+    actTmpPT(stackPD[511].getAddr());
+
+    tmpPT[511].activeAddr(stackPos); // getBack current stack
+
+    for(size_t i = 1 ; i < nbPages ; ++i){
+        tmpPT[511 -i].activeAddr(physmemalloc.alloc());
+    }
+    // we can now use the high space stack
+
+    freeTmpPT();
+}
+void Paging::actTmpPD (void* PDphyAddr){
+    assert(!pagePT[TMPPDOFF].present);
+    pagePT[TMPPDOFF].activeAddr(PDphyAddr);
+}
+void Paging::actTmpPT (void* PTphyAddr){
+    assert(!pagePT[TMPPTOFF].present);
+    pagePT[TMPPTOFF].activeAddr(PTphyAddr);
+}
+void Paging::freeTmpPD (){
+    pagePT[TMPPDOFF].present = false;
+}
+void Paging::freeTmpPT (){
+    pagePT[TMPPTOFF].present = false;
+}
+
+
 /*
 PageDirectoryEntry PDElower[1024];
 PageDirectoryEntry* PDE = (PageDirectoryEntry*)((uint)PDElower + THREEGB);
@@ -184,7 +287,7 @@ void kfree(void* ptr) {
         //copy boundary tag
         *getNextBoundaryTag(head) = *head;
     }
-}
-    Paging paging;*/
+    }*/
+    Paging paging;
 
 
