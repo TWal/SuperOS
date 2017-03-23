@@ -17,6 +17,8 @@ public:
     void* alloc();
     void free(void* page);
     void printfirst(int i) ; // print i*64 first bits
+    int getPageSize(){return _size / 8 / 0x1000;}
+    void* getCurrentAddr(){return _bitset;};
 private:
     bool get(u64 i);
     void set(u64 i);
@@ -24,7 +26,7 @@ private:
     bool get(void* addr);
     void set(void* addr);
     void unset(void* addr);
-    u64* _bitset;
+    u64* _bitset; // size in number of bits
     size_t _size;
 };
 

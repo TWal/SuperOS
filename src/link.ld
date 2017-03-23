@@ -32,5 +32,5 @@ SECTIONS {
     __init_array_end = .;
     }
 
-    kernel_code_end = . + 0x80000000;
+    kernel_code_end = .; /* virtual address (beginning of heap)*/
 }

@@ -132,14 +132,27 @@ public:
     void init(PageEntry* PML4);
     void allocStack(void*stackPos,size_t nbPages); // assume stack is less than 4K by now
     void removeIdent();// remove identity mappings
-   
+    void createMapping(uptr phy, uptr virt);
+    void createMapping(uptr phy, uptr virt,int nbPages);
+    void freeMapping(uptr virt,int nbPages = 1);
+    void freeMappingAndPhy(uptr virt,int nbPages = 1);
+    //void switchUser(PageEntry* UserPDP);
     //int brk(void* paddr);
     //void* sbrk(size_t inc); // i64 ?
 private:
+    void actTmpPDP (void* PDPphyAddr); // activate temporary PD
     void actTmpPD (void* PDphyAddr); // activate temporary PD
     void actTmpPT (void* PTphyAddr); // activate temporary PT
+    void freeTmpPDP ();
     void freeTmpPD ();
     void freeTmpPT ();
+    void* getPDPphyu(uptr addr); // unsafe version
+    void* getPDPphy(uptr addr); // safe version
+    void* getPDphyu(uptr addr); // unsafe version
+    void* getPDphy(uptr addr); // safe version
+    void* getPTphyu(uptr addr); // unsafe version
+    void* getPTphy(uptr addr); // safe version
+    void* getphyu(uptr addr); // unsafe version
     //uptr _brk;
     //uptr _truebrk;
 };

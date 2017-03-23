@@ -28,7 +28,7 @@ u64 PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupAr
     //printfirst(1);
 
     for(u64 i = 0 ; i < occupSize ; ++i){
-        //printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
+        printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
         //printfirst(1);
         //breakpoint;
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){
@@ -96,10 +96,12 @@ void* PhysicalMemoryAllocator::alloc() {
     assert(i < _size && "out of memory");
 
     _bitset[i] &= ~(1<<pos);
+    //printf("allocating %p",(0x100000 + ((64*i+pos)<<12)));
     return (void*)(0x100000 + ((64*i+pos)<<12)); //4kb page = 2^12 byte
 }
 
 void PhysicalMemoryAllocator::free(void* page) {
+    //printf("freeing %p",page);
     u64 index = (u64)((u8*)page - 0x100000);
     assert((index&((1<<12)-1)) == 0);
     index >>= 12;

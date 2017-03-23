@@ -50,7 +50,8 @@ SRCASM = $(SRCDIR)/Interrupts/Interrupt.s
 SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp \
 				 $(SRCDIR)/Interrupts/Interrupt.cpp $(SRCDIR)/Interrupts/Pic.cpp \
 				 $(SRCDIR)/Memory/PhysicalMemoryAllocator.cpp \
-				 $(SRCDIR)/Memory/Paging.cpp
+				 $(SRCDIR)/Memory/Paging.cpp \
+				 $(SRCDIR)/Memory/Heap.cpp
 
 #SRCASM = $(filter %.s,$(SRCCONTENT))
 #SRCC = $(filter %.c,$(SRCCONTENT))
