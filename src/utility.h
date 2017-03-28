@@ -5,6 +5,11 @@
 #include <stdint.h>// int32 etc
 #include <stdarg.h>
 
+#ifdef SUP_OS_KERNEL
+#include <vector>
+#include <string>
+#endif
+
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -107,6 +112,11 @@ extern "C" void bsod(const char* s, ...);
 
 const u64 HHOFFSET = -0x80000000; //High half kernel offset ~ 250T
 static_assert((HHOFFSET & 0x3FFFFFFF) == 0);
+
+#ifdef SUP_OS_KERNEL
+std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
+std::string concat(std::vector<std::string> strs,char separator);
+#endif
 
 #endif
 
