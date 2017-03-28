@@ -3,21 +3,21 @@
 #include "utility.h"
 #include "../src32/KArgs.h"
 #include "Interrupts/Interrupt.h"
-//#include "Memory/Segmentation.h"
-//#include "IO/Keyboard.h"
+#include "IO/Keyboard.h"
 #include "Memory/Paging.h"
+#include "Memory/Segmentation.h"
 //#include "HDD/HardDrive.h"
 #include "Memory/PhysicalMemoryAllocator.h"
 //#include "HDD/FAT.h"
-//#include "Memory/dirtyMalloc.h"
-//#include <stdarg.h>
-//#include <memory>
-//#include "IO/CommandLine.h"
+#include <stdarg.h>
+#include "IO/CommandLine.h"
 //#include <functional>
-//#include "multiboot.h"
 #include "Interrupts/Pic.h"
 #include "Memory/Heap.h"
 #include <stdlib.h>
+
+#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -70,15 +70,28 @@ void pagefault(const InterruptParamsErr& par){
 }
 
 //int 0x21
-/*void keyboard(const InterruptParams&){
+void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
-    }*/
+}
+
+
+//--------------------TESTING MACRO
+#define TMP_TEST (-1)
+#define MALLOC_TEST 0
+#define FAT_TEST 1
+#define KBD_TEST 2
+#define CL_TEST 3
+#define INT_TEST 4
+
+
+
+//-----------------------------------kmain---------------------------
 
 extern "C" void kmain(KArgs* kargs) {
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
-    // TODO GDT
+    gdt.init();
     idt.init(); // interruption initialization
     idt.addInt(0, div0); // adding various interruption handlers
     idt.addInt(6, invalidOpcode);
@@ -97,25 +110,24 @@ extern "C" void kmain(KArgs* kargs) {
     /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
-    paging.removeIdent();
+    //paging.removeIdent();
     kheap.init(&kernel_code_end);
     initmalloc();
+    (void)kargs;
 
 
 
-    //breakpoint;
 
-#define BLA -1
+#define BLA INT_TEST
 #define EMUL // comment for LORDI version
-#if BLA == -1
+#if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
-
 
     printf("done");
 
     stop;
 
-#elif BLA == 0
+#elif BLA == MALLOC_TEST
 
     char* p1 = (char*)malloc(13);
     char* p2 = (char*)malloc(19);
@@ -127,7 +139,7 @@ extern "C" void kmain(KArgs* kargs) {
     fb.printf("%x\n", p5);
     while(1) asm volatile ("cli;hlt");
 
-#elif BLA == 1
+#elif BLA == HDD_TEST
     HDD first(1,true);
     first.init();
 
@@ -171,6 +183,39 @@ extern "C" void kmain(KArgs* kargs) {
         first.getStatus().printStatus();
         fb.printf("\r");
     }
+
+
+#elif BLA == INT_TEST
+    breakpoint;
+
+    volatile int i =0;
+    volatile int j = 1/i;
+    (void)j;
+
+
+    stop;
+
+
+#elif BLA == KBD_TEST
+    idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
+    breakpoint;
+
+    auto k = kbd.poll();
+    printf("%c",k.symbol);
+    stop;
+
+
+
+#elif BLA == CL_TEST
+    idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
+    //CommandLine cl; // load Command line
+    //cl.run(); //run command line
+    stop;
+
 
 
 

@@ -1,4 +1,4 @@
-.PHONY: all run rund runqemu runqemud load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm
+.PHONY: all run rund runqemu runqemud load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count
 
 AS = as
 CC = gcc
@@ -21,7 +21,7 @@ OPTILVL = -O2 -mno-sse
 ASFLAGS =
 AS32FLAGS = --32
 CBASEFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
-				 -Wno-packed-bitfield-compat \
+				 -Wno-packed-bitfield-compat -Werror \
 				 $(OPTILVL)
 C32FLAGS = $(CBASEFLAGS) -m32 -DSUP_OS_LOADER
 CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
@@ -46,16 +46,16 @@ SRCCONTENT = $(shell find src -type f)
 
 SRCCONTENT = $(shell find src -type f)
 
-SRCASM = $(SRCDIR)/Interrupts/Interrupt.s
-SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp \
+#SRCASM = $(SRCDIR)/Interrupts/Interrupt.s
+#SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp \
 				 $(SRCDIR)/Interrupts/Interrupt.cpp $(SRCDIR)/Interrupts/Pic.cpp \
 				 $(SRCDIR)/Memory/PhysicalMemoryAllocator.cpp \
 				 $(SRCDIR)/Memory/Paging.cpp \
 				 $(SRCDIR)/Memory/Heap.cpp
 
-#SRCASM = $(filter %.s,$(SRCCONTENT))
-#SRCC = $(filter %.c,$(SRCCONTENT))
-#SRCCXX = $(filter %.cpp,$(SRCCONTENT))
+SRCASM = $(filter %.s,$(SRCCONTENT))
+SRCC = $(filter %.c,$(SRCCONTENT))
+SRCCXX = $(filter %.cpp,$(SRCCONTENT))
 
 DEPF = $(wildcard $(DEPDIR)/*.d) $(wildcard $(DEPDIR)/$(LIBC)/*.d)  $(wildcard $(DEPDIR)/$(LIBCXX)/*.d) $(wildcard $(DEP32DIR)/*.d)
 
@@ -134,7 +134,7 @@ $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
 $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupts/Interrupt.py Makefile
 	@python3 $(SRCDIR)/Interrupts/Interrupt.py > $(OUTDIR)/InterruptInt.s
 	@$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
-	@echo Genrating and assembling from kernel file : $<
+	@echo Generating and assembling from kernel file : $<
 
 
 
@@ -272,6 +272,9 @@ dasm:
 
 dasml:
 	objdump -D -C loader.elf > disassemblyl
+
+count:
+	cloc libc libc++ src src32 -lang-no-ext="C/C++ Header"
 
 include $(DEPF)
 

@@ -2,7 +2,7 @@
 
 InterruptEntry IDT[256];
 
-InterruptEntry::InterruptEntry() : offLow(0),segSelector(0x18),ist(0), zero(0),
+InterruptEntry::InterruptEntry() : offLow(0),segSelector(0x08),ist(0), zero(0),
                                    isTrap(true),ones(-1),zero2(0),privilegeLvl(0),
                                    present(false),offHigh(0),zero3(0)
 {
