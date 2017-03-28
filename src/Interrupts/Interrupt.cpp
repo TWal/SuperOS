@@ -24,7 +24,7 @@ struct IDTLoader{
 }__attribute__((packed));
 
 void __attribute__((optimize("O0"))) lidt (){
-    IDTLoader lo = {256*8,IDT};
+    IDTLoader lo = {256*16,IDT};
     asm volatile (
         "lidt %0" :
         : "m"(lo)

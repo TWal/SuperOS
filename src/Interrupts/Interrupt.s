@@ -12,6 +12,7 @@ params:
 .text
     .global geneInt
 geneInt: # by default interruption on user stack.
+    ## %rbx contains the number of the interruption, all the others are not changed.
     push %rbp
     push %rsi
     push %rdi
@@ -45,8 +46,8 @@ geneInt: # by default interruption on user stack.
     pop %rdx
     pop %rdi
 	  pop %rsi
-	  pop %rbp
     testb $4,(%rbp,%rbx,8)
+	  pop %rbp
 	  jnz errEnd
     pop %rbx
     iretq
