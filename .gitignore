@@ -8,8 +8,9 @@ out/*
 ld_mapping
 ld_mapping_full
 ld_mapping_loader
-ld_mapping_full_loader
+ld_mapping_loader_full
 disassembly
+disassemblyl
 .dep/*
 disk.img
 libc.a

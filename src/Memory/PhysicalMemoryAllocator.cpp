@@ -107,7 +107,7 @@ void PhysicalMemoryAllocator::free(void* page) {
     index >>= 12;
     u64 i = index / 64;
     u8 pos = index % 64;
-    assert((_bitset[i] & (1 << pos)) != 1);
+    assert(!(_bitset[i] & (1 << pos)));
     _bitset[i] |= (1 << pos);
 }
 

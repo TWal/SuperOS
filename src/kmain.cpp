@@ -17,6 +17,7 @@
 //#include "multiboot.h"
 #include "Interrupts/Pic.h"
 #include "Memory/Heap.h"
+#include <stdlib.h>
 
 using namespace std;
 
@@ -93,10 +94,12 @@ extern "C" void kmain(KArgs* kargs) {
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
-    asm volatile(
+    /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
-        ); // rbp switch : use this code only in O0, gcc can use rbp for other thing in 0123.
+        );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
     paging.removeIdent();
+    kheap.init(&kernel_code_end);
+    initmalloc();
 
 
 
@@ -105,17 +108,8 @@ extern "C" void kmain(KArgs* kargs) {
 #define BLA -1
 #define EMUL // comment for LORDI version
 #if BLA == -1
-    fb.printf("64 bits kernel booted, paging and stack initialized!!\n");
+    fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
 
-    void* code_end =  &kernel_code_end;
-
-    fb.printf("vritual code end : %p\n", code_end);
-    kheap.init(code_end);
-    void* res = kheap.sbrk(10000);
-    printf("allocated %p\n",res);
-    kheap.sbrk(-5000);
-    res = kheap.sbrk(10000);
-    printf("allocated %p\n",res);
 
     printf("done");
 

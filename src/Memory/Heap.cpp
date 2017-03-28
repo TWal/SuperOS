@@ -5,11 +5,11 @@ Heap::Heap() : _virtAddrStart(nullptr),_Brk(0){
 
 void Heap::init(void* startAddr){
     _virtAddrStart = (char*)(((uptr)startAddr + 0x1000 -1) / 0x1000 * 0x1000);
+    //printf("Heap base : %p\n",_virtAddrStart);
 }
 
 int Heap::brk(void*addr){
-    //printf("recieved address %p\n",addr);
-    breakpoint;
+    //printf("brk recieved address %p\n",addr);
     assert((char*)addr > _virtAddrStart);
     uptr dist = (char*)addr - _virtAddrStart;
     if(dist > _Brk){ // if we should allocate new page
@@ -17,7 +17,6 @@ int Heap::brk(void*addr){
         uptr startAddr = (uptr)_virtAddrStart + _Brk;
         for(int i = 0 ; i < nbNewPages ; ++ i){
             void * phy = physmemalloc.alloc();
-            breakpoint;
             paging.createMapping((uptr)phy,startAddr + i * 0x1000);
         }
         _Brk+= nbNewPages * 0x1000;

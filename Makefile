@@ -16,7 +16,7 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O0 -mno-sse
+OPTILVL = -O2 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32
@@ -72,7 +72,9 @@ LOOPDEV = /dev/loop0
 MNTPATH = /mnt/test# must be absolute and not relative
 
 LIBCSRC = $(wildcard $(LIBC)/src/*.c)
-LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC))
+LIBCSRCXX = $(wildcard $(LIBC)/src/*.cpp)
+LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC)) \
+	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRCXX))
 LIBCH = $(wildcard $(LIBC)/*.h)
 
 LIBCXXSRC = $(wildcard $(LIBCXX)/src/*.cpp)
@@ -81,15 +83,6 @@ LIBCXXH = $(wildcard $(LIBCXX)/*) $(wildcard $(LIBCXX)/include/*.h)
 
 
 all: loader.elf kernel.elf
-
-loader.elf: $(OBJ32) $(SRC32DIR)/link.ld
-	g++ $(LD32FLAGS) $(OBJ32) -o loader.elf $(LIBS32) -Xlinker --print-map > ld_mapping_loader_full
-	@cat ld_mapping_loader_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping_loader
-
-
-kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
-	g++ $(LD64FLAGS) $(OBJ) -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
-	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
 
 os.iso: all
 	cp loader.elf iso/boot/loader.elf
@@ -109,57 +102,101 @@ runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
 
 
+
+#-------------------------------kernel rules------------------------------------
+
+kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
+	@echo Linking kernel
+	@g++ $(LD64FLAGS) $(OBJ) -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
+	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
+	@echo --------------------------kernel built.------------------------------
+	@echo
+	@echo
+
 $(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a Makefile
 	@mkdir -p `dirname $@`
-	$(AS) $(ASFLAGS) $< -o $@
-
-$(OUT32DIR)/%.s.o: $(SRC32DIR)/%.s Makefile
-	@mkdir -p $(OUT32DIR)
-	$(AS) $(AS32FLAGS) $< -o $@
+	@$(AS) $(ASFLAGS) $< -o $@
+	@echo Assembling kernel file : $<
 
 $(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)`
-	$(CC) $(CFLAGS)  -c $< -o $@
-	@$(CC) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)  $<
+	@echo Compiling kernel file : $<
+	@$(CC) $(CFLAGS) -MD -MT '$@' -MF	$(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<) -c $< -o $@
 
 $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)`
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-	@$(CXX) -MM -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)  $<
+	@echo Compiling kernel file : $<
+	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<) -c $< -o $@
+
+
+$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupts/Interrupt.py Makefile
+	@python3 $(SRCDIR)/Interrupts/Interrupt.py > $(OUTDIR)/InterruptInt.s
+	@$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
+	@echo Genrating and assembling from kernel file : $<
+
+
+
+#----------------------------------loader rules---------------------------------
+
+loader.elf: $(OBJ32) $(SRC32DIR)/link.ld
+	@echo Linking loader
+	@g++ $(LD32FLAGS) $(OBJ32) -o loader.elf $(LIBS32) -Xlinker --print-map > ld_mapping_loader_full
+	@cat ld_mapping_loader_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping_loader
+	@echo --------------------------loader built.------------------------------
+	@echo
+	@echo
+
+
+
+$(OUT32DIR)/%.s.o: $(SRC32DIR)/%.s Makefile
+	@mkdir -p $(OUT32DIR)
+	@$(AS) $(AS32FLAGS) $< -o $@
+	@echo Assembling loader file : $<
 
 $(OUT32DIR)/%.cpp.o: $(SRC32DIR)/%.cpp Makefile
 	@mkdir -p $(OUT32DIR)
 	@mkdir -p `dirname $(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<)`
-	$(CXX) $(CXX32FLAGS) -c $< -o $@
-	@$(CXX) -MM -MT '$@' -MF $(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<)  $<
-
-$(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupts/Interrupt.py Makefile
-	python3 $(SRCDIR)/Interrupts/Interrupt.py > $(OUTDIR)/InterruptInt.s
-	$(AS) $(ASFLAGS) $(OUTDIR)/InterruptInt.s -o $(OUTDIR)/InterruptInt.o
+	@echo Compiling loader file : $<
+	@$(CXX) $(CXX32FLAGS) -MD -MT '$@' -MF$(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<) -c $< -o $@
 
 
-
+#----------------------------------libc rules-----------------------------------
 
 $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c Makefile
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
-	$(CC) $(CFLAGS)  -c $< -o $@
-	@$(CC) -MM -MT '$@' -MF $(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<)  $<
+	@echo Compiling libc file : $<
+	@$(CC) $(CFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<) -c $< -o $@
+
+$(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.cpp Makefile
+	@mkdir -p $(OUTDIR)/libc
+	@mkdir -p $(DEPDIR)/libc
+	@echo Compiling libc file : $<
+	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.cpp, $(DEPDIR)/$(LIBC)/%.cpp.d, $<) -c $< -o $@
 
 libc.a: $(LIBCOBJ) $(LIBCH) Makefile
-	ar rcs libc.a $(LIBCOBJ)
 
+	ar rcs libc.a $(LIBCOBJ)
+	@echo --------------------------libc built.------------------------------
+	@echo
+	@echo
+
+
+#----------------------------------libc++ rules---------------------------------
 
 $(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a Makefile
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-	@$(CXX) -MM -MT '$@' -MF $(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<)  $<
+	@echo Compiling libcpp file : $<
+	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<) -c $< -o $@
 
 libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a Makefile
 	ar rcs libc++.a $(LIBCXXOBJ)
+	@echo --------------------------libc++ built.------------------------------
+	@echo
+	@echo
 
 
 
