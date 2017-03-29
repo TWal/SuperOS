@@ -31,10 +31,14 @@ namespace std{
         size_type _capacity;
 
         inline size_type strategy(size_type s){
-            size_t res = 1 << (8*sizeof(size_t) - __builtin_clz(s+1)+1);
+            size_t bsr;
+            asm("bsr %1,%0" : "=r"(bsr) : "r"(s+1));
+            size_t res = 1 << (bsr +1);
+            assert(res > s);
             if(res) return res;
             else return s;
         }
+
         inline void destroy(pointer input,size_t nb){
             for(size_t i = 0 ; i < nb ; ++i){
                 input[i].~value_type();
@@ -134,6 +138,12 @@ namespace std{
             new(&_data[_size]) T(val);
             ++_size;
         }
+        void push_back (value_type&& val){
+            reserve(_size+1);
+            new(&_data[_size]) T(move(val));
+            ++_size;
+        }
+
         iterator begin(){
             return _data;
         }

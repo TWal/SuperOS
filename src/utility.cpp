@@ -89,7 +89,7 @@ vector<string> split(std::string str,char separator,bool keepEmpty){
 
 std::string concat(std::vector<std::string> strs,char separator){
     string res;
-    for(auto s : strs){
+    for(auto& s : strs){
         res.append(s);
         res.push_back(separator);
     }
