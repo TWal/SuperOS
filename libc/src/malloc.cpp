@@ -49,7 +49,7 @@ static inline size_t align8(size_t n) {
 }
 
 void* malloc(size_t size) {
-    //printf("malloc %lld",size);
+    //printf("malloc %lld\n",size);
     size = align8(size);
     MallocHeader* head = firstHeader;
     assert(head->seemsValid());
@@ -57,7 +57,9 @@ void* malloc(size_t size) {
         //if we are at the end of the linked list
         if(head->size == 0) {
             //allocate enough space
-            assert(headerToPtr(head) == sbrk(sizeof(MallocHeader)+size));
+            void* newAddr = sbrk(sizeof(MallocHeader)+size);
+            //printf("Allocated at %p\n",newAddr);
+            assert(headerToPtr(head) == newAddr);
             //setup header
             head->setSize(size);
             head->setFree(false);
@@ -106,7 +108,7 @@ void* malloc(size_t size) {
 }
 
 void free(void* ptr) {
-    printf("freeing %p",ptr);
+    //printf("freeing %p",ptr);
     MallocHeader* head = ptrToHeader(ptr);
     //free the block
     assert(!head->free && "This is probably a double free!");

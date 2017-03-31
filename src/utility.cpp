@@ -98,5 +98,8 @@ std::string concat(std::vector<std::string> strs,char separator){
 }
 #endif
 
-
+void pbool(bool b,const char* s){
+    if(b)printf("%s : OK\n",s);
+    else printf("%s : Not OK\n",s);
+}
 

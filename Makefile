@@ -101,6 +101,9 @@ runqemu: os.iso
 runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -serial file:logqemu.txt
 
+runqemuu: updatedisk
+	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -nographic
+
 connect : all
 	gdb -ex "set arch i386:x86-64" -ex "symbol-file kernel.elf" -ex "target remote localhost:1234"
 
@@ -206,7 +209,7 @@ libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a Makefile
 #---------------------------------Unit tests-------------------------------
 
 unittest:
-	./unitTests.sh
+	@./unitTests.sh
 
 
 buildunit: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
