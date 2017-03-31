@@ -1,4 +1,3 @@
-
 #include "../src/utility.h"
 #include "multiboot.h"
 #include "KArgs.h"
@@ -6,7 +5,6 @@
 #include "Segmentation.h"
 #include "../src/IO/FrameBuffer.h"
 #include "../src/User/Elf64.h"
-
 #include "mapping.h"
 
 
@@ -64,19 +62,19 @@ extern "C" void load(multibootInfo * mb){
     Elf64::Elf64 kernelFile(kernelAddr,kernelSize);
 
     printf("%d sections and %d prog section\n",kernelFile.shnum, kernelFile.phnum);
-    for(int i = 0; i < kernelFile.shnum ; ++ i){
+    /*for(int i = 0; i < kernelFile.shnum ; ++ i){
         auto sh = kernelFile.getSectionHeader(i);
         const char* type = sh.type == Elf64::SHT_PROGBITS ? "ProgBit" :
-            (sh.type == Elf64::SHT_NOBITS ? "noBits" : "Other");
+          (sh.type == Elf64::SHT_NOBITS ? "noBits" : "Other");
 
         printf("%s, t : %s, off : %llx, virt : %llx, size : %d\n",sh.getName(),type,sh.offset,sh.addr,sh.size);
-    }
-    printf("\n");
+    }*/
+    //printf("\n");
 
     for(int i = 0; i < kernelFile.phnum ; ++ i){
         auto ph = kernelFile.getProgramHeader(i);
 
-        printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
+        //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
         if(ph.type == Elf64::PT_LOAD){
             createMapping(ph.getData(),ph.vaddr,(ph.filesz + 0x1000-1) / 0x1000);
             push(kernelrsp,OccupArea{u32(ph.getData()),u32((ph.filesz + 0x1000-1) / 0x1000)});

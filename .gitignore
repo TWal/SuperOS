@@ -15,3 +15,5 @@ disassemblyl
 disk.img
 libc.a
 libc++.a
+log.txt
+logqemu.txt

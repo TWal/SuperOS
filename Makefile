@@ -16,12 +16,12 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O2 -mno-sse
+OPTILVL = -O0 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32
 CBASEFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
-				 -Wno-packed-bitfield-compat -Werror \
+				 -Wno-packed-bitfield-compat -fno-builtin -Werror \
 				 $(OPTILVL)
 C32FLAGS = $(CBASEFLAGS) -m32 -DSUP_OS_LOADER
 CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
@@ -90,16 +90,19 @@ os.iso: all
 	grub-mkrescue -o os.iso iso
 
 run: os.iso
-	bochs -f bochsrc.txt -q
+	bochs -q -f bochsrc.txt
 
 rund: updatedisk
 	bochs -f bochsrcd.txt -q
 
 runqemu: os.iso
-	qemu-system-x86_64 -boot d -cdrom os.iso -m 512
+	qemu-system-x86_64 -boot d -cdrom os.iso -m 512 -s -serial file:logqemu.txt
 
 runqemud: updatedisk
-	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512
+	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -serial file:logqemu.txt
+
+connect : all
+	gdb -ex "set arch i386:x86-64" -ex "symbol-file kernel.elf" -ex "target remote localhost:1234"
 
 
 
@@ -200,6 +203,24 @@ libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a Makefile
 
 
 
+#---------------------------------Unit tests-------------------------------
+
+unittest:
+	./unitTests.sh
+
+
+buildunit: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
+	@$(CXX) $(CXXFLAGS) -DUNITTEST -c $(SRCDIR)/kmain.cpp -o $(OUTDIR)/kmain.cpp.o
+	@echo Linking kernel for unit test
+	@g++ $(LD64FLAGS) $(OBJ) $(OUTDIR)/unittest.o -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
+	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
+	@echo ----------------------unittest kernel built.------------------------------
+	@echo
+	@echo
+
+getCompileLine:
+	@echo $(CXX) $(CXXFLAGS)
+
 
 
 
@@ -238,11 +259,12 @@ grubinst:
 
 mvtoimg: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
+	cp loader.elf iso/boot/loader.elf
 	sudo rsync -r iso/ $(MNTPATH)/
 
 builddisk: load partition mount grubinst mvtoimg ulm
 
-updatedisk: kernel.elf lm mvtoimg ulm
+updatedisk: kernel.elf loader.elf lm mvtoimg ulm
 
 
 

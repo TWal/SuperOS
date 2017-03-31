@@ -1,5 +1,6 @@
 #include"../stdlib.h"
 #include"malloc.h"
+#include "../stdio.h"
 
 static MallocHeader* firstHeader;
 
@@ -48,6 +49,7 @@ static inline size_t align8(size_t n) {
 }
 
 void* malloc(size_t size) {
+    //printf("malloc %lld",size);
     size = align8(size);
     MallocHeader* head = firstHeader;
     assert(head->seemsValid());
@@ -104,6 +106,7 @@ void* malloc(size_t size) {
 }
 
 void free(void* ptr) {
+    printf("freeing %p",ptr);
     MallocHeader* head = ptrToHeader(ptr);
     //free the block
     assert(!head->free && "This is probably a double free!");
