@@ -8,7 +8,6 @@ switchSegReg:
     pushq $0x8
 	  movabs $switchSegReg_rec,%rax
 	  push %rax
-    xchg %bx,%bx
 	  iretq
 switchSegReg_rec :
 	  mov $0x10,%eax
