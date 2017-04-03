@@ -19,6 +19,7 @@
 
 #include<vector>
 #include<string>
+#include<deque>
 
 using namespace std;
 
@@ -85,13 +86,9 @@ void dummy(const InterruptParams&){
 
 //--------------------TESTING MACRO
 #define TMP_TEST (-1)
-#define MALLOC_TEST 0
 #define FAT_TEST 1
 #define KBD_TEST 2
 #define CL_TEST 3
-#define INT_TEST 4
-#define LIBCXX_TEST 5
-#define SPLIT_TEST 6
 #define HDD_TEST 7
 
 
@@ -135,27 +132,14 @@ extern "C" void kmain(KArgs* kargs) {
 #endif
 
 
-#define BLA TMP_TEST
+#define BLA NO_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
 
-
     printf("done");
 
     stop;
-
-#elif BLA == MALLOC_TEST
-
-    char* p1 = (char*)malloc(13);
-    char* p2 = (char*)malloc(19);
-    char* p3 = (char*)malloc(23);
-    char* p4 = (char*)malloc(27);
-    fb.printf("%x %x %x %x\n", p1, p2, p3, p4);
-    free(p2);
-    char* p5 = (char*)malloc(21);
-    fb.printf("%x\n", p5);
-    while(1) asm volatile ("cli;hlt");
 
 #elif BLA == HDD_TEST
     HDD first(1,true);
@@ -202,14 +186,6 @@ extern "C" void kmain(KArgs* kargs) {
         fb.printf("\r");
     }
 
-
-#elif BLA == INT_TEST
-    breakpoint;
-
-    idt.addInt(150,dummy);
-    interrupt<150>();
-
-
 #elif BLA == KBD_TEST
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
@@ -219,33 +195,6 @@ extern "C" void kmain(KArgs* kargs) {
     while(true) {
         auto k = kbd.poll();
         if(!k.isRelease)printf("%c",k.symbol);}
-
-
-#elif BLA == LIBCXX_TEST
-    printf("libc++ test :\n");
-    string s = "hello world!";
-    for(auto v : s){
-        printf("%c",v);
-    }
-    printf(" = %s of size %llu\n", s.c_str(),s.size());
-    assert(s == "hello world!");
-    string s2;
-    s2 = s;
-    s = "123456789";
-    s.erase(s.begin()+3,s.end() -4);
-    printf("%s and %s and %d\n",s.c_str(),s2.c_str(),s.find_first_of('8'));
-    s+= s2;
-    printf("hello = %s neq %s\n",s2.substr(0,5).c_str(), (s += s2).c_str());
-    printf("s = %s\n",s.c_str());
-    assert(s < s2);
-
-#elif BLA == SPLIT_TEST
-    auto v = split("dsjkflqsd,dsfjklsfjsq,fsfjsdfl,sqdjflk,f,sd,,,,fksdjqfls",',');
-    for(string& s : v){
-        printf("%s ; ",s.c_str());
-    }
-
-    printf("\n\nconcat : %s",concat(v,';').c_str());
 
 
 #elif BLA == CL_TEST

@@ -46,13 +46,14 @@ geneInt: # by default interruption on user stack.
     pop %rdx
     pop %rdi
 	  pop %rsi
-    testb $4,(%rbp,%rbx,8)
-	  pop %rbp
+    testb $4,(%rbp,%rbx)
 	  jnz errEnd
+	  pop %rbp
     pop %rbx
     iretq
 
 errEnd:
+	  pop %rbp
 	  pop %rbx
-    add $4,%rsp
+    add $8,%rsp
 	  iretq

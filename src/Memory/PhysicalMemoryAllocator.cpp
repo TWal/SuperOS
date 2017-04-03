@@ -28,7 +28,7 @@ u64 PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupAr
     //printfirst(1);
 
     for(u64 i = 0 ; i < occupSize ; ++i){
-        printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
+        //printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
         //printfirst(1);
         //breakpoint;
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){

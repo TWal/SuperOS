@@ -83,6 +83,7 @@ struct IntParams{
     IntParams(): isAssembly(false),doReturn(false),hasErrorCode(false){};
 }__attribute__((packed));
 
+static_assert(sizeof(IntParams) == 1, "IntParams is too big");
 
 typedef u64 (*interFuncR)(const InterruptParams&);
 typedef void (*interFunc)(const InterruptParams&);

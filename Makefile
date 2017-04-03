@@ -299,7 +299,7 @@ dasml:
 	objdump -D -C loader.elf > disassemblyl
 
 count:
-	cloc libc libc++ src src32 -lang-no-ext="C/C++ Header"
+	cloc libc libc++ src src32 unitTests -lang-no-ext="C/C++ Header"
 
 include $(DEPF)
 
