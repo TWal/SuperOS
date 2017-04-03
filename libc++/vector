@@ -30,7 +30,19 @@ namespace std{
         size_type _size;
         size_type _capacity;
 
-        inline size_type strategy(size_type s){
+        /* Class Invariant :
+           either _size == _capacity == 0 and _data = nullptr
+           and no memory or object are owned by the vector called empty state
+           (the vector can be empty and not in empty state) or
+           _data is valid pointer given by _alloc with capacity
+           _capacity owned only by this.
+           the area from _data to _data + _size (excluded) is valid
+           constructed objects of type T owned by this.
+           the area from _data + _size to _data + _capacity is uninitialized memory.
+           and of course _capacity >= _size
+        */
+
+        inline size_type strategy(size_type s){ // return > s
             size_t bsr;
             asm("bsr %1,%0" : "=r"(bsr) : "r"(s+1));
             size_t res = 1 << (bsr +1);
@@ -63,8 +75,9 @@ namespace std{
             reserve(oth._size);
             _size = oth._size;
             for(int i =0 ; i < _size;++i){
-                _data[i] = oth._data[i];
+                new(_data +i) T(oth._data[i]);
             }
+
         }
         vector (vector&& oth): _alloc(move(oth._alloc)),_data(oth._data),
                                      _size(oth._size),_capacity(oth._capacity){
@@ -73,33 +86,25 @@ namespace std{
             oth._capacity = 0;
         }
 
-        vector (size_type n, const value_type& val,
-                const allocator_type& alloc = allocator_type());
+        //vector (size_type n, const value_type& val,
+        //        const allocator_type& alloc = allocator_type());
 
-        ~vector(){
+        ~vector(){ // change a valid state to an invalid state with no memory or objects owned
             if(_size && _data){
                 for(size_t i = 0 ; i < _size ; ++i){
                     _data[i].~value_type();
                 }
             }
-            //printf("Destructed elem in %p \n",_data);
-            //    for(volatile int i = 0 ; i < 500000000 ; ++ i);
             if(_data) _alloc.deallocate(_data,_capacity);
-            //printf("Destructed area \n");
-            //for(volatile int i = 0 ; i < 500000000 ; ++ i);
         }
 
         vector& operator= (const vector& x){
-            if(_data){
-                for(size_t i = 0 ; i < _size ; ++i){
-                    _data[i].~value_type();
-                }
-            }
+            clear();
             reserve(x.size());
-            for(size_t i = 0 ; i < x._size ; ++ i){
-                _data[i] = x._data[i];
-            }
             _size = x._size;
+            for(size_t i = 0 ; i < _size ; ++i){
+                new(_data + i) T(x._data[i]);
+            }
             return *this;
         }
         vector& operator= (vector&& x){
@@ -120,19 +125,24 @@ namespace std{
         size_type size(){
             return _size;
         }
+        /* Switch any valid state to a valid state with same objects owned,
+           same _size and _capacity > size.
+           The output state is never the empty state */
         void reserve(size_type size){
             if (_size>0 && size <= _capacity) return;
-            size_type capacity = strategy(size);
+            // size > _capacity >= size => size > _size
+            size_type capacity = strategy(size); // capacity >= _capacity
             pointer data = _alloc.allocate(capacity);
             if(_data){
                 for(size_t i = 0 ; i < _size ; ++i){
-                    data[i] = move(_data[i]);
+                    new(data+i) T(move(_data[i]));
                 }
                 _alloc.deallocate(_data,_capacity);
             }
             _capacity = capacity;
             _data = data;
         }
+
         void push_back (const value_type& val){
             reserve(_size+1);
             new(&_data[_size]) T(val);
@@ -164,11 +174,13 @@ namespace std{
         }
         iterator erase (iterator first, iterator last){
             size_type diff = last - first;
-            if(!diff)return end();
+            if(!diff)return first;
             move(last,_data+_size,first);
+            for(int i = 1 ; i <= diff ; ++i){
+                _data[_size - i].~value_type();
+            }
             _size -= diff;
             return first;
-
         }
         iterator erase (iterator position){
             erase(position,position+1);
@@ -182,8 +194,6 @@ namespace std{
             return _size == 0;
         }
         iterator insert (const_iterator position, const value_type& val){
-            //printf("vector insert %p %p!\n",position,end());
-            //for(volatile int i = 0 ; i < 100000000 ; ++i);
             if(position == end()){
                 push_back(val);
                 return end()-1;
@@ -196,11 +206,9 @@ namespace std{
                 for(pointer it = _data ; it < position ; ++it){
                     new (data + (it-_data)) T(move(*it));
                 }
-                //move(const_iterator(_data),position,data);
                 for(const_pointer it = position ; it < _data + _size ; ++it){
                     new (data + (it-_data)+1) T(move(*it));
                 }
-                //move(position,const_iterator(_data + _size),data + diff +1);
                 new (data + diff) T(val);
                 _capacity = capacity;
                 _data = data;
@@ -210,22 +218,15 @@ namespace std{
             else{
                 assert(_capacity > _size);
                 iterator newpos = const_cast<iterator>(position);
-                //printf("way 2 %d %d %p %p\n",_capacity, _size , newpos,_data + _capacity);
                 new(_data +_size) T();
                 move_backward(newpos,_data + _size,_data + _size +1);
                 *newpos = val;
                 ++_size;
-                //printf ("Yeah !\n");
                 return newpos;
             }
-            //return begin();
         }
-        void clear(){
-            //printf("Clearing\n");
-            //for(volatile int i  = 0 ; i < 300000000 ; ++i);
+        void clear(){// switch any valid state to the empty valid state
             this->~vector();
-            //printf("Cleared\n");
-            //for(volatile int i  = 0 ; i < 300000000 ; ++i);
             _data = nullptr;
             _size = 0;
             _capacity = 0;

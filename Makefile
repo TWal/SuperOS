@@ -21,7 +21,7 @@ OPTILVL = -O0 -mno-sse
 ASFLAGS =
 AS32FLAGS = --32
 CBASEFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
-				 -Wno-packed-bitfield-compat -fno-builtin -Werror \
+				 -Wno-packed-bitfield-compat -fno-builtin -Werror -mno-red-zone \
 				 $(OPTILVL)
 C32FLAGS = $(CBASEFLAGS) -m32 -DSUP_OS_LOADER
 CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \

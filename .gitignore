@@ -17,3 +17,4 @@ libc.a
 libc++.a
 log.txt
 logqemu.txt
+logqemu_*.txt

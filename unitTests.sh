@@ -21,10 +21,10 @@ do
     fi
     outfile=${f%.*}.out
     # Change the 2s if the system is too slow to boot
-    timeout --foreground 2s make -s runqemuu >logqemu.txt 2>/dev/null
+    timeout --foreground 2s make -s runqemuu >logqemu_$b2.txt 2>/dev/null
 
     o=${f%.*}.out
-    if ! cmp logqemu.txt $o
+    if ! cmp logqemu_$b2.txt $o
     then
         echo Test $b2 failed : wrong output
         #exit 1
