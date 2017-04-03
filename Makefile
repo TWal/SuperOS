@@ -276,21 +276,26 @@ updatedisk: kernel.elf loader.elf lm mvtoimg ulm
 clean:
 	rm -rf $(OUTDIR)
 	rm -f disassembly
+	rm -f disassemblyl
 	rm -f ld_mapping
 	rm -f ld_mapping_full
 	rm -f ld_mapping_loader
-	rm -f ld_mapping_full_loader
+	rm -f ld_mapping_loader_full
 	rm -f os.iso
 	rm -f kernel.elf
 	rm -f loader.elf
 	rm -f bochslog.txt
 	rm -f libc.a
 	rm -f libc++.a
+	rm -f log.txt
+	rm -f logqemu.txt
+	rm -f logqemu_*.txt
 
 mrproper: clean
 	rm -f disk.img
 	rm -rf $(DEPDIR)
 	rm -f iso/boot/kernel.elf
+	rm -f iso/boot/loader.elf
 
 dasm:
 	objdump -D -C kernel.elf > disassembly
