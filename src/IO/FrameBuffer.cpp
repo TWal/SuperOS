@@ -1,6 +1,11 @@
+#ifdef SUP_OS_KERNEL
 #include "FrameBuffer.h"
+#include "Serial.h"
+#elif defined(SUP_OS_LOADER)
+#include "../src/IO/FrameBuffer.h"
+#endif
 
-static char* const FB = (char*) (0xB8000 + THREEGB);
+static char* const FB = (char*) (0xB8000);
 
 inline static char getColor(char fg, char bg) {
     return (fg & 0xF) | ((bg & 0xF) << 4);
@@ -11,6 +16,10 @@ FrameBuffer::FrameBuffer() {
 }
 
 void FrameBuffer::clear(char fg, char bg) {
+//#ifdef SUP_OS_KERNEL
+    //      breakpoint;
+//#endif
+
     _fg = fg;
     _bg = bg;
     _cursCol = 0;
@@ -49,6 +58,9 @@ void FrameBuffer::setMargin(int left, int right) {
 }
 
 void FrameBuffer::writeChar(char c, int col, int row, char fg, char bg) {
+//#ifdef SUP_OS_KERNEL
+    //  breakpoint;
+//#endif
     int i = 80*row + col;
     FB[2*i] = c;
     FB[2*i+1] = getColor(fg, bg);
@@ -75,6 +87,9 @@ void FrameBuffer::scroll(uint n, bool updateCurs) {
 }
 
 void FrameBuffer::putc(char c, bool updateCurs) {
+#ifdef SUP_OS_KERNEL
+    ser.write(c); // all OS printf are also redirected to serial TODO clean way.
+#endif
     switch(c) {
         case '\n':
             _cursCol = _margLeft;
@@ -115,6 +130,7 @@ void FrameBuffer::putc(char c, bool updateCurs) {
 }
 
 void FrameBuffer::puts(const char* s, bool updateCurs) {
+
     for(; *s; ++s) {
         putc(*s, false);
     }

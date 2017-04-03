@@ -1,0 +1,7 @@
+libc++ test :
+hello world! = hello world! of size 12
+String equality : OK
+1236789 and hello world! and 5
+hello = hello neq 1236789hello world!hello world!
+s = 1236789hello world!hello world!
+String comparaison : OK

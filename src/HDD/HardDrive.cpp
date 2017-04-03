@@ -1,5 +1,6 @@
 #include <string.h>
 #include "HardDrive.h"
+#include <stdio.h>
 
 static const u16 bus1BasePort = 0x1F0;
 static const u16 bus1SpecialPort = 0x3F6;

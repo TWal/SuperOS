@@ -67,7 +67,9 @@ namespace std {
         size_type _capacity;
 
         inline size_type strategy(size_type s){
-            size_t res = 1 << (8*sizeof(size_t) - __builtin_clz(s+1)+1);
+            size_t bsr;
+            asm("bsr %1,%0" : "=r"(bsr) : "r"(s+1));
+            size_t res = 1 << (bsr +1);
             assert(res > s);
             if(res) return res;
             else return s;
@@ -132,7 +134,7 @@ namespace std {
         basic_string& operator=(basic_string&& str){
             //printf("move ");
             this->~basic_string();
-            new(this) basic_string(str);
+            new(this) basic_string(move(str));
             return *this;
             }
 
@@ -226,9 +228,10 @@ namespace std {
             reserve(_size + str.size()+1);
             traits_type::copy(_data+_size,str._data,str._size);
             _size += str._size;
+            return *this;
         }
         basic_string& operator += (const basic_string& ref){
-            append(ref);
+            return append(ref);
         }
         void pop_back(){
             assert(_size > 0 && "pop_back on empty basic_string");

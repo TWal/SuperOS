@@ -1,10 +1,14 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#include <stddef.h>
 #include <stdint.h>// int32 etc
 #include <stdarg.h>
+
+#ifdef SUP_OS_KERNEL
 #include <vector>
 #include <string>
+#endif
 
 
 typedef unsigned char uchar;
@@ -102,14 +106,21 @@ void reboot();
 #define sti asm volatile("sti");
 #define stop asm volatile("xchg %bx,%bx ; cli ; hlt");
 
-std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
-std::string concat(std::vector<std::string> strs,char separator);
 
 #define WAIT(time) do { \
         for(volatile u64 i = 0 ; i < time ; ++i); \
     } while(false)
 
-const uptr THREEGB = 0xC0000000;
+
+const u64 HHOFFSET = -0x80000000; //High half kernel offset ~ 250T
+static_assert((HHOFFSET & 0x3FFFFFFF) == 0);
+
+void pbool(bool b,const char* = "");
+
+#ifdef SUP_OS_KERNEL
+std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
+std::string concat(std::vector<std::string> strs,char separator);
+#endif
 
 #endif
 

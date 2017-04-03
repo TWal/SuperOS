@@ -113,7 +113,7 @@ namespace std {
 
         ReturnValue operator()(Args... args){
             if(_data){
-                printf("Calling %p",_data);
+                //printf("Calling %p",_data);
                 return ((*_data)(args...));
             }
             if(_inter){

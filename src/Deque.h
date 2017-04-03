@@ -4,7 +4,7 @@
 #include "utility.h"
 
 template<typename T, uint N>
-class Deque {
+class Deque { //TODO rewrite it with constructor friendly implementation.
     public:
         Deque() :_begin(0), _end(0), _size(0) { }
 

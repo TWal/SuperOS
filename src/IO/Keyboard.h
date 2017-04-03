@@ -36,7 +36,7 @@ class Keyboard {
             CAPSLOCK
         };
     private:
-        Deque<uchar, 16> _deque;
+        Deque<uchar, 1024> _deque;
         u32 _flags;
         bool _lastIsE0;
         const Keymap* _keymap;

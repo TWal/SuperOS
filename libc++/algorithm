@@ -3,6 +3,8 @@
 
 #include<iterator>
 #include <stdio.h>
+#include <vector>
+#include <string>
 
 namespace std {
     template <class ForwardIterator, class T>
@@ -77,6 +79,7 @@ namespace std {
         while (last!=first) *(--result) = *(--last);
         return result;
     }
+
 }
 
 #endif
