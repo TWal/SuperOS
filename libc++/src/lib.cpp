@@ -1,5 +1,6 @@
 #include "../cstdlib"
 #include "../vector"
+#include "../deque"
 #include "../string"
 #include "../memory"
 #include "../new"
