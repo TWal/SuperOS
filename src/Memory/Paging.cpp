@@ -27,11 +27,11 @@ PageTable* const tmpPT = (PageTable*)virtTables + TMPPTOFF * 512; // temporary m
 
 // initialization routines
 
-PageEntry::PageEntry() : present(false),readWrite(true),user(false),writeThrough(false),
+PageEntry::PageEntry() : present(false),readWrite(true),user(true),writeThrough(false),
                          cacheDisable(false),accessed(false),zero(0),isSizeMega(false),
                          nothing(0),addr(0),data(0),zero2(0) {}
 
-PageTable::PageTable() : present(false),readWrite(true),user(false),writeThrough(false),
+PageTable::PageTable() : present(false),readWrite(true),user(true),writeThrough(false),
                          cacheDisable(false),accessed(false),dirty(0),zero(0),global(false),
                          nothing(0),addr(0),data(0),zero2(0) {}
 

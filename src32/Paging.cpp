@@ -16,7 +16,7 @@ void setupBasicPaging() {
     for(int i = 0 ; i < 512 ; ++i){
         PML4[i].present = false;
         PML4[i].readWrite = true;
-        PML4[i].user = false;
+        PML4[i].user = true;
         PML4[i].writeThrough = false;
         PML4[i].cacheDisable = false;
         PML4[i].accessed = false;
@@ -30,7 +30,7 @@ void setupBasicPaging() {
         for(int j = 0 ; j < 512 ; ++j){
             PDPs[i][j].present = false;
             PDPs[i][j].readWrite = true;
-            PDPs[i][j].user = false;
+            PDPs[i][j].user = true;
             PDPs[i][j].writeThrough = false;
             PDPs[i][j].cacheDisable = false;
             PDPs[i][j].accessed = false;
@@ -45,7 +45,7 @@ void setupBasicPaging() {
         for(int j = 0; j < 512; ++j) {
             PDs[i][j].present = false;
             PDs[i][j].readWrite = true;
-            PDs[i][j].user = false;
+            PDs[i][j].user = true;
             PDs[i][j].writeThrough = false;
             PDs[i][j].cacheDisable = false;
             PDs[i][j].accessed = false;
@@ -60,7 +60,7 @@ void setupBasicPaging() {
         for(int j = 0 ; j < 512 ; ++j) {
             PTs[i][j].present = false;
             PTs[i][j].readWrite = true;
-            PTs[i][j].user = false;
+            PTs[i][j].user = true;
             PTs[i][j].writeThrough = false;
             PTs[i][j].cacheDisable = false;
             PTs[i][j].accessed = false;

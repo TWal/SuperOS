@@ -17,6 +17,9 @@
 #include "Memory/Heap.h"
 #include <stdlib.h>
 #include "IO/Serial.h"
+#include "User/Context.h"
+#include "Interrupts/TaskSegment.h"
+#include "User/Syscall.h"
 
 #include<vector>
 #include<string>
@@ -84,6 +87,10 @@ void dummy(const InterruptParams&){
 
 }
 
+void hello(const InterruptParams&){
+    printf("hello system call");
+}
+
 
 //--------------------TESTING MACRO
 #define TMP_TEST (-1)
@@ -120,9 +127,9 @@ extern "C" void kmain(KArgs* kargs) {
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
-    asm volatile(
+    /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
-        ); // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
+        );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
     paging.removeIdent();
     kheap.init(&kernel_code_end);
     initmalloc();
@@ -132,14 +139,19 @@ extern "C" void kmain(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA EXT2_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
+    breakpoint;
 
-    printf("done");
+    syscallInit();
 
-    stop;
+    tss.load();
+    tss.RSP[0] = (void*)0xFFFFFFFFFFFFF800ull;
+
+    testLaunchCPL3();
+
 
 #elif BLA == EXT2_TEST
 

@@ -51,7 +51,7 @@ enableLM:
     ## switch to long mode
     mov $0xC0000080,%ecx
     rdmsr
-    or $(1 << 8),%eax
+    or $(1 << 8)|1,%eax
     wrmsr
 
     ## set PG

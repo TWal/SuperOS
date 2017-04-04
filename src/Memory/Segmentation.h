@@ -3,10 +3,14 @@
 
 #define CODE_SEGMENT 0x08
 #define DATA_SEGMENT 0x10
-#define USER_CODE_SEGMENT 0x18
+#define USER_CODE32_SEGMENT 0x18
 #define USER_DATA_SEGMENT 0x20
+#define USER_CODE_SEGMENT 0x28
+#define TSS_SEGMENT 0x30
 
 #include "../utility.h"
+
+const uint gdtsize = 8;
 
 struct GDTEntry{
     GDTEntry();
@@ -35,7 +39,7 @@ struct GDTEntry{
 }__attribute__((packed));
 static_assert(sizeof(GDTEntry) == 8 , "GDTEntry has wrong size");
 
-extern GDTEntry GDT[5];
+extern GDTEntry GDT[gdtsize];
 
 class GDTDescriptor{
 public :

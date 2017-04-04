@@ -2,7 +2,7 @@
 
 
 
-GDTEntry GDT[5];
+GDTEntry GDT[gdtsize];
 
 
 GDTEntry::GDTEntry(): limitLow(0),baseLow(0),accessed(0),RW(true),
@@ -43,12 +43,16 @@ void GDTDescriptor::stdGDT(){
     GDT[2].setFullDataSegment();
     GDT[3].setFullExecSegment();
     GDT[3].privilege = 3;
+    GDT[3].is64bits = false;
+    GDT[3].is32bits = true;
     GDT[4].setFullDataSegment();
     GDT[4].privilege = 3;
+    GDT[5].setFullExecSegment();
+    GDT[5].privilege = 3;
 }
 
 void GDTDescriptor::lgdt(){
-    _size = 5*8;
+    _size = gdtsize*8;
     _GDT = GDT;
     asm volatile (
         "lgdt (%0)" :

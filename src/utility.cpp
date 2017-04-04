@@ -27,6 +27,27 @@ u16 inw(u16 port){
     asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "d"(port) : "%ax");
     return res;
 }
+void wrmsr(u32 num,u64 value){
+    asm volatile(
+        "wrmsr" :
+        :
+        "c"(num),"a"((u32)value),"d"((u32)(value >> 32)) :
+        //"%rdx"
+        );
+}
+u64 rdmsr(u32 num){
+    u32 resh,resl;
+    asm volatile(
+        "rdmsr;" :
+        "=a"(resl),"=d"(resh) :
+        "c"(num) :
+        );
+    return (u64)resl + ((u64)resh << 32);
+}
+
+
+
+u64 rdmsr(u32 num);
 
 
 void vbsod(const char* s, va_list ap) {

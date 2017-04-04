@@ -55,6 +55,9 @@ u8 inb(u16 port);
 void outw(u16 port, u16 data);
 u16 inw(u16 port);
 
+void wrmsr(u32 num,u64 value); // read and write MSR from C
+u64 rdmsr(u32 num);
+
 template<typename T> T min(const T& a, const T& b) {
     if(a < b) {
         return a;

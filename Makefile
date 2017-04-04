@@ -16,7 +16,7 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O0 -mno-sse
+OPTILVL = -O2 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32
@@ -42,9 +42,7 @@ LIBS64 = -L. -L $(LIBGCC) -lc -lgcc -lc++
 SRC32ASM = $(wildcard $(SRC32DIR)/*.s)
 SRC32CXX = $(wildcard $(SRC32DIR)/*.cpp)
 
-SRCCONTENT = $(shell find src -type f)
-
-SRCCONTENT = $(shell find src -type f)
+SRCCONTENT = $(shell find $(SRCDIR) -type f)
 
 #SRCASM = $(SRCDIR)/Interrupts/Interrupt.s
 #SRCCXX = $(SRCDIR)/kmain.cpp $(SRCDIR)/IO/FrameBuffer.cpp $(SRCDIR)/utility.cpp \
@@ -57,7 +55,7 @@ SRCASM = $(filter %.s,$(SRCCONTENT))
 SRCC = $(filter %.c,$(SRCCONTENT))
 SRCCXX = $(filter %.cpp,$(SRCCONTENT))
 
-DEPF = $(wildcard $(DEPDIR)/*.d) $(wildcard $(DEPDIR)/$(LIBC)/*.d)  $(wildcard $(DEPDIR)/$(LIBCXX)/*.d) $(wildcard $(DEP32DIR)/*.d)
+DEPF = $(shell find $(DEPDIR) -type f)
 
 OBJ32 = $(patsubst $(SRC32DIR)/%, $(OUT32DIR)/%.o, $(SRC32ASM)) \
       $(patsubst $(SRC32DIR)/%, $(OUT32DIR)/%.o, $(SRC32CXX)) \
@@ -132,13 +130,13 @@ $(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)`
 	@echo Compiling kernel file : $<
-	@$(CC) $(CFLAGS) -MD -MT '$@' -MF	$(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<) -c $< -o $@
+	@$(CC) $(CFLAGS) -MMD -MT '$@' -MF	$(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<) -c $< -o $@
 
 $(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)`
 	@echo Compiling kernel file : $<
-	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -MMD -MT '$@' -MF $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<) -c $< -o $@
 
 
 $(OUTDIR)/InterruptInt.o : $(SRCDIR)/Interrupts/Interrupt.py Makefile
@@ -169,7 +167,7 @@ $(OUT32DIR)/%.cpp.o: $(SRC32DIR)/%.cpp Makefile
 	@mkdir -p $(OUT32DIR)
 	@mkdir -p `dirname $(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<)`
 	@echo Compiling loader file : $<
-	@$(CXX) $(CXX32FLAGS) -MD -MT '$@' -MF$(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<) -c $< -o $@
+	@$(CXX) $(CXX32FLAGS) -MMD -MT '$@' -MF$(patsubst $(SRC32DIR)/%.cpp, $(DEP32DIR)/%.cpp.d, $<) -c $< -o $@
 
 
 #----------------------------------libc rules-----------------------------------
@@ -279,6 +277,7 @@ updatedisk: kernel.elf loader.elf lm mvtoimg ulm
 
 clean:
 	rm -rf $(OUTDIR)
+	rm -rf $(DEPDIR)
 	rm -f disassembly
 	rm -f disassemblyl
 	rm -f ld_mapping
@@ -297,7 +296,6 @@ clean:
 
 mrproper: clean
 	rm -f disk.img
-	rm -rf $(DEPDIR)
 	rm -f iso/boot/kernel.elf
 	rm -f iso/boot/loader.elf
 
