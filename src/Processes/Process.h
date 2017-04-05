@@ -3,6 +3,8 @@
 
 #include "../utility.h"
 #include "../Memory/Paging.h"
+#include <vector>
+#include "FileDescriptor.h"
 
 struct GeneralRegisters{
     u64 rax;
@@ -31,6 +33,7 @@ class Process{
     // Descriptor table
     bool terminated; // i.e zombie
     u64 returnCode; // valid iff terminated = true
+    std::vector<FileDescriptor*> fds;
 };
 
 class WaitingReason;
