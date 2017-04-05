@@ -20,6 +20,7 @@
 #include "User/Context.h"
 #include "Interrupts/TaskSegment.h"
 #include "User/Syscall.h"
+#include "Processes/Scheduler.h"
 
 #include<vector>
 #include<string>
@@ -123,16 +124,19 @@ extern "C" void kmain(KArgs* kargs) {
     physmemalloc.init((void*)kargs->freeAddr,kargs->RAMSize,
                       (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
     paging.init((PageEntry*)kargs->PML4); // initializing paging
-    paging.allocStack((void*)kargs->stackAddr,3); // allocation kernel stack (fixed size for now)
+    paging.allocStack((void*)kargs->stackAddr,3); // allocation of kernel stack (fixed size for now)
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
     /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
-    paging.removeIdent();
-    kheap.init(&kernel_code_end);
-    initmalloc();
+    paging.removeIdent(); // remove the identyt paging necessary for boot process
+    kheap.init(&kernel_code_end); // creating kernel heap
+    initmalloc(); // initializing kernel malloc : no heap access before this point.
+    syscallInit(); // intialize syscall API
+    tss.load(); // load TSS for enabling interrupts from usermode
+    tss.RSP[0] = nullptr; // the kernel stack really start from 0.
 
 #ifdef UNITTEST
     unittest();
@@ -143,13 +147,7 @@ extern "C" void kmain(KArgs* kargs) {
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
-    breakpoint;
-
-    syscallInit();
-
-    tss.load();
-    tss.RSP[0] = (void*)0xFFFFFFFFFFFFF800ull;
-
+    schedul.init();
     testLaunchCPL3();
 
 

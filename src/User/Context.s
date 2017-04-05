@@ -18,6 +18,7 @@ testCPL3:
     mov $42,%rax
     int $0x80
     xchg %bx,%bx
-    mov $43, %rax
-    syscall
+    movabs $t,%rax
+t:
+    jmp *%rax
 
