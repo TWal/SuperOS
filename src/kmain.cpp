@@ -109,6 +109,7 @@ void hello(const InterruptParams&){
 void unittest();
 #endif
 
+// WARNING : kmain local var should not exceed 2K for stack switching
 extern "C" void kmain(KArgs* kargs) {
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
@@ -124,7 +125,7 @@ extern "C" void kmain(KArgs* kargs) {
     physmemalloc.init((void*)kargs->freeAddr,kargs->RAMSize,
                       (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
     paging.init((PageEntry*)kargs->PML4); // initializing paging
-    paging.allocStack((void*)kargs->stackAddr,3); // allocation of kernel stack (fixed size for now)
+    paging.allocStack((void*)kargs->stackAddr,10); // allocation of kernel stack (fixed size )
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);

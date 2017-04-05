@@ -97,14 +97,29 @@ run: os.iso
 rund: updatedisk
 	bochs -f bochsrcd.txt -q
 
+runs: updatedisk
+	cp disk.img disko.img
+	bochs -f bochsrcd.txt -q
+	mv disk.img diskout.img
+	mv disko.img disk.img
+
+
 runqemu: os.iso
 	qemu-system-x86_64 -boot d -cdrom os.iso -m 512 -s -serial file:logqemu.txt
 
 runqemud: updatedisk
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -serial file:logqemu.txt
 
+runqemus: updatedisk
+	cp disk.img disko.img
+	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -serial file:logqemu.txt
+	mv disk.img diskout.img
+	mv disko.img disk.img
+
 runqemuu: updatedisk
+	cp disk.img disko.img
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -nographic
+	mv disko.img disk.img
 
 connect : all
 	gdb -ex "set arch i386:x86-64" -ex "symbol-file kernel.elf" -ex "target remote localhost:1234"
@@ -226,7 +241,18 @@ buildunit: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
 getCompileLine:
 	@echo $(CXX) $(CXXFLAGS)
 
+#---------------------------------User mode------------------------------------
 
+$(OUTDIR)/start/crt0.s.o: start/crt0.s
+	@mkdir -p `dirname $@`
+	@$(AS) $(ASFLAGS) $< -o $@
+
+$(OUTDIR)/start/crt0.c.o:  start/crt0.c
+	@mkdir -p `dirname $@`
+	@$(CC) $(CFLAGS) $< -o $@
+
+crt0.o: $(OUTDIR)/start/crt0.s.o $(OUTDIR)/start/crt0.c.o
+	ld -r $^ -o crt0.o
 
 
 

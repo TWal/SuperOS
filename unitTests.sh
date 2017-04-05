@@ -20,8 +20,8 @@ do
        exit 1
     fi
     outfile=${f%.*}.out
-    # Change the 2s if the system is too slow to boot
-    timeout --foreground 2s make -s runqemuu >logqemu_$b2.txt 2>/dev/null
+    # Change the 3s if the system is too slow to boot
+    timeout --foreground 3s make -s runqemuu >logqemu_$b2.txt 2>/dev/null
 
     o=${f%.*}.out
     if ! cmp logqemu_$b2.txt $o

@@ -48,6 +48,7 @@ HDD::HDD(u8 bus,bool master) : _master(master),active(false),table{},MBR{}
 void HDD::writelba (u32 LBA , const void* data, u32 nbsector){
     assert(nbsector > 0 && nbsector < 512 && data != nullptr);
     activate();
+    outb (_basePort + 6, 0x40 |((!_master)<<4));
     outb (_basePort + 2, nbsector >> 8);
     outb (_basePort + 3, (LBA >> 24) & 0xFF);
     outb (_basePort + 4, 0/*(LBA >> 32) & 0xFF*/);
@@ -60,18 +61,23 @@ void HDD::writelba (u32 LBA , const void* data, u32 nbsector){
     while(!getStatus().isReadyOrFailed()){}
     assert(getStatus().isOk());
     for(u64 i = 0 ; i < nbsector*256 ; ++ i ){
+        if (i % 256 == 0){
+            while(!getStatus().isReadyOrFailed()){}
+            assert(getStatus().isOk());
+        }
+        WAIT(10);
         outw(_basePort,reinterpret_cast<const ushort*>(data)[i]);
     }
 
 
 
-    outb (_basePort + 7,0xE7);
+    outb (_basePort + 7,0xE7); // cache flush
     while(!getStatus().isReadyOrFailed()){}
     assert(getStatus().isOk());
 }
 
 
-void HDD::readlba (u32 LBA, void * data, u32 nbsector)const {
+void HDD::readlba (u32 LBA, void * data, u32 nbsector)const{
     //printf("HDD reading sector %u\n",LBA);
     readaddr(u64(LBA)*u64(512),data,u64(nbsector)*u64(512));
 

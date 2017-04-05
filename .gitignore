@@ -13,6 +13,8 @@ disassembly
 disassemblyl
 .dep/*
 disk.img
+disko.img
+diskout.img
 libc.a
 libc++.a
 log.txt
