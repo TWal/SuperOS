@@ -153,10 +153,12 @@ class FS : public FileSystem {
         friend class File;
         void _loadSuperBlock();
         void _writeSuperBlock();
-        void loadBlockGroupDescriptor();
+        void _loadBlockGroupDescriptor();
+        void _writeBlockGroupDescriptor();
         SuperBlock _sb;
         BlockGroupDescriptor* _bgd;
         uint _blockSize;
+        uint _nbBgd;
 };
 
 class File : public virtual ::File {
@@ -179,10 +181,8 @@ class File : public virtual ::File {
         void _readrec(ReadRecArgs& args, int level, u32 blockId) const;
 
         struct WriteRecArgs : public ReadRecArgs {
+            u64 indirectBlock[4];
             u32 blockNum;
-            u8* zeros;
-            u8* getZeros();
-            u64 indirectBlock(int i);
         };
         bool _writerec(WriteRecArgs& args, int level, u32* blockId);
 
