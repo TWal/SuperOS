@@ -270,14 +270,6 @@ size_t File::getSize() const {
     return _data.size;
 }
 
-bool File::isInRAM() const {
-    return false;
-}
-
-void* File::getData() {
-    return nullptr;
-}
-
 
 Directory::Directory(u32 inode, InodeData data, FS* fs) : File(inode, data, fs) { }
 

@@ -103,13 +103,11 @@ namespace fat {
         u32 _clusterSize;
         u32 _size;
     public :
-        size_t getSize() const;
-        bool isInRAM()const {return false;}
-        void* getData(){return nullptr;}
-        void writeaddr (u64 addr,const void * data, size_t size);
-        void readaddr (u64 addr, void * data, size_t size) const;
-        void writelba (u32 LBA , const void* data, u32 nbsector);
-        void readlba (u32 LBA, void * data, u32 nbsector) const;
+        virtual size_t getSize() const;
+        virtual void writeaddr (u64 addr,const void * data, size_t size);
+        virtual void readaddr (u64 addr, void * data, size_t size) const;
+        virtual void writelba (u32 LBA , const void* data, u32 nbsector);
+        virtual void readlba (u32 LBA, void * data, u32 nbsector) const;
 
         explicit File(FS* fs, u32 cluster,size_t size, Directory* parent = nullptr);
         void setName(const std::string& name);
@@ -139,7 +137,7 @@ namespace fat {
         u32 getFATEntry(u32 cluster)const;
         u32 clusterToLBA(u32 cluster,u32 offset)const;
         u32 nbRemainingCluster(u32 cluster)const;
-        ::Directory* getRoot();
+        virtual ::Directory* getRoot();
         Directory* getRootFat();
     };
 

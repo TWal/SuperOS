@@ -30,9 +30,7 @@ class HDD : public HDDBytes {
     u8 MBR[512];
 
 public :
-    size_t getSize() const {return 0;}; // for now I don't know how to get this information
-    bool isInRAM() const {return false ;}
-    void* getData(){return nullptr;}
+    virtual size_t getSize() const {return 0;}; // for now I don't know how to get this information
 
     bool isThereADisk();
     HDD(u8 bus,bool master);
@@ -40,10 +38,10 @@ public :
     void setMaster(bool master);
     void setBus(int bus);
     void init();
-    void writelba (u32 LBA , const void* data, u32 nbsector);
-    void readlba (u32 LBA, void * data, u32 nbsector)const;
-    void writeaddr (u64 addr , const void* data, size_t size);
-    void readaddr (u64 addr, void * data, size_t size)const;
+    virtual void writelba (u32 LBA , const void* data, u32 nbsector);
+    virtual void readlba (u32 LBA, void * data, u32 nbsector)const;
+    virtual void writeaddr (u64 addr , const void* data, size_t size);
+    virtual void readaddr (u64 addr, void * data, size_t size)const;
     void activate()const {}
     PartitionTableEntry operator[](u8 i)const;
     const PartitionTableEntry* partWithPred(std::function<bool(const Partition&)> pred);

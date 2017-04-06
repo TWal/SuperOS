@@ -14,15 +14,15 @@ enum class FileType {
 class File : public HDDBytes {
     public:
     virtual FileType getType();
-    virtual Directory * dir() {return nullptr;};
+    virtual Directory* dir() {return nullptr;};
 };
 
 class Directory : public virtual File {
 public :
     virtual std::vector<std::string> getFilesName () = 0;
     FileType getType();
-    virtual File * operator[](const std::string& name) = 0; // nullptr means it does not exists
-    virtual Directory * dir() {return this;};
+    virtual File* operator[](const std::string& name) = 0; // nullptr means it does not exists
+    virtual Directory* dir() {return this;};
 };
 
 class FileSystem {
@@ -31,7 +31,6 @@ protected :
 public:
     explicit FileSystem (Partition * part);
     virtual Directory* getRoot() = 0;
-    //virtual File* operator [] (const std::string& path) = 0; //return null when path is not valid
 };
 
 

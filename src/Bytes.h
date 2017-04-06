@@ -8,11 +8,6 @@ public:
     virtual void writeaddr (u64 addr,const void * data, size_t size) = 0;
     virtual void readaddr (u64 addr, void * data, size_t size) const = 0;
     virtual size_t getSize()const  = 0; // 0 mean unknown or too big
-    virtual bool isInRAM()const = 0;
-    virtual void* getData() = 0; // may fail if isInRAM() == false
-};
-
-class RAMBytes : public Bytes { // TODO implement it
 };
 
 class HDDBytes : public Bytes {

@@ -4,6 +4,7 @@
 FileType File::getType(){
     return FileType::File;
 }
+
 FileType Directory::getType(){
     return FileType::Directory;
 }

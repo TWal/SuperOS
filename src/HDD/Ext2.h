@@ -167,8 +167,6 @@ class File : public virtual ::File {
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual size_t getSize() const;
-        virtual bool isInRAM() const;
-        virtual void* getData();
 
     protected:
         struct ReadRecArgs {
@@ -185,12 +183,6 @@ class File : public virtual ::File {
             u32 blockNum;
         };
         bool _writerec(WriteRecArgs& args, int level, u32* blockId);
-
-        typedef bool(*getBlockFunc)(File* self, u32* block, uint j, uint* is, u64* indirectSize, uint i, void* buffer);
-        typedef void(*doWorkFunc)(File* self, void* data, size_t blockId, size_t addr, size_t count);
-        typedef bool(*skipFunc)(File* self, int i, uint* is, u64* indirectSize);
-        typedef bool(*prepareDataFunc)(File* self, u32* block, size_t j, uint* is, u64* indirectSize, uint i);
-        void _staraddr(void* data, u64 addr, size_t size, getBlockFunc getBlock, doWorkFunc doWork, skipFunc skip, prepareDataFunc prepareData);
 
         u32 _inode;
         InodeData _data;
