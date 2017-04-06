@@ -1,4 +1,4 @@
-.PHONY: all run rund runs runqemu runqemud runqemus load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count
+.PHONY: all run rund runs runqemu runqemud runqemus load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count dofsck fsck
 
 AS = as
 CC = gcc
@@ -81,8 +81,10 @@ LIBCXXH = $(wildcard $(LIBCXX)/*) $(wildcard $(LIBCXX)/include/*.h)
 
 FSTYPE = ext2
 MKFSARGS = -b 2048
+FSCKARGS = -f -n
 #FSTYPE = fat
 #MKFSARGS = -F 32
+#FSCKARGS = -n
 
 all: loader.elf kernel.elf
 
@@ -257,7 +259,9 @@ crt0.o: $(OUTDIR)/start/crt0.s.o $(OUTDIR)/start/crt0.c.o
 
 
 disk.img :
-	dd if=/dev/zero of=disk.img bs=512 count=131072
+	dd if=/dev/zero of=disk.img bs=512 count=131072 #64 MiB
+	#dd if=/dev/zero of=disk.img bs=512 count=2097152 # 1 GiB
+	#dd if=/dev/zero of=disk.img bs=512 count=4194304 # 2 GiB
 
 load: disk.img
 	sudo losetup $(LOOPDEV) disk.img
@@ -333,6 +337,12 @@ dasml:
 
 count:
 	cloc libc libc++ src src32 unitTests -lang-no-ext="C/C++ Header"
+
+dofsck:
+	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p1
+
+
+fsck: load dofsck unload
 
 include $(DEPF)
 

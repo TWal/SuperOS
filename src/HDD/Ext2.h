@@ -83,7 +83,7 @@ struct InodeData {
     u32 dtime; //Deletion Time
     u16 gid; //Group Id
     u16 links_count; //Links count
-    u32 blocks; //Blocks count
+    u32 blocks; //Blocks count (block of 512 byte!!)
     u32 flags; //File flags
     u32 reserved1; //OS dependent
     u32 block[15]; //Pointers to blocks
@@ -95,6 +95,8 @@ struct InodeData {
     u8 fsize; //Fragment size
     u16 pad1;
     u32 reserved2[2];
+    u32 getBlockCount(const SuperBlock& sb) const;
+    void incrBlockCount(int diff, const SuperBlock& sb);
 } __attribute__((packed));
 
 static_assert(sizeof(InodeData) == 128, "InodeData has the wrong size");
@@ -145,12 +147,10 @@ class FS : public FileSystem {
         virtual ::Directory* getRoot();
         void getInodeData(u32 inode, InodeData* res) const;
         void writeInodeData(u32 inode, const InodeData* data);
-        void test(u32 beg, u32 size);
         u32 getNewBlock(u32 nearInode);
 
     private:
         friend class File;
-        File* f;
         void _loadSuperBlock();
         void _writeSuperBlock();
         void loadBlockGroupDescriptor();
@@ -162,12 +162,30 @@ class FS : public FileSystem {
 class File : public virtual ::File {
     public:
         File(u32 inode, InodeData data, FS* fs);
-        virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
+        virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual size_t getSize() const;
         virtual bool isInRAM() const;
         virtual void* getData();
+
     protected:
+        struct ReadRecArgs {
+            u64 addr;
+            u8* data;
+            size_t size;
+            u64 indirectSize[4];
+            u32* blocks[3];
+        };
+        void _readrec(ReadRecArgs& args, int level, u32 blockId) const;
+
+        struct WriteRecArgs : public ReadRecArgs {
+            u32 blockNum;
+            u8* zeros;
+            u8* getZeros();
+            u64 indirectBlock(int i);
+        };
+        bool _writerec(WriteRecArgs& args, int level, u32* blockId);
+
         typedef bool(*getBlockFunc)(File* self, u32* block, uint j, uint* is, u64* indirectSize, uint i, void* buffer);
         typedef void(*doWorkFunc)(File* self, void* data, size_t blockId, size_t addr, size_t count);
         typedef bool(*skipFunc)(File* self, int i, uint* is, u64* indirectSize);

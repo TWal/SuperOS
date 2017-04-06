@@ -3,6 +3,14 @@
 
 namespace Ext2 {
 
+u32 InodeData::getBlockCount(const SuperBlock& sb) const {
+    return blocks/(2<<sb.log_block_size);
+}
+
+void InodeData::incrBlockCount(int diff, const SuperBlock& sb) {
+    blocks += diff*(2<<sb.log_block_size);
+}
+
 FS::FS(Partition* part) : FileSystem(part) {
     _bgd = nullptr;
     _loadSuperBlock();
@@ -90,216 +98,172 @@ void FS::loadBlockGroupDescriptor() {
 File::File(u32 inode, InodeData data, FS* fs) :
     _inode(inode), _data(data), _fs(fs) {}
 
-static u64 getBlockId(int i, uint* is, u64* indirectSize) {
-    if(i < 12) {
-        return i;
+void File::readaddr(u64 addr, void* data, size_t size) const {
+    ReadRecArgs args;
+    args.addr = addr;
+    args.data = (u8*)data;
+    args.size = size;
+    args.indirectSize[0] = _fs->_blockSize;
+    for(int i = 0; i < 3; ++i) {
+        args.indirectSize[i+1] = (_fs->_blockSize/4)*args.indirectSize[i];
+        args.blocks[i] = nullptr;
     }
-    i -= 12;
-    u64 blockId = 12;
-    for(int j = 1; j <= i; ++j) {
-        blockId += indirectSize[j];
+
+    for(int j = 0; j < 12; ++j) {
+        _readrec(args, 0, _data.block[j]);
     }
-    for(int j = i; j >= 0; --j) {
-        blockId += is[j]*indirectSize[i-j];
+    for(int i = 0; i < 3; ++i) {
+        args.blocks[i] = (u32*)malloc(_fs->_blockSize);
+        _readrec(args, i+1, _data.block[12+i]);
     }
-    return blockId;
+
+    for(int i = 0; i < 3; ++i) {
+        if(args.blocks[i] != nullptr) {
+            free(args.blocks[i]);
+        }
+    }
+}
+
+void File::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
+    if(args.size == 0) return;
+    if(args.addr >= args.indirectSize[level]) {
+        args.addr -= args.indirectSize[level];
+        return;
+    }
+
+    if(level == 0) {
+        uint count = min(_fs->_blockSize - args.addr, (u64)args.size);
+        _fs->_part->readaddr(blockId*_fs->_blockSize + args.addr, args.data, count);
+        args.data += count;
+        args.size -= count;
+        args.addr = 0;
+    } else {
+        _fs->_part->readaddr(blockId*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
+
+        uint starti = args.addr/args.indirectSize[level-1];
+        args.addr %= args.indirectSize[level-1];
+
+        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+            if(args.size == 0) return;
+            _readrec(args, level-1, args.blocks[level-1][i]);
+        }
+    }
+}
+
+u64 File::WriteRecArgs::indirectBlock(int i) {
+    return indirectSize[i]/indirectSize[0];
+}
+
+u8* File::WriteRecArgs::getZeros() {
+    if(zeros == nullptr) {
+        zeros = (u8*)malloc(indirectSize[0]);
+        memset(zeros, 0, indirectSize[0]);
+    }
+    return zeros;
 }
 
 void File::writeaddr(u64 addr, const void* data, size_t size) {
-    void* pdata = &data;
-
-    _staraddr(pdata, addr, size,
-        //gtBlock
-        [](File* self, u32* block, uint j, uint* is, u64* indirectSize, uint i, void* buffer) {
-            FS* fs = self->_fs;
-            if(getBlockId(i, is, indirectSize) >= (self->_data.blocks/(2<<fs->_sb.log_block_size))) {
-                block[j] = fs->getNewBlock(self->_inode);
-                return true; //since this is a new block, there is garbage inside so we don't care
-            }
-            fs->_part->readaddr(block[j]*fs->_blockSize, buffer, fs->_blockSize);
-            return false;
-        },
-        //doWork
-        [](File* self, void* pdata, size_t blockId, size_t addr, size_t count) {
-            FS* fs = self->_fs;
-            u8*& data = *(u8**)pdata;
-            fs->_part->writeaddr(blockId*fs->_blockSize + addr, data, count);
-            data += count;
-        },
-        //skip
-        [](File* self, int i, uint* is, u64* indirectSize) {
-            FS* fs = self->_fs;
-            return getBlockId(i, is, indirectSize) + indirectSize[i-12+1] < (self->_data.blocks/(2<<fs->_sb.log_block_size));
-        },
-        //prepareData
-        [](File* self, u32* block, size_t j, uint* is, u64* indirectSize, uint i) {
-            FS* fs = self->_fs;
-            if(getBlockId(i, is, indirectSize) >= (self->_data.blocks/(2<<fs->_sb.log_block_size))) {
-                block[j] = fs->getNewBlock(self->_inode);
-                char* s = (char*)malloc(fs->_blockSize);
-                memset(s, 0, fs->_blockSize);
-                fs->_part->writeaddr(block[j]*fs->_blockSize, s, fs->_blockSize);
-                free(s);
-                self->_data.blocks += (2<<fs->_sb.log_block_size);
-                return true;
-            }
-            return false;
-        }
-    );
-}
-
-
-void File::readaddr(u64 addr, void* data, size_t size) const {
-    void* pdata = &data;
-    ((File*)this)->_staraddr(pdata, addr, size,
-        //getBlock
-        [](File* self, u32* block, uint j, uint*, u64*, uint, void* buffer) {
-            FS* fs = self->_fs;
-            fs->_part->readaddr(block[j]*fs->_blockSize, buffer, fs->_blockSize);
-            return false;
-        },
-        //doWork
-        [](File* self, void* pdata, size_t blockId, size_t addr, size_t count) {
-            FS* fs = self->_fs;
-            u8*& data = *(u8**)pdata;
-            fs->_part->readaddr(blockId*fs->_blockSize + addr, data, count);
-            data += count;
-        },
-        //skip
-        [](File*, int, uint*, u64*) {
-            return true;
-        },
-        //prepareData
-        [](File*, u32*, size_t, uint*, u64*, uint) {
-            return false;
-        }
-    );
-}
-
-void File::_staraddr(void* data, u64 addr, size_t size, getBlockFunc getBlock, doWorkFunc doWork, skipFunc skip, prepareDataFunc prepareData) {
-    u64 savedAddr = addr;
-    size_t savedSize = size;
-    uint blockSize = _fs->_blockSize;
-    bool writeInode = false;
-    bool writeBlock[3] = {false, false, false};
-
-    u64 indirectSize[4];
-    indirectSize[0] = 1;
-    for(int i = 1; i < 4; ++i) {
-        indirectSize[i] = (blockSize/4)*indirectSize[i-1];
+    WriteRecArgs args;
+    args.addr = addr;
+    args.data = (u8*)data;
+    args.size = size;
+    args.blockNum = 0;
+    args.zeros = nullptr;
+    args.indirectSize[0] = _fs->_blockSize;
+    for(int i = 0; i < 3; ++i) {
+        args.indirectSize[i+1] = (_fs->_blockSize/4)*args.indirectSize[i];
+        args.blocks[i] = nullptr;
     }
 
-    uint is[3] = {0, 0, 0};
-    //blocks[0] = the block of data.block
-    //blocks[i+1] = the block at blocks[i][is[i]]
-    u32* blocks[3];
-    for(uint i = 0; i < 3; ++i) {
-        blocks[i] = nullptr;
+    bool write = false;
+    for(int j = 0; j < 12; ++j) {
+        write |= _writerec(args, 0, &_data.block[j]);
+    }
+    for(int i = 0; i < 3; ++i) {
+        args.blocks[i] = (u32*)malloc(_fs->_blockSize);
+        write |= _writerec(args, i+1, &_data.block[12+i]);
     }
 
-    int i;
-    for(i = 0; i < 12; ++i) {
-        if(size == 0) {
-            i = -1;
-            goto end;
-        }
-
-        writeInode |= prepareData(this, (u32*)_data.block, i, is, indirectSize, i);
-        if(addr >= blockSize) {
-            addr -= blockSize;
-        } else {
-            uint count = min(blockSize - addr, (u64)size);
-            doWork(this, data, _data.block[i], addr, count);
-            size -= count;
-            addr = 0;
+    for(int i = 0; i < 3; ++i) {
+        if(args.blocks[i] != nullptr) {
+            free(args.blocks[i]);
         }
     }
-
-    for(i = 0; i < 3; ++i) {
-        if(size == 0) goto end;
-        blocks[i] = (u32*)malloc(blockSize);
-
-        bool canSkip = skip(this, 12+i, is, indirectSize);
-        if(addr >= indirectSize[i+1]*blockSize) {
-            if(canSkip) {
-                addr -= indirectSize[i+1]*blockSize;
-                continue;
-            }
-        }
-
-        if(writeBlock[0]) {
-            _fs->_part->writeaddr(_data.block[12+i-1]*blockSize, blocks[0], blockSize);
-            writeBlock[0] = false;
-        }
-
-        writeInode |= getBlock(this, (u32*)_data.block, 12+i, is, indirectSize, 12+i, blocks[0]);
-
-        if(canSkip) {
-            for(int j = 0; j <= i; ++j) {
-                is[j] += addr/(indirectSize[i-j]*blockSize);
-                addr %= indirectSize[i-j]*blockSize;
-            }
-        }
-
-        for(int j = 1; j <= i; ++j) {
-            writeBlock[j-1] |= getBlock(this, blocks[j-1], is[j-1], is, indirectSize, 12+i, blocks[j]);
-        }
-
-        do {
-            if(size == 0) goto end;
-
-            writeBlock[i] |= prepareData(this, blocks[i], is[i], is, indirectSize, 12+i);
-            if(addr < blockSize) {
-                uint count = min(blockSize - addr, (u64)size);
-                doWork(this, data, blocks[i][is[i]], addr, count);
-                size -= count;
-                addr = 0;
-            } else {
-                addr -= blockSize;
-            }
-
-            //increment `is` by `1` in base `blockSize/4` and update `blocks`
-            for(int j = i; j >= 0; --j) {
-                is[j] += 1;
-                if(is[j] == blockSize/4) {
-                    is[j] = 0;
-                } else {
-                    for(int k = j+1; k <= i; ++k) {
-                        if(writeBlock[k]) {
-                            _fs->_part->writeaddr(blocks[k-1][(is[k-1]+blockSize/4-1)%(blockSize/4)]*blockSize, blocks[k], blockSize);
-                            writeBlock[k] = false;
-                        }
-                    }
-                    for(int k = j+1; k <= i; ++k) {
-                        writeBlock[k-1] |= getBlock(this, blocks[k-1], is[k-1], is, indirectSize, 12+i, blocks[k]);
-                    }
-                    break;
-                }
-            }
-        } while(!(is[0] == 0 && is[1] == 0 && is[2] == 0));
+    if(args.zeros != nullptr) {
+        free(args.zeros);
     }
 
-end:
-    //write remaining blocks
-    if(writeBlock[0]) {
-        _fs->_part->writeaddr(_data.block[12+i]*blockSize, blocks[0], blockSize);
+    size_t newSize = addr + size;
+    if(newSize > _data.size) {
+        _data.size = newSize;
+        write = true;
     }
-    for(int j = 1; j <= i; ++j) {
-        if(writeBlock[j]) {
-            _fs->_part->writeaddr(blocks[j-1][is[j-1]]*blockSize, blocks[j], blockSize);
-        }
-    }
-
-    //write inode
-    if(true || writeInode) {
-        _data.size = max(_data.size, (u32)(savedAddr+savedSize));
+    if(write) {
         _fs->writeInodeData(_inode, &_data);
     }
+}
 
-    for(int j = 0; j < 3; ++j) {
-        if(blocks[j] != nullptr) {
-            free(blocks[j]);
+bool File::_writerec(WriteRecArgs& args, int level, u32* blockId) {
+    if(args.size == 0) return false;
+
+    bool canSkip = args.blockNum + args.indirectBlock(level) - 1 < _data.getBlockCount(_fs->_sb);
+
+    if(canSkip && (args.addr >= args.indirectSize[level])) {
+        args.blockNum += args.indirectBlock(level);
+        args.addr -= args.indirectSize[level];
+        return false;
+    }
+
+    if(level == 0) {
+        bool retVal = false;
+        if(args.blockNum >= _data.getBlockCount(_fs->_sb)) {
+            *blockId = _fs->getNewBlock(_inode);
+            _data.incrBlockCount(1, _fs->_sb);
+            retVal = true;
         }
+
+        if(args.addr < _fs->_blockSize) {
+            uint count = min(_fs->_blockSize - args.addr, (u64)args.size);
+            _fs->_part->writeaddr((*blockId)*_fs->_blockSize + args.addr, args.data, count);
+            args.data += count;
+            args.size -= count;
+            args.addr = 0;
+        } else {
+            args.addr -= _fs->_blockSize;
+        }
+
+        args.blockNum += 1;
+        return retVal;
+    } else {
+        bool retVal = false;
+
+        if(args.blockNum >= _data.getBlockCount(_fs->_sb)) {
+            *blockId = _fs->getNewBlock(_inode);
+            retVal = true;
+            memset(args.blocks[level-1], 0, _fs->_blockSize);
+        } else {
+            _fs->_part->readaddr((*blockId)*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
+        }
+
+        uint starti = 0;
+        if(canSkip) {
+            starti = args.addr/args.indirectSize[level-1];
+            args.addr %= args.indirectSize[level-1];
+            args.blockNum += starti*args.indirectBlock(level-1);
+        }
+
+        bool write = false;
+        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+            if(args.size == 0) {
+                break;
+            }
+            write |= _writerec(args, level-1, &args.blocks[level-1][i]);
+        }
+        assert(!retVal || write); //retVal => write
+        if(write) {
+            _fs->_part->writeaddr((*blockId)*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
+        }
+        return retVal;
     }
 }
 
