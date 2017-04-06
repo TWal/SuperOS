@@ -144,7 +144,7 @@ extern "C" void kmain(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA TMP_TEST
+#define BLA EXT2_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
@@ -163,7 +163,8 @@ extern "C" void kmain(KArgs* kargs) {
 
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interrruption
-    kbd.setKeymap(&azertyKeymap); // activate azerty map.
+    //kbd.setKeymap(&azertyKeymap); // activate azerty map.
+    kbd.setKeymap(&dvorakKeymap); // activate dvorak map.
 
     CommandLine cl;
     cl.pwd = fs.getRoot();

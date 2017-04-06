@@ -1,4 +1,4 @@
-.PHONY: all run rund runqemu runqemud load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count
+.PHONY: all run rund runs runqemu runqemud runqemus load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count
 
 AS = as
 CC = gcc
@@ -16,7 +16,7 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O2 -mno-sse
+OPTILVL = -O1 -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32

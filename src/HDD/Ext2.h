@@ -47,7 +47,7 @@ struct SuperBlock {
     u32 reserved[205]; //padding to 1024 bytes
 } __attribute__((packed));
 
-static_assert(sizeof(SuperBlock) == 1024);
+static_assert(sizeof(SuperBlock) == 1024, "SuperBlock has the wrong size");
 
 enum FileSystemState {
     FSS_CLEAN = 1,
@@ -71,7 +71,7 @@ struct BlockGroupDescriptor {
     u32 reserved[3]; //padding
 } __attribute__((packed));
 
-static_assert(sizeof(BlockGroupDescriptor) == 32);
+static_assert(sizeof(BlockGroupDescriptor) == 32, "BlockGroupDescriptor has the wrong size");
 
 struct InodeData {
     u16 mode; //File mode
@@ -97,7 +97,7 @@ struct InodeData {
     u32 reserved2[2];
 } __attribute__((packed));
 
-static_assert(sizeof(InodeData) == 128);
+static_assert(sizeof(InodeData) == 128, "InodeData has the wrong size");
 
 enum FileMode {
     FM_IFMT = 0xF000, //format mask
@@ -130,23 +130,27 @@ enum FileMode {
 };
 
 struct DirectoryEntry {
-    u32 inode; //address if inode
-    u16 rec_len; //length of this record
-    u8 name_len; //length of file name
+    u32 inode;    //address if inode
+    u16 rec_len;  //length of this record
+    u8 name_len;  //length of file name
     u8 type;
     char name[0]; //the file name
 } __attribute__((packed));
 
-static_assert(sizeof(DirectoryEntry) == 8);
+static_assert(sizeof(DirectoryEntry) == 8, "DirectoryEntry has the wrong size");
 
 class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
         virtual ::Directory* getRoot();
-        void getInodeData(uint inode, InodeData* res);
+        void getInodeData(u32 inode, InodeData* res) const;
+        void writeInodeData(u32 inode, const InodeData* data);
+        void test(u32 beg, u32 size);
+        u32 getNewBlock(u32 nearInode);
 
     private:
         friend class File;
+        File* f;
         void _loadSuperBlock();
         void _writeSuperBlock();
         void loadBlockGroupDescriptor();
@@ -157,13 +161,20 @@ class FS : public FileSystem {
 
 class File : public virtual ::File {
     public:
-        File(InodeData data, FS* fs);
+        File(u32 inode, InodeData data, FS* fs);
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual size_t getSize() const;
         virtual bool isInRAM() const;
         virtual void* getData();
     protected:
+        typedef bool(*getBlockFunc)(File* self, u32* block, uint j, uint* is, u64* indirectSize, uint i, void* buffer);
+        typedef void(*doWorkFunc)(File* self, void* data, size_t blockId, size_t addr, size_t count);
+        typedef bool(*skipFunc)(File* self, int i, uint* is, u64* indirectSize);
+        typedef bool(*prepareDataFunc)(File* self, u32* block, size_t j, uint* is, u64* indirectSize, uint i);
+        void _staraddr(void* data, u64 addr, size_t size, getBlockFunc getBlock, doWorkFunc doWork, skipFunc skip, prepareDataFunc prepareData);
+
+        u32 _inode;
         InodeData _data;
         FS* _fs;
 };
@@ -191,7 +202,7 @@ class Directory : public virtual File, public virtual ::Directory {
                 u32 _pos;
                 char _name[256];
         };
-        Directory(InodeData data, FS* fs);
+        Directory(u32 inode, InodeData data, FS* fs);
         virtual std::vector<std::string> getFilesName();
         virtual Ext2::File* operator[](const std::string& name);
         iterator begin();
