@@ -108,6 +108,9 @@ namespace fat {
         virtual void readaddr (u64 addr, void * data, size_t size) const;
         virtual void writelba (u32 LBA , const void* data, u32 nbsector);
         virtual void readlba (u32 LBA, void * data, u32 nbsector) const;
+        virtual void resize(size_t size) {
+            bsod("fat::File::resize not implemented!");
+        }
 
         explicit File(FS* fs, u32 cluster,size_t size, Directory* parent = nullptr);
         void setName(const std::string& name);

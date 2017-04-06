@@ -14,6 +14,10 @@ enum class FileType {
 class File : public HDDBytes {
     public:
     virtual FileType getType();
+
+    //undefined behavior if the file is a directory
+    //no guarantees when it augments the size on what is after the old size
+    virtual void resize(size_t size) = 0;
     virtual Directory* dir() {return nullptr;};
 };
 

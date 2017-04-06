@@ -18,13 +18,6 @@ FS::FS(Partition* part) : FileSystem(part) {
     assert(_sb.log_block_size == (u32)_sb.log_frag_size);
     _loadBlockGroupDescriptor();
 
-    //uint nbBgd = ((_sb.blocks_count-1) / _sb.blocks_per_group) + 1;
-
-    //for(uint i = 1; i < nbBgd; i *= {3,5,7}) {
-        //SuperBlock sb;
-        //_part->readaddr((_sb.first_data_block + i*_sb.blocks_per_group)*_blockSize, &sb, sizeof(SuperBlock));
-        //printf("%d %x\n", _sb.first_data_block + i*_sb.blocks_per_group, sb.magic);
-    //}
 }
 
 ::Directory* FS::getRoot() {
@@ -72,7 +65,29 @@ u32 FS::getNewBlock(u32 nearInode) {
     }
     free(bitmap);
     bsod("No space on disk :-("); //TODO handle this properly
-    return 42; //make g++ happy
+}
+
+void FS::freeBlock(u32 block) {
+    u32 blockGroup = block / _sb.blocks_per_group;
+    u32 blockIndex = block % _sb.blocks_per_group;
+    u8* bitmap = (u8*)malloc(_blockSize);
+
+    _part->readaddr(_bgd[blockGroup].block_bitmap*_blockSize, bitmap, _blockSize);
+
+    u32 bitmapInd = blockIndex / (8*sizeof(u8));
+    u32 byteInd   = blockIndex % (8*sizeof(u8));
+    assert((bitmap[bitmapInd] & (1 << byteInd)) != 0);
+    bitmap[bitmapInd] &= ~(1 << byteInd);
+    assert((bitmap[bitmapInd] & (1 << byteInd)) == 0);
+
+    _part->writeaddr(_bgd[blockGroup].block_bitmap*_blockSize, bitmap, _blockSize);
+
+    _bgd[blockGroup].free_blocks_count += 1;
+    _sb.free_blocks_count += 1;
+
+    _writeBlockGroupDescriptor(); //TODO do this less often
+    _writeSuperBlock();
+    free(bitmap);
 }
 
 
@@ -87,6 +102,13 @@ void FS::_loadSuperBlock() {
 
 void FS::_writeSuperBlock() {
     _part->writeaddr(1024, &_sb, sizeof(SuperBlock));
+
+    //to write the super block backup with the sparse superblock feature:
+    //for(uint i = 1; i < _nbBgd; i *= {3,5,7}) {
+        //SuperBlock sb;
+        //_part->readaddr((_sb.first_data_block + i*_sb.blocks_per_group)*_blockSize, &sb, sizeof(SuperBlock));
+        //printf("%d %x\n", _sb.first_data_block + i*_sb.blocks_per_group, sb.magic);
+    //}
 }
 
 void FS::_loadBlockGroupDescriptor() {
@@ -265,6 +287,85 @@ bool File::_writerec(WriteRecArgs& args, int level, u32* blockId) {
         return retVal;
     }
 }
+
+void File::resize(size_t size) {
+    if(size < _data.size) {
+        ResizeRecArgs args;
+        args.sizeAfter = size;
+        args.sizeBefore = ((_data.size - 1) / _fs->_blockSize + 1) * _fs->_blockSize; //align on upper blockSize multiple
+        args.indirectSize[0] = _fs->_blockSize;
+        for(int i = 0; i < 3; ++i) {
+            args.indirectSize[i+1] = (_fs->_blockSize/4)*args.indirectSize[i];
+            args.blocks[i] = nullptr;
+        }
+
+        for(int j = 0; j < 12; ++j) {
+            _resizerec(args, 0, _data.block[j]);
+        }
+        for(int i = 0; i < 3; ++i) {
+            args.blocks[i] = (u32*)malloc(_fs->_blockSize);
+            _resizerec(args, i+1, _data.block[12+i]);
+        }
+
+        for(int i = 0; i < 3; ++i) {
+            if(args.blocks[i] != nullptr) {
+                free(args.blocks[i]);
+            }
+        }
+
+        _data.size = size;
+        _fs->writeInodeData(_inode, &_data);
+    } else {
+        writeaddr(size, nullptr, 0);
+    }
+}
+
+bool File::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
+    if(args.sizeBefore == 0) return false;
+    if(args.sizeAfter >= args.indirectSize[level]) {
+        args.sizeAfter  -= args.indirectSize[level];
+        args.sizeBefore -= args.indirectSize[level];
+        return false;
+    }
+
+    if(level == 0) {
+        if(args.sizeAfter != 0) {
+            args.sizeAfter = 0;
+            args.sizeBefore -= _fs->_blockSize;
+            return false;
+        }
+        _fs->freeBlock(blockId);
+        _data.incrBlockCount(-1, _fs->_sb);
+        args.sizeBefore -= _fs->_blockSize;
+        return true;
+    } else {
+        _fs->_part->readaddr(blockId*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
+
+        uint starti = args.sizeAfter/args.indirectSize[level-1];
+        args.sizeAfter  -= starti*args.indirectSize[level-1];
+        args.sizeBefore -= starti*args.indirectSize[level-1];
+
+        bool deleteMyself = (starti == 0);
+        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+            if(args.sizeBefore == 0) break;
+            if(_resizerec(args, level-1, args.blocks[level-1][i])) {
+                args.blocks[level-1][i] = 0;
+            } else {
+                deleteMyself = false;
+            }
+        }
+
+        _fs->_part->writeaddr(blockId*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
+
+        if(deleteMyself) {
+            _fs->freeBlock(blockId);
+            _data.incrBlockCount(-1, _fs->_sb);
+            return true;
+        }
+        return false;
+    }
+}
+
 
 size_t File::getSize() const {
     return _data.size;

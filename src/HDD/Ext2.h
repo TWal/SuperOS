@@ -148,6 +148,7 @@ class FS : public FileSystem {
         void getInodeData(u32 inode, InodeData* res) const;
         void writeInodeData(u32 inode, const InodeData* data);
         u32 getNewBlock(u32 nearInode);
+        void freeBlock(u32 block);
 
     private:
         friend class File;
@@ -166,6 +167,7 @@ class File : public virtual ::File {
         File(u32 inode, InodeData data, FS* fs);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual void writeaddr(u64 addr, const void* data, size_t size);
+        virtual void resize(size_t size);
         virtual size_t getSize() const;
 
     protected:
@@ -183,6 +185,15 @@ class File : public virtual ::File {
             u32 blockNum;
         };
         bool _writerec(WriteRecArgs& args, int level, u32* blockId);
+
+        struct ResizeRecArgs {
+            size_t sizeAfter;
+            size_t sizeBefore;
+            u64 indirectSize[4];
+            u32* blocks[3];
+        };
+        bool _resizerec(ResizeRecArgs& args, int level, u32 blockId);
+
 
         u32 _inode;
         InodeData _data;
