@@ -86,8 +86,8 @@ inline void* getCR2(){
 
 
 
-void vbsod(const char* s, va_list ap);
-extern "C" void bsod(const char* s, ...);
+void vbsod(const char* s, va_list ap) __attribute__((noreturn));
+extern "C" void bsod(const char* s, ...) __attribute__((noreturn));
 
 void reboot();
 
