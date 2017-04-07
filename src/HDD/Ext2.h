@@ -101,36 +101,6 @@ struct InodeData {
 
 static_assert(sizeof(InodeData) == 128, "InodeData has the wrong size");
 
-enum FileMode {
-    FM_IFMT = 0xF000, //format mask
-    FM_IFSOCK = 0xA000, //socket
-    FM_IFLNK = 0xC000, //symbolic link
-    FM_IFREG = 0x8000, //regular file
-    FM_IFBLK = 0x6000, //block device
-    FM_IFDIR = 0x4000, //directory
-    FM_IFCHR = 0x2000, //character device
-    FM_IFIFO = 0x1000, //fifo
-
-    FM_ISUID = 0x0800, //SUID
-    FM_ISGID = 0x0400, //SGID
-    FM_ISVTX = 0x0200, //sticky bit
-
-    FM_IRWXU = 0x01C0, //user mask
-    FM_IRUSR = 0x0100, //read
-    FM_IWUSR = 0x0080, //write
-    FM_IXUSR = 0x0040, //execute
-
-    FM_IRWXG = 0x0038, //group mask
-    FM_IRGRP = 0x0020, //read
-    FM_IWGRP = 0x0010, //write
-    FM_IXGRP = 0x0008, //execute
-
-    FM_IRWXO = 0x0007, //other mask
-    FM_IROTH = 0x0004, //read
-    FM_IWOTH = 0x0002, //write
-    FM_IXOTH = 0x0001  //execute
-};
-
 struct DirectoryEntry {
     u32 inode;    //address if inode
     u16 rec_len;  //length of this record
@@ -138,6 +108,18 @@ struct DirectoryEntry {
     u8 type;
     char name[0]; //the file name
 } __attribute__((packed));
+
+enum DirectoryFileType {
+    FT_UNKNOWN = 0,  //Unknown File Type
+    FT_REG_FILE = 1, //Regular File
+    FT_DIR = 2,      //Directory File
+    FT_CHRDEV = 3,   //Character Device
+    FT_BLKDEV = 4,   //Block Device
+    FT_FIFO = 5,     //Buffer File
+    FT_SOCK = 6,     //Socket File
+    FT_SYMLINK = 7   //Symbolic Link
+};
+
 
 static_assert(sizeof(DirectoryEntry) == 8, "DirectoryEntry has the wrong size");
 
@@ -209,6 +191,9 @@ class Directory : public virtual File, public virtual ::Directory {
         virtual long int tell(void* d);
         virtual void seek(void* d, long int loc);
         virtual void close(void* d);
+        virtual File* addFile(const std::string& name, u16 mode, u16 uid, u16 gid);
+        virtual void removeFile(const std::string& name);
+
     private:
         struct DirIterator {
             DirectoryEntry entry;

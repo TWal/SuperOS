@@ -17,7 +17,6 @@ FS::FS(Partition* part) : FileSystem(part) {
     assert(_sb.magic == 0xef53);
     assert(_sb.log_block_size == (u32)_sb.log_frag_size);
     _loadBlockGroupDescriptor();
-
 }
 
 ::Directory* FS::getRoot() {
@@ -390,9 +389,9 @@ File* Directory::operator[](const std::string& name) {
     }
     InodeData inodedat;
     _fs->getInodeData(inode, &inodedat);
-    if((inodedat.mode&0xE000) == FM_IFDIR) {
+    if(S_ISDIR(inodedat.mode)) {
         return new Directory(inode, inodedat, _fs);
-    } else if((inodedat.mode&0xE000) == FM_IFREG) {
+    } else if(S_ISREG(inodedat.mode)) {
         return new File(inode, inodedat, _fs);
     } else {
         return nullptr;
@@ -406,15 +405,15 @@ void* Directory::open() {
 dirent* Directory::read(void* d) {
     DirIterator* dirit = (DirIterator*)d;
 
-    readaddr(dirit->pos, &dirit->entry, sizeof(DirectoryEntry));
-    if(dirit->entry.inode == 0) {
-        return nullptr;
-    }
-    readaddr(dirit->pos+sizeof(DirectoryEntry), &dirit->res.d_name, dirit->entry.name_len);
+    do {
+        if(dirit->pos >= _data.blocks*512) return nullptr;
+        readaddr(dirit->pos, &dirit->entry, sizeof(DirectoryEntry));
+        readaddr(dirit->pos+sizeof(DirectoryEntry), &dirit->res.d_name, dirit->entry.name_len);
+        dirit->pos += dirit->entry.rec_len;
+    } while(dirit->entry.inode == 0);
+
     dirit->res.d_name[dirit->entry.name_len] = 0;
     dirit->res.d_ino = dirit->entry.inode;
-
-    dirit->pos += dirit->entry.rec_len;
     return &dirit->res;
 }
 
@@ -430,6 +429,39 @@ void Directory::close(void* d) {
     free(d);
 }
 
+File* Directory::addFile(const std::string& name, u16 mode, u16 uid, u16 gid) {
+}
+
+void Directory::removeFile(const std::string& name) {
+    DirIterator* d = (DirIterator*)open();
+    u32 lastPos = 0;
+    u32 curPos = 0;
+    dirent* dir;
+    while(true) {
+        lastPos = curPos;
+        curPos = d->pos;
+        dir = read(d);
+        if(dir == nullptr) break;
+        if(std::string(dir->d_name) == name) break;
+    }
+    close(d);
+    if(dir == nullptr) {
+        bsod("Ext2::Directory::removeFile called with a file that doesn't exists!\n");
+    }
+
+    if(curPos == 0) {
+        d->entry.inode = 0;
+        d->entry.name_len = 0;
+        d->entry.type = FT_UNKNOWN;
+        readaddr(0, &d->entry, sizeof(DirectoryEntry));
+        return;
+    }
+
+    DirectoryEntry lastEntry;
+    readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+    lastEntry.rec_len += d->entry.rec_len;
+    writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+}
 
 }
 

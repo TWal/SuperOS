@@ -144,6 +144,13 @@ namespace fat {
         virtual void close(void* d) {
             bsod("fat::Directory::close not implemented");
         }
+        virtual File* addFile(const std::string& name, u16 mode, u16 uid, u16 gid) {
+            bsod("fat::Directory::addFile not implemented");
+        }
+        virtual void removeFile(const std::string& name) {
+            bsod("fat::Directory::removeFile not implemented");
+        }
+
     };
 
     class FS : public FileSystem {
