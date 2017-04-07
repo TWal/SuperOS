@@ -27,8 +27,13 @@ CommandLine::CommandLine(table_type table):_table(table){
             printf("fatal error : no pwd set\n");
             return;
         }
-        auto v = cl->pwd->getFilesName();
-        for(auto f : v) printf("%s ",f.c_str());
+        void* d = cl->pwd->open();
+
+        dirent* dir;
+        while((dir = cl->pwd->read(d)) != nullptr) {
+            printf("%s ", dir->d_name);
+        }
+        cl->pwd->close(d);
         printf("\n");
     }));
 

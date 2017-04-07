@@ -374,21 +374,17 @@ size_t File::getSize() const {
 
 Directory::Directory(u32 inode, InodeData data, FS* fs) : File(inode, data, fs) { }
 
-std::vector<std::string> Directory::getFilesName() {
-    std::vector<std::string> res;
-    for(dirent d : *this) {
-        res.push_back(d.d_name);
-    }
-    return res;
-}
-
 File* Directory::operator[](const std::string& name) {
-    uint inode = 0;
-    for(dirent d : *this) {
-        if(std::string(d.d_name) == name) {
-            inode = d.d_ino;
+    u32 inode = 0;
+    void* d = open();
+    dirent* dir;
+    while((dir = read(d)) != nullptr) {
+        if(std::string(dir->d_name) == name) {
+            inode = dir->d_ino;
         }
     }
+    close(d);
+
     if(inode == 0) {
         return nullptr;
     }
@@ -403,46 +399,37 @@ File* Directory::operator[](const std::string& name) {
     }
 }
 
-Directory::iterator Directory::begin() {
-    return iterator(this, 0);
+void* Directory::open() {
+    return malloc(sizeof(DirIterator));
 }
 
-Directory::iterator Directory::end() {
-    return iterator(this);
+dirent* Directory::read(void* d) {
+    DirIterator* dirit = (DirIterator*)d;
+
+    readaddr(dirit->pos, &dirit->entry, sizeof(DirectoryEntry));
+    if(dirit->entry.inode == 0) {
+        return nullptr;
+    }
+    readaddr(dirit->pos+sizeof(DirectoryEntry), &dirit->res.d_name, dirit->entry.name_len);
+    dirit->res.d_name[dirit->entry.name_len] = 0;
+    dirit->res.d_ino = dirit->entry.inode;
+
+    dirit->pos += dirit->entry.rec_len;
+    return &dirit->res;
 }
 
-Directory::iterator& Directory::iterator::operator++() {
-    new(this) iterator(_father, _pos + _entry.rec_len);
-    return *this;
+long int Directory::tell(void* d) {
+    return (long int)(((DirIterator*)d)->pos);
 }
 
-dirent Directory::iterator::operator*() {
-    dirent res;
-    res.d_ino = _entry.inode;
-    strncpy(res.d_name, _name, 256);
-    return res;
+void Directory::seek(void* d, long int loc) {
+    ((DirIterator*)d)->pos = loc;
 }
 
-Directory::iterator::iterator(Directory* father, u32 pos) {
-    _father = father;
-    _pos = pos;
-    _father->readaddr(_pos, &_entry, sizeof(DirectoryEntry));
-    _father->readaddr(_pos+sizeof(DirectoryEntry), &_name, _entry.name_len);
-    _name[_entry.name_len] = 0;
+void Directory::close(void* d) {
+    free(d);
 }
 
-Directory::iterator::iterator(Directory* father) {
-    _father = father;
-    _entry.inode = 0;
-}
-
-bool Directory::iterator::operator==(const iterator& other) {
-    return _entry.inode == other._entry.inode && _father == other._father;
-}
-
-bool Directory::iterator::operator!=(const iterator& other) {
-    return !((*this) == other);
-}
 
 }
 

@@ -200,36 +200,21 @@ class File : public virtual ::File {
         FS* _fs;
 };
 
-struct dirent {
-    u32 d_ino;
-    char d_name[256];
-};
-
 class Directory : public virtual File, public virtual ::Directory {
     public :
-        class iterator {
-            public:
-                iterator& operator++();
-                dirent operator*();
-                bool operator==(const iterator& other);
-                bool operator!=(const iterator& other);
-
-            private:
-                friend class Directory;
-                iterator(Directory* father, u32 pos);
-                iterator(Directory* father);
-                Directory* _father;
-                DirectoryEntry _entry;
-                u32 _pos;
-                char _name[256];
-        };
         Directory(u32 inode, InodeData data, FS* fs);
-        virtual std::vector<std::string> getFilesName();
         virtual Ext2::File* operator[](const std::string& name);
-        iterator begin();
-        iterator end();
+        virtual void* open();
+        virtual dirent* read(void* d);
+        virtual long int tell(void* d);
+        virtual void seek(void* d, long int loc);
+        virtual void close(void* d);
     private:
-        friend class iterator;
+        struct DirIterator {
+            DirectoryEntry entry;
+            u32 pos;
+            dirent res;
+        };
 };
 
 }

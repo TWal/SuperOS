@@ -127,8 +127,23 @@ namespace fat {
     public :
         Directory(FS* fs, u32 cluster, size_t size,Directory* parent = nullptr);
         void load(); // load directory in RAM.
-        std::vector<std::string> getFilesName ();
+        //std::vector<std::string> getFilesName ();
         File * operator[](const std::string& name);
+        virtual void* open() {
+            bsod("fat::Directory::open not implemented");
+        }
+        virtual dirent* read(void* d) {
+            bsod("fat::Directory::read not implemented");
+        }
+        virtual long int tell(void* d) {
+            bsod("fat::Directory::tell not implemented");
+        }
+        virtual void seek(void* d, long int loc) {
+            bsod("fat::Directory::seek not implemented");
+        }
+        virtual void close(void* d) {
+            bsod("fat::Directory::close not implemented");
+        }
     };
 
     class FS : public FileSystem {

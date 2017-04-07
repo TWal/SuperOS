@@ -5,6 +5,12 @@
 #include <vector>
 #include <string>
 
+//TODO: move this in libc?
+struct dirent {
+    u32 d_ino;
+    char d_name[256];
+};
+
 class Directory;
 
 enum class FileType {
@@ -23,10 +29,15 @@ class File : public HDDBytes {
 
 class Directory : public virtual File {
 public :
-    virtual std::vector<std::string> getFilesName () = 0;
     FileType getType();
     virtual File* operator[](const std::string& name) = 0; // nullptr means it does not exists
     virtual Directory* dir() {return this;};
+
+    virtual void* open() = 0;
+    virtual dirent* read(void* d) = 0;
+    virtual long int tell(void* d) = 0;
+    virtual void seek(void* d, long int loc) = 0;
+    virtual void close(void* d) = 0;
 };
 
 class FileSystem {

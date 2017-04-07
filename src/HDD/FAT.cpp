@@ -154,14 +154,15 @@ namespace fat {
     }
 
 
-    std::vector<std::string> Directory::getFilesName (){
-        load();
-        std::vector<std::string> res;
-        for(auto p : _content){
-            res.push_back(p.first);
-        }
-        return res;
-    }
+    //std::vector<std::string> Directory::getFilesName (){
+        //load();
+        //std::vector<std::string> res;
+        //for(auto p : _content){
+            //res.push_back(p.first);
+        //}
+        //return res;
+    //}
+
     File * Directory::operator[](const std::string& name){
         load();
         auto it = _content.find(name);
