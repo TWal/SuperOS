@@ -17,20 +17,20 @@ struct dirent {
 };
 
 struct stat {
-   u32    st_dev;      // ID of device containing file
-   u32    st_ino;      // inode number
-   u16    st_mode;     // file type and mode
-   u16    st_nlink;   // number of hard links
-   u16    st_uid;      // user ID of owner
-   u16    st_gid;      // group ID of owner
-   u32    st_rde;      // device ID (if special file) //TODO: what is this?
-   size_t st_size;    // total size, in bytes
-   u32    st_blksize; // blocksize for filesystem I/O
-   u32    st_blocks;  // number of 512B blocks allocated
+    u32    st_dev;      // ID of device containing file
+    u32    st_ino;      // inode number
+    u16    st_mode;     // file type and mode
+    u16    st_nlink;   // number of hard links
+    u16    st_uid;      // user ID of owner
+    u16    st_gid;      // group ID of owner
+    u32    st_rde;      // device ID (if special file) //TODO: what is this?
+    size_t st_size;    // total size, in bytes
+    u32    st_blksize; // blocksize for filesystem I/O
+    u32    st_blocks;  // number of 512B blocks allocated
 
-   timespec st_atim;  // time of last access
-   timespec st_mtim;  // time of last modification
-   timespec st_ctim;  // time of last status change
+    timespec st_atim;  // time of last access
+    timespec st_mtim;  // time of last modification
+    timespec st_ctim;  // time of last status change
     // Backward compatibility
 #define st_atime st_atim.tv_sec
 #define st_mtime st_mtim.tv_sec
@@ -84,10 +84,12 @@ enum class FileType {
 class File : public HDDBytes {
     public:
     virtual FileType getType();
-
     //undefined behavior if the file is a directory
     //no guarantees when it augments the size on what is after the old size
     virtual void resize(size_t size) = 0;
+    virtual void link() = 0;
+    virtual void unlink() = 0;
+    virtual void getStats(stat* buf) = 0;
     virtual Directory* dir() {return nullptr;};
 };
 
@@ -103,7 +105,7 @@ public :
     virtual void seek(void* d, long int loc) = 0;
     virtual void close(void* d) = 0;
 
-    virtual File* addFile(const std::string& name, u16 mode, u16 uid, u16 gid) = 0;
+    virtual void addFile(const std::string& name, File* file) = 0;
     virtual void removeFile(const std::string& name) = 0;
 };
 
@@ -113,6 +115,8 @@ protected :
 public:
     explicit FileSystem (Partition * part);
     virtual Directory* getRoot() = 0;
+    virtual File* getNewFile(u16 uid, u16 gid, u16 mode) = 0;
+    virtual Directory* getNewDirectory(u16 uid, u16 gid, u16 mode) = 0;
 };
 
 

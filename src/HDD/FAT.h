@@ -111,6 +111,15 @@ namespace fat {
         virtual void resize(size_t size) {
             bsod("fat::File::resize not implemented!");
         }
+        virtual void link() {
+            bsod("fat::File::link not implemented!");
+        }
+        virtual void unlink() {
+            bsod("fat::File::unlink not implemented!");
+        }
+        virtual void getStats(stat* buf) {
+            bsod("fat::File::getStats not implemented!");
+        }
 
         explicit File(FS* fs, u32 cluster,size_t size, Directory* parent = nullptr);
         void setName(const std::string& name);
@@ -144,7 +153,7 @@ namespace fat {
         virtual void close(void* d) {
             bsod("fat::Directory::close not implemented");
         }
-        virtual File* addFile(const std::string& name, u16 mode, u16 uid, u16 gid) {
+        virtual void addFile(const std::string& name, ::File* file) {
             bsod("fat::Directory::addFile not implemented");
         }
         virtual void removeFile(const std::string& name) {
@@ -164,6 +173,12 @@ namespace fat {
         u32 nbRemainingCluster(u32 cluster)const;
         virtual ::Directory* getRoot();
         Directory* getRootFat();
+        virtual File* getNewFile(u16 uid, u16 gid, u16 mode) {
+            bsod("fat::FS::getNewFile not implemented");
+        }
+        virtual Directory* getNewDirectory(u16 uid, u16 gid, u16 mode) {
+            bsod("fat::FS::getNewDirectory not implemented");
+        }
     };
 
 

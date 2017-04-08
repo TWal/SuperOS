@@ -11,12 +11,24 @@ void InodeData::incrBlockCount(int diff, const SuperBlock& sb) {
     blocks += diff*(2<<sb.log_block_size);
 }
 
+size_t InodeData::getSize() const {
+    return size;
+    return (size_t)size | (((size_t)dir_acl) << 32);
+}
+
+void InodeData::setSize(size_t sz) {
+    size = sz & (((size_t)1<<32) - 1);
+    dir_acl = (sz >> 32) & (((size_t)1<<32) - 1);
+}
+
+
 FS::FS(Partition* part) : FileSystem(part) {
     _bgd = nullptr;
     _loadSuperBlock();
     assert(_sb.magic == 0xef53);
     assert(_sb.log_block_size == (u32)_sb.log_frag_size);
     _loadBlockGroupDescriptor();
+
 }
 
 ::Directory* FS::getRoot() {
@@ -24,6 +36,38 @@ FS::FS(Partition* part) : FileSystem(part) {
     getInodeData(2, &dat);
     return new Directory(2, dat, this);
 }
+
+::File* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
+    assert(S_ISREG(mode)); //TODO handle this better
+    u32 inode = getNewInode();
+    InodeData dat;
+    memset(&dat, 0, sizeof(InodeData));
+    dat.uid = uid;
+    dat.gid = gid;
+    dat.mode = mode;
+    writeInodeData(inode, &dat);
+    return new File(inode, dat, this);
+}
+
+::Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
+    assert(S_ISDIR(mode)); //TODO handle this better
+    u32 inode = getNewInode();
+    //update bgd
+    uint blockGroup = (inode-1) / _sb.inodes_per_group;
+    _bgd[blockGroup].used_dirs_count += 1;
+    _writeBlockGroupDescriptor();
+    //write inode
+    InodeData dat;
+    memset(&dat, 0, sizeof(InodeData));
+    dat.uid = uid;
+    dat.gid = gid;
+    dat.mode = mode;
+    writeInodeData(inode, &dat);
+    Directory* d = new Directory(inode, dat, this);
+    d->init();
+    return d;
+}
+
 
 void FS::getInodeData(u32 inode, InodeData* res) const {
     uint blockGroup = (inode-1) / _sb.inodes_per_group;
@@ -42,10 +86,10 @@ void FS::writeInodeData(u32 inode, const InodeData* data) {
 u32 FS::getNewBlock(u32 nearInode) {
     //TODO: some bitmap caching to speed up writing
     uint blockGroup = (nearInode-1) / _sb.inodes_per_group;
-    uint nbBgd = ((_sb.blocks_count-1) / _sb.blocks_per_group) + 1;
     u8* bitmap = (u8*)malloc(_blockSize);
-    for(uint i = 0; i < nbBgd; ++i) {
-        uint bgd = (i+blockGroup)%nbBgd;
+    for(uint i = 0; i < _nbBgd; ++i) {
+        uint bgd = (i+blockGroup)%_nbBgd;
+        if(_bgd[bgd].free_blocks_count == 0) continue;
         _part->readaddr(_bgd[bgd].block_bitmap*_blockSize, bitmap, _blockSize);
         for(uint j = 0; j < _blockSize; ++j) {
             if((u8)~bitmap[j] != 0) {
@@ -83,6 +127,53 @@ void FS::freeBlock(u32 block) {
 
     _bgd[blockGroup].free_blocks_count += 1;
     _sb.free_blocks_count += 1;
+
+    _writeBlockGroupDescriptor(); //TODO do this less often
+    _writeSuperBlock();
+    free(bitmap);
+}
+
+u32 FS::getNewInode() {
+    u8* bitmap = (u8*)malloc(_blockSize);
+    for(uint i = 0; i < _nbBgd; ++i) {
+        if(_bgd[i].free_inodes_count == 0) continue;
+        _part->readaddr(_bgd[i].inode_bitmap*_blockSize, bitmap, _blockSize);
+        for(uint j = 0; j < _blockSize; ++j) {
+            if((u8)~bitmap[j] != 0) {
+                uint pos = __builtin_ctz(~bitmap[j]);
+                assert((bitmap[j] & (1 << pos)) == 0);
+                bitmap[j] |= (1 << pos);
+                _part->writeaddr(_bgd[i].inode_bitmap*_blockSize, bitmap, _blockSize);
+                _bgd[i].free_inodes_count -= 1;
+                _sb.free_inodes_count -= 1;
+                _writeBlockGroupDescriptor();
+                _writeSuperBlock();
+                free(bitmap);
+                return _sb.inodes_per_group*i + 8*sizeof(u8)*j + pos + 1;
+            }
+        }
+    }
+    free(bitmap);
+    bsod("No more inodes on disk :-("); //TODO handle this properly
+}
+
+void FS::freeInode(u32 inode) {
+    u32 inodeGroup = (inode - 1) / _sb.inodes_per_group;
+    u32 inodeIndex = (inode - 1) % _sb.inodes_per_group;
+    u8* bitmap = (u8*)malloc(_blockSize);
+
+    _part->readaddr(_bgd[inodeGroup].inode_bitmap*_blockSize, bitmap, _blockSize);
+
+    u32 bitmapInd = inodeIndex / (8*sizeof(u8));
+    u32 byteInd   = inodeIndex % (8*sizeof(u8));
+    assert((bitmap[bitmapInd] & (1 << byteInd)) != 0);
+    bitmap[bitmapInd] &= ~(1 << byteInd);
+    assert((bitmap[bitmapInd] & (1 << byteInd)) == 0);
+
+    _part->writeaddr(_bgd[inodeGroup].inode_bitmap*_blockSize, bitmap, _blockSize);
+
+    _bgd[inodeGroup].free_inodes_count += 1;
+    _sb.free_inodes_count += 1;
 
     _writeBlockGroupDescriptor(); //TODO do this less often
     _writeSuperBlock();
@@ -210,8 +301,8 @@ void File::writeaddr(u64 addr, const void* data, size_t size) {
     }
 
     size_t newSize = addr + size;
-    if(newSize > _data.size) {
-        _data.size = newSize;
+    if(newSize > _data.getSize()) {
+        _data.setSize(newSize);
         write = true;
     }
     if(write) {
@@ -288,10 +379,10 @@ bool File::_writerec(WriteRecArgs& args, int level, u32* blockId) {
 }
 
 void File::resize(size_t size) {
-    if(size < _data.size) {
+    if(size < _data.getSize()) {
         ResizeRecArgs args;
         args.sizeAfter = size;
-        args.sizeBefore = ((_data.size - 1) / _fs->_blockSize + 1) * _fs->_blockSize; //align on upper blockSize multiple
+        args.sizeBefore = alignup(_data.size, _fs->_blockSize);
         args.indirectSize[0] = _fs->_blockSize;
         for(int i = 0; i < 3; ++i) {
             args.indirectSize[i+1] = (_fs->_blockSize/4)*args.indirectSize[i];
@@ -312,7 +403,7 @@ void File::resize(size_t size) {
             }
         }
 
-        _data.size = size;
+        _data.setSize(size);
         _fs->writeInodeData(_inode, &_data);
     } else {
         writeaddr(size, nullptr, 0);
@@ -365,11 +456,41 @@ bool File::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     }
 }
 
-
-size_t File::getSize() const {
-    return _data.size;
+void File::link() {
+    _data.links_count += 1;
+    _fs->writeInodeData(_inode, &_data);
 }
 
+void File::unlink() {
+    if(_data.links_count == 1) {
+        resize(0);
+        _fs->freeInode(_inode);
+        memset(&_data, 0, sizeof(InodeData));
+    } else {
+        _data.links_count -= 1;
+    }
+    _fs->writeInodeData(_inode, &_data);
+}
+
+void File::getStats(stat* buf) {
+    buf->st_ino = _inode;
+    buf->st_mode = _data.mode;
+    buf->st_nlink = _data.links_count;
+    buf->st_uid = _data.uid;
+    buf->st_gid = _data.gid;
+    buf->st_size = _data.getSize();
+    buf->st_blocks = _data.blocks;
+    buf->st_atim.tv_nsec = 0;
+    buf->st_mtim.tv_nsec = 0;
+    buf->st_ctim.tv_nsec = 0;
+    buf->st_atim.tv_sec = _data.atime;
+    buf->st_mtim.tv_sec = _data.mtime;
+    buf->st_ctim.tv_sec = _data.ctime;
+}
+
+size_t File::getSize() const {
+    return _data.getSize();
+}
 
 Directory::Directory(u32 inode, InodeData data, FS* fs) : File(inode, data, fs) { }
 
@@ -399,7 +520,9 @@ File* Directory::operator[](const std::string& name) {
 }
 
 void* Directory::open() {
-    return malloc(sizeof(DirIterator));
+    DirIterator* res = (DirIterator*)malloc(sizeof(DirIterator));
+    res->pos = 0;
+    return res;
 }
 
 dirent* Directory::read(void* d) {
@@ -429,7 +552,72 @@ void Directory::close(void* d) {
     free(d);
 }
 
-File* Directory::addFile(const std::string& name, u16 mode, u16 uid, u16 gid) {
+static DirectoryFileType inodeToDirType(u16 mode) {
+    if(S_ISREG(mode))  return FT_REG_FILE;
+    if(S_ISDIR(mode))  return FT_DIR;
+    if(S_ISCHR(mode))  return FT_CHRDEV;
+    if(S_ISBLK(mode))  return FT_BLKDEV;
+    if(S_ISFIFO(mode)) return FT_FIFO;
+    if(S_ISSOCK(mode)) return FT_SOCK;
+    if(S_ISLNK(mode))  return FT_SYMLINK;
+    return FT_UNKNOWN;
+}
+
+void Directory::addFile(const std::string& name, ::File* file) {
+    if(file->getType() ==  FileType::Directory && !(name.size() == 2 && name[0] == '.' && name[1] == '.')){ //name != ".."
+        file->dir()->addFile("..", this);
+        link();
+    }
+    u32 neededSize = sizeof(DirectoryEntry) + name.size();
+    stat stats;
+    file->getStats(&stats);
+    u32 inode = stats.st_ino;
+    DirectoryEntry entry;
+    u32 curPos = 0;
+    u32 nextPos = 0;
+
+    while(true) {
+        curPos = nextPos;
+        if(curPos >= _data.blocks*512) {
+            bsod("Ext2::Directory::addFile: It should be impossible to get here\n");
+        }
+        readaddr(curPos, &entry, sizeof(DirectoryEntry));
+        nextPos = curPos + entry.rec_len;
+
+        u32 curSize = alignup((u32)(sizeof(DirectoryEntry) + entry.name_len), (u32)4);
+        u32 availableSize = entry.rec_len - curSize;
+
+        bool atEnd = nextPos >= _data.blocks*512;
+
+        if(atEnd || neededSize < availableSize) {
+            u32 targetPos = 0;
+            //a directory record must not be on two blocks
+            if((curPos+curSize)/_fs->_blockSize == (curPos + curSize + neededSize)/_fs->_blockSize) {
+                targetPos = curPos + curSize;
+            } else {
+                targetPos = alignup(curPos+curSize, _fs->_blockSize);
+                if(!(atEnd || targetPos + neededSize < curPos + entry.rec_len)) {
+                    continue;
+                }
+            }
+            DirectoryEntry newEntry;
+            newEntry.inode = inode;
+            if(atEnd) {
+                newEntry.rec_len = _data.blocks*512 - targetPos;
+            } else {
+                newEntry.rec_len = nextPos - targetPos;
+            }
+            newEntry.name_len = name.size();
+            InodeData dat;
+            _fs->getInodeData(inode, &dat);
+            newEntry.type = inodeToDirType(dat.mode);
+            writeaddr(targetPos, &newEntry, sizeof(DirectoryEntry));
+            writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size());
+            entry.rec_len = targetPos - curPos;
+            writeaddr(curPos, &entry, sizeof(DirectoryEntry));
+            break;
+        }
+    }
 }
 
 void Directory::removeFile(const std::string& name) {
@@ -461,6 +649,19 @@ void Directory::removeFile(const std::string& name) {
     readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
     lastEntry.rec_len += d->entry.rec_len;
     writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+}
+
+void Directory::init() {
+    DirectoryEntry entry;
+    entry.inode = _inode;
+    entry.rec_len = _fs->_blockSize;
+    entry.name_len = 1;
+    entry.type = FT_DIR;
+    char name = '.';
+    resize(_fs->_blockSize);
+    writeaddr(0, &entry, sizeof(DirectoryEntry));
+    writeaddr(sizeof(DirectoryEntry), &name, 1);
+    link(); //reference for '.'
 }
 
 }

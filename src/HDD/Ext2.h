@@ -97,6 +97,8 @@ struct InodeData {
     u32 reserved2[2];
     u32 getBlockCount(const SuperBlock& sb) const;
     void incrBlockCount(int diff, const SuperBlock& sb);
+    size_t getSize() const;
+    void setSize(size_t size);
 } __attribute__((packed));
 
 static_assert(sizeof(InodeData) == 128, "InodeData has the wrong size");
@@ -127,13 +129,19 @@ class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
         virtual ::Directory* getRoot();
+        virtual ::File* getNewFile(u16 uid, u16 gid, u16 mode);
+        virtual ::Directory* getNewDirectory(u16 uid, u16 gid, u16 mode);
+
         void getInodeData(u32 inode, InodeData* res) const;
         void writeInodeData(u32 inode, const InodeData* data);
         u32 getNewBlock(u32 nearInode);
         void freeBlock(u32 block);
+        u32 getNewInode();
+        void freeInode(u32 inode);
 
     private:
         friend class File;
+        friend class Directory;
         void _loadSuperBlock();
         void _writeSuperBlock();
         void _loadBlockGroupDescriptor();
@@ -150,6 +158,9 @@ class File : public virtual ::File {
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void resize(size_t size);
+        virtual void link();
+        virtual void unlink();
+        virtual void getStats(stat* buf);
         virtual size_t getSize() const;
 
     protected:
@@ -191,8 +202,9 @@ class Directory : public virtual File, public virtual ::Directory {
         virtual long int tell(void* d);
         virtual void seek(void* d, long int loc);
         virtual void close(void* d);
-        virtual File* addFile(const std::string& name, u16 mode, u16 uid, u16 gid);
+        virtual void addFile(const std::string& name, ::File* file);
         virtual void removeFile(const std::string& name);
+        void init();
 
     private:
         struct DirIterator {
