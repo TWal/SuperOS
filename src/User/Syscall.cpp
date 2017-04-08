@@ -20,7 +20,7 @@ void syserror(){
 }
 
 u64 systest(u64 a,u64 b,u64 c,u64 d,u64 e,u64 f){
-    printf("Systest called with %llu, %llu, %llu, %llu, %llu, %llu \n",a,b,c,d,e,f);
+    printf("Systest called with %lld, %lld, %lld, %lld, %lld, %lld \n",a,b,c,d,e,f);
     return 0;
 }
 

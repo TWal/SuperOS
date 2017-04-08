@@ -86,8 +86,8 @@ inline void* getCR2(){
 
 
 
-void vbsod(const char* s, va_list ap) __attribute__((noreturn));
-extern "C" void bsod(const char* s, ...) __attribute__((noreturn));
+[[noreturn]] void vbsod(const char* s, va_list ap);
+extern "C" [[noreturn]]  void bsod(const char* s, ...);
 
 void reboot();
 
@@ -123,6 +123,9 @@ void pbool(bool b,const char* = "");
 #ifdef SUP_OS_KERNEL
 std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
 std::string concat(std::vector<std::string> strs,char separator);
+
+[[noreturn]]void kend(); // close the kernel
+
 #endif
 
 #endif

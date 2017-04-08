@@ -27,6 +27,9 @@ ProgramHeader Elf64::getProgramHeader(uint i) {
     assert(i < phnum);
     return ProgramHeader(this, i);
 }
+size_t Elf64::toLoadSize(){
+    return max(phoff + phnum*phentsize,shoff + shnum*shentsize);
+}
 
 
 SectionHeader::SectionHeader(Elf64* parent, uint index) :

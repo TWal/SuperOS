@@ -136,9 +136,9 @@ public:
     void createMapping(uptr phy, uptr virt,int nbPages);
     void freeMapping(uptr virt,int nbPages = 1);
     void freeMappingAndPhy(uptr virt,int nbPages = 1);
-    //void switchUser(PageEntry* UserPDP);
-    //int brk(void* paddr);
-    //void* sbrk(size_t inc); // i64 ?
+    void* newUserPDP(); // physical address
+    void switchUser(void* usPDP);
+    void freeUserPDP(void* usPDP);
 private:
     void actTmpPDP (void* PDPphyAddr); // activate temporary PD
     void actTmpPD (void* PDphyAddr); // activate temporary PD
@@ -153,28 +153,13 @@ private:
     void* getPTphyu(uptr addr); // unsafe version
     void* getPTphy(uptr addr); // safe version
     void* getphyu(uptr addr); // unsafe version
-    //uptr _brk;
-    //uptr _truebrk;
+
+    void freePTs(void* PD, bool start);
+    void freePDs(void* PDP);
+    void TLBflush();
+
 };
 
-/*struct MallocHeader {
-    size_t size : 30;
-    bool prevFree : 1;
-    bool free : 1;
-    inline size_t getSize() {
-        return size << 2;
-    }
-    inline void setSize(size_t sz) {
-        assert((sz & ((1<<2)-1)) == 0);
-        size = sz >> 2;
-    }
-};
-
-static_assert(sizeof(MallocHeader) == 4, "MallocHeader has the wrong size");
-
-void initkmalloc();
-void* kmalloc(size_t size);
-void kfree(void* ptr);*/
 
 extern Paging paging;
 

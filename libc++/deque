@@ -221,7 +221,7 @@ namespace std{
         const_iterator end()const{
             return const_iterator(_data,_endIndex,_capacity,_begIndex);
         }
-        size_type size(){ // the number of owned and constructed objects
+        size_type size()const{ // the number of owned and constructed objects
             return _endIndex >= _begIndex ? _endIndex - _begIndex :
                 _endIndex + _capacity - _begIndex; // no underflow : _capacity > _begIndex
         }
@@ -276,8 +276,18 @@ namespace std{
         bool empty() const{
             return _endIndex == _begIndex;
         }
-
-
+        reference operator [](size_type i){
+            return *(begin() += i);
+        }
+        const_reference operator [](size_type i)const{
+            return *(begin() += i);
+        }
+        reference front(){
+            return _data[_begIndex];
+        }
+        const_reference front() const{
+            return _data[_begIndex];
+        }
 
 
     };

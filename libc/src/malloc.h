@@ -2,6 +2,7 @@
 #define __SUPOS_MALLOC_H
 
 #include<stddef.h>
+#include<stdint.h>
 #include<assert.h>
 
 struct MallocHeader {
@@ -23,9 +24,10 @@ struct MallocHeader {
 };
 static_assert(sizeof(MallocHeader) == 8, "MallocHeader has the wrong size");
 
-
-void initmalloc();
-void* malloc(size_t size);
-void free(void* ptr);
+extern "C" void* sbrk(intptr_t offset);
+extern "C" void __setbrk(void* newBrk);
+extern "C" void __initmalloc();
+extern "C" void* malloc(size_t size);
+extern "C" void free(void* ptr);
 
 #endif

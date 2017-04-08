@@ -4,6 +4,7 @@ os.iso
 bochslog.txt
 iso/boot/kernel.elf
 iso/boot/loader.elf
+iso/init
 out/*
 ld_mapping
 ld_mapping_full

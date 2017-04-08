@@ -2,9 +2,28 @@
 #include"malloc.h"
 #include "../stdio.h"
 
+
+
+static void* Brk;
+
+void __setbrk(void* newBrk){
+    Brk = newBrk;
+}
+
+void* sbrk(intptr_t offset){
+    char * before = (char*)Brk;
+    int err = brk(before + offset);
+    if (!err){
+        Brk = before + offset;
+        return (void*)before;
+    }
+    return (void*)(-1);
+}
+
+
 static MallocHeader* firstHeader;
 
-void initmalloc() {
+void __initmalloc() {
     firstHeader = (MallocHeader*)sbrk(sizeof(MallocHeader));
     firstHeader->size = 0;
     firstHeader->prevFree = false;

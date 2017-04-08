@@ -1,0 +1,12 @@
+#!/bin/bash
+
+dirname=`dirname $0`
+
+make -s crt0.o
+make -s libc.a
+make -s libc++.a
+
+g++ -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra -fno-builtin -mno-sse \
+ -fno-exceptions -fno-rtti -std=c++14 \
+ -isystem $dirname/libc -isystem $dirname/libc++ -Wl,-melf_x86_64 -L $dirname \
+ -L /usr/lib/gcc/x86_64-*linux-gnu/6.* -Wl,crt0.o -Wl,--build-id=none $* -lc -lgcc -lc++

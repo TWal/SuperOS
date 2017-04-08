@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #ifdef SUP_OS_KERNEL
-void bsod(const char* s, ...);
+    __attribute__((noreturn)) void bsod(const char* s, ...);
 
 #define __S(x) #x
 #define __S_(x) __S(x)

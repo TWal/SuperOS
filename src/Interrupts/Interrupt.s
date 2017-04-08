@@ -40,7 +40,7 @@ geneInt: # by default interruption on user stack.
 	  pop %r8
     pop %rcx
     movabs $params, %rbp
-    testb $2,(%rbp,%rbx,8)
+    testb $2,(%rbp,%rbx)
     cmovz %rcx,%rax
     pop %rcx
     pop %rdx

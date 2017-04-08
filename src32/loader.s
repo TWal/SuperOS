@@ -78,7 +78,7 @@ startKernel:
 startKernel64:
     movq 4(%rsp),%rax
     movl 12(%rsp),%edi
-    movl 12(%rsp),%esp
+    movl 12(%rsp),%esp          # TODO This is stupid.
     jmp *%rax # launching kernel
 
 

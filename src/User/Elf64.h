@@ -30,6 +30,7 @@ class Elf64 : public Header {
         Elf64(char* data, size_t size);
         SectionHeader getSectionHeader(uint i);
         ProgramHeader getProgramHeader(uint i);
+        size_t toLoadSize();
     private:
         friend class SectionHeader;
         friend class ProgramHeader;
@@ -211,5 +212,6 @@ const u32 PF_MASKOS = 0x00FF0000;   // These flag bits are reserved for environm
 const u32 PF_MASKPROC = 0xFF000000; // These flag bits are reserved for processor-specific use
 
 }
+
 #endif
 

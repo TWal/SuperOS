@@ -29,15 +29,20 @@ CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
 				   -DSUP_OS_KERNEL \
 					 -mcmodel=kernel # 64 bit high-half kernel
 
+CNKFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
+					 -fno-builtin $(OPTILVL)
+
+
 CXXBASEFLAGS = -fno-exceptions -fno-rtti -std=c++14
 CXX32FLAGS = $(C32FLAGS) $(CXXBASEFLAGS)
 CXXFLAGS = $(CFLAGS) $(CXXBASEFLAGS)
+CXXNKFLAGS = $(CNKFLAGS) $(CXXBASEFLAGS)
 
 LDFLAGS =  -nostdlib -Wl,--build-id=none
 LD32FLAGS = $(LDFLAGS) -m32 -T $(SRC32DIR)/link.ld -Wl,-melf_i386
 LIBS32 = -L $(LIB32GCC) -lgcc
 LD64FLAGS = $(LDFLAGS) -T $(SRCDIR)/link.ld -Wl,-melf_x86_64
-LIBS64 = -L. -L $(LIBGCC) -lc -lgcc -lc++
+LIBS64 = -L. -L $(LIBGCC) -lk -lgcc -lc++
 
 SRC32ASM = $(wildcard $(SRC32DIR)/*.s)
 SRC32CXX = $(wildcard $(SRC32DIR)/*.cpp)
@@ -73,6 +78,8 @@ LIBCSRC = $(wildcard $(LIBC)/src/*.c)
 LIBCSRCXX = $(wildcard $(LIBC)/src/*.cpp)
 LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC)) \
 	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRCXX))
+LIBKOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/libk/%.o,$(LIBCSRC)) \
+	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/libk/%.o,$(LIBCSRCXX))
 LIBCH = $(wildcard $(LIBC)/*.h)
 
 LIBCXXSRC = $(wildcard $(LIBCXX)/src/*.cpp)
@@ -86,7 +93,7 @@ FSCKARGS = -f -n
 #MKFSARGS = -F 32
 #FSCKARGS = -n
 
-all: loader.elf kernel.elf
+all: loader.elf kernel.elf crt0.o init
 
 os.iso: all
 	cp loader.elf iso/boot/loader.elf
@@ -130,7 +137,7 @@ connect : all
 
 #-------------------------------kernel rules------------------------------------
 
-kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
+kernel.elf: $(OBJ) $(SRCDIR)/link.ld libk.a libc++.a
 	@echo Linking kernel
 	@g++ $(LD64FLAGS) $(OBJ) -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
 	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
@@ -138,18 +145,18 @@ kernel.elf: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
 	@echo
 	@echo
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libc.a libc++.a Makefile
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libk.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@$(AS) $(ASFLAGS) $< -o $@
 	@echo Assembling kernel file : $<
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libc.a libc++.a Makefile
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libk.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)`
 	@echo Compiling kernel file : $<
 	@$(CC) $(CFLAGS) -MMD -MT '$@' -MF	$(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<) -c $< -o $@
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libc.a libc++.a Makefile
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libk.a libc++.a Makefile
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)`
 	@echo Compiling kernel file : $<
@@ -193,13 +200,13 @@ $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c Makefile
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
 	@echo Compiling libc file : $<
-	@$(CC) $(CFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<) -c $< -o $@
+	@$(CC) $(CNKFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.c, $(DEPDIR)/$(LIBC)/%.c.d, $<) -c $< -o $@
 
 $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.cpp Makefile
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
 	@echo Compiling libc file : $<
-	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.cpp, $(DEPDIR)/$(LIBC)/%.cpp.d, $<) -c $< -o $@
+	@$(CXX) $(CXXNKFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.cpp, $(DEPDIR)/$(LIBC)/%.cpp.d, $<) -c $< -o $@
 
 libc.a: $(LIBCOBJ) $(LIBCH) Makefile
 
@@ -208,16 +215,37 @@ libc.a: $(LIBCOBJ) $(LIBCH) Makefile
 	@echo
 	@echo
 
+#----------------------------------libk rules-----------------------------------
+
+$(OUTDIR)/libk/%.o: $(LIBC)/src/%.c Makefile
+	@mkdir -p $(OUTDIR)/libk
+	@mkdir -p $(DEPDIR)/libk
+	@echo Compiling libk file : $<
+	@$(CC) $(CFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.c, $(DEPDIR)/libk/%.c.d, $<) -c $< -o $@
+
+$(OUTDIR)/libk/%.o: $(LIBC)/src/%.cpp Makefile
+	@mkdir -p $(OUTDIR)/libk
+	@mkdir -p $(DEPDIR)/libk
+	@echo Compiling libk file : $<
+	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBC)/src/%.cpp, $(DEPDIR)/libk/%.cpp.d, $<) -c $< -o $@
+
+libk.a: $(LIBKOBJ) $(LIBCH) Makefile
+
+	ar rcs libk.a $(LIBKOBJ)
+	@echo --------------------------libk built.------------------------------
+	@echo
+	@echo
+
 
 #----------------------------------libc++ rules---------------------------------
 
-$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp libc.a Makefile
+$(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp $(LIBCH) Makefile
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
 	@echo Compiling libcpp file : $<
 	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<) -c $< -o $@
 
-libc++.a: $(LIBCXXOBJ) $(LIBCXXH) libc.a Makefile
+libc++.a: $(LIBCXXOBJ) $(LIBCXXH) $(LIBCH) Makefile
 	ar rcs libc++.a $(LIBCXXOBJ)
 	@echo --------------------------libc++ built.------------------------------
 	@echo
@@ -231,7 +259,7 @@ unittest:
 	@./unitTests.sh
 
 
-buildunit: $(OBJ) $(SRCDIR)/link.ld libc.a libc++.a
+buildunit: $(OBJ) $(SRCDIR)/link.ld libk.a libc++.a
 	@$(CXX) $(CXXFLAGS) -DUNITTEST -c $(SRCDIR)/kmain.cpp -o $(OUTDIR)/kmain.cpp.o
 	@echo Linking kernel for unit test
 	@g++ $(LD64FLAGS) $(OBJ) $(OUTDIR)/unittest.o -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
@@ -245,19 +273,23 @@ getCompileLine:
 
 #---------------------------------User mode------------------------------------
 
-$(OUTDIR)/start/crt0.s.o: start/crt0.s
-	@mkdir -p `dirname $@`
-	@$(AS) $(ASFLAGS) $< -o $@
+$(OUTDIR)/start/crt0.s.o: user/start/crt0.s
+	mkdir -p `dirname $@`
+	$(AS) $(ASFLAGS) $< -o $@
 
-$(OUTDIR)/start/crt0.c.o:  start/crt0.c
-	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) $< -o $@
+$(OUTDIR)/start/crt0.c.o:  user/start/crt0.c
+	mkdir -p `dirname $@`
+	$(CC) $(CFLAGS) -c $< -o $@
 
 crt0.o: $(OUTDIR)/start/crt0.s.o $(OUTDIR)/start/crt0.c.o
 	ld -r $^ -o crt0.o
 
+#---------------------------------Init Process------------------------------------
 
+init: user/init/init.c
+	./gcc-supos $< -o $@
 
+#---------------------------------Disk building------------------------------------
 disk.img :
 	dd if=/dev/zero of=disk.img bs=512 count=131072 #64 MiB
 	#dd if=/dev/zero of=disk.img bs=512 count=2097152 # 1 GiB
@@ -295,17 +327,20 @@ grubinst:
 mvtoimg: kernel.elf
 	cp kernel.elf iso/boot/kernel.elf
 	cp loader.elf iso/boot/loader.elf
+	cp init iso/init
 	sudo rsync -r iso/ $(MNTPATH)/
 
 builddisk: load partition mount grubinst mvtoimg ulm
 
-updatedisk: kernel.elf loader.elf lm mvtoimg ulm
+updatedisk: kernel.elf loader.elf crt0.o init lm mvtoimg ulm
 
 
 
+cleanunit:
+	rm -f logqemu_*.txt
 
 
-clean:
+clean: cleanunit
 	rm -rf $(OUTDIR)
 	rm -rf $(DEPDIR)
 	rm -f disassembly
@@ -318,11 +353,15 @@ clean:
 	rm -f kernel.elf
 	rm -f loader.elf
 	rm -f bochslog.txt
+	rm -f libk.a
 	rm -f libc.a
 	rm -f libc++.a
 	rm -f log.txt
 	rm -f logqemu.txt
-	rm -f logqemu_*.txt
+	rm -f crt0.o
+	rm -f init
+	rm -f diskout.img
+
 
 mrproper: clean
 	rm -f disk.img
@@ -336,7 +375,7 @@ dasml:
 	objdump -D -C loader.elf > disassemblyl
 
 count:
-	cloc libc libc++ src src32 unitTests -lang-no-ext="C/C++ Header"
+	cloc libc libc++ src src32 unitTests user -lang-no-ext="C/C++ Header"
 
 dofsck:
 	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p1

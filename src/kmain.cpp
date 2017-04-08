@@ -110,7 +110,7 @@ void unittest();
 #endif
 
 // WARNING : kmain local var should not exceed 2K for stack switching
-extern "C" void kmain(KArgs* kargs) {
+extern "C" [[noreturn]] void kmain(KArgs* kargs) {
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
     gdt.init();
@@ -132,9 +132,9 @@ extern "C" void kmain(KArgs* kargs) {
     /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
-    paging.removeIdent(); // remove the identyt paging necessary for boot process
-    kheap.init(&kernel_code_end); // creating kernel heap
-    initmalloc(); // initializing kernel malloc : no heap access before this point.
+    paging.removeIdent(); // remove the identity paging necessary for boot process
+    __setbrk(kheap.init(&kernel_code_end));// creating kernel heap
+    __initmalloc(); // initializing kernel malloc : no heap access before this point.
     syscallInit(); // intialize syscall API
     tss.load(); // load TSS for enabling interrupts from usermode
     tss.RSP[0] = nullptr; // the kernel stack really start from 0.
@@ -144,12 +144,25 @@ extern "C" void kmain(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA EXT2_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
-    schedul.init();
-    testLaunchCPL3();
+    breakpoint;
+    HDD first(1,true);
+    first.init();
+    PartitionTableEntry part1 = first[1];
+    //fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
+    Partition pa1 (&first,part1);
+    Ext2::FS fs (&pa1);
+
+    File* init = (*(fs.getRoot()))["init"];
+    assert(init);
+    Process initp(1);
+    Thread* initt = initp.loadFromBytes(init);
+    schedul.init(initt);
+    schedul.run();
+
 
 
 #elif BLA == EXT2_TEST
@@ -270,10 +283,19 @@ extern "C" void kmain(KArgs* kargs) {
     cl.run(); //run command line
 #endif
 
-    printf("kmain end : this is not normal for an operating system !");
-    stop;
+    kend();
 }
+
+[[noreturn]] void kend(){
+    cli;
+    //fb.clear();
+    printf("\n\nKernel is ready to Shutdown, please press power button for 5 sec");
+    while(true) stop;
+}
+
+
+
 
 extern "C" void __cxa_pure_virtual (){}
 void * __dso_handle=0;
-//extern "C" void  __cxa_atexit(){}
+extern "C" void  __cxa_atexit(){}

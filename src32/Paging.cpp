@@ -72,7 +72,7 @@ void setupBasicPaging() {
             PTs[i][j].zero2 = 0;
         }
     }
-    //Identity map the first 2MB (loader must not use more than 1 MB)
+    //Identity map the first 4MB (loader must not use more than 3 MB)
     PML4[0].present = true;
     PML4[0].setAddr32(PDPs[0]);
     ++nbPDPused;
@@ -148,6 +148,7 @@ void createMapping(void* phy,u64 virt){
     auto PT = getPTphy(virt);
     PT[getPTindex(virt)].setAddr(phy);
     PT[getPTindex(virt)].present =true;
+    // TODO think about adding an invlpg
 }
 void createMapping(void* phy,u64 virt,int numPg){
     char* cphy = (char*)phy;

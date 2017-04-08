@@ -8,15 +8,12 @@
 extern "C" {
 #endif
 
-#ifdef SUP_OS_KERNEL
     int   brk(void* addr);
     void* sbrk(intptr_t offset);
     void* malloc(size_t size);
     void  free (void* ptr);
-    void  initmalloc();
-#else
-    #error "Hosted stdlib has not been implemented"
-#endif
+    void __initmalloc();
+    void __setbrk(void*addr);
 
 
 #ifdef __cplusplus

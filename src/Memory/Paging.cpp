@@ -56,7 +56,6 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
     PageEntry* PPD = new (physmemalloc.alloc()) PageEntry[512]; // paging page directory
     KPDP[509].activeAddr(PPD);
-    invlpg(pagePD);
 
     PageTable* firstPPT = new(physmemalloc.alloc()) PageTable[512]; // first paging page table
     PPD[0].activeAddr(firstPPT); // activate first page PT
@@ -92,21 +91,26 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     char* pbitset = (char*)physmemalloc.getCurrentAddr();
     for(int i = 0 ; i < physmemalloc.getPageSize() ; ++i){
         bitsetPT[i].activeAddr(pbitset + i * 0x1000);
+        bitsetPT[i].global = true;
         invlpg(bitset +i*0x1000);
     }
     physmemalloc.switchVirt(bitset);
 
     assert(PML4[0].getAddr()); // user PDP is already active
     firstPPT[6].activeAddr(PML4[0].getAddr()); // set user PDP
+    invlpg(userPDP);
 
     assert(userPDP[0].getAddr()); // first PD is already active and identity map the first 4 Mo
     firstPPT[7].activeAddr(userPDP[0].getAddr());
+    invlpg(firstPD);
 
     // mapping of physical RAM from 4K to 1M
     firstPPT[8].activeAddr(new(physmemalloc.alloc()) PageTable[512]);
+    invlpg(firstPT);
     for(int i = 1 ; i < 256 ; ++ i){ // RAM mapping to devices
         firstPT[i].activeAddr((char*)nullptr + 0x1000 * i);
         firstPT[i].writeThrough = true ; // only for device mapping RAM
+        firstPT[i].global = true; // these are the only user space mapping to be global.
     }
     // we don't activate firstPT i.e removing identity map of RAM begining now.
 
@@ -115,7 +119,11 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     firstPPT[11].writeThrough = true;
     firstPPT[12].writeThrough = true;
 
+    for(int i = 0 ; i < 12 ; ++i){
+        firstPPT[i].global = true;
+    }
 
+    TLBflush();
 }
 
 void Paging::allocStack(void*stackPos,size_t nbPages){
@@ -249,6 +257,9 @@ void Paging::createMapping(uptr phy,uptr virt){
     actTmpPT(PT);
     assert(!tmpPT[getPTindex(virt)].present);
     tmpPT[getPTindex(virt)].activeAddr((void*)phy);
+    if(iptr(virt) < 0){ // if we are in kernel space
+        tmpPT[getPTindex(virt)].global = true;
+    }
     freeTmpPT();
     invlpg(virt);
 }
@@ -272,6 +283,69 @@ void Paging::freeMappingAndPhy(uptr virt,int nbPages){
     }
     freeMapping(virt,nbPages);
 }
+
+void* Paging::newUserPDP(){
+    void* phyPDP = physmemalloc.alloc();
+    actTmpPDP(phyPDP);
+    new(tmpPDP) PageEntry[512];
+    void* phyPD = physmemalloc.alloc();
+    actTmpPD(phyPD);
+    new(tmpPD) PageEntry[512];
+
+    tmpPDP[0].activeAddr(phyPD);
+    assert(firstPD[0].getAddr());
+    tmpPD[0].activeAddr(firstPD[0].getAddr());
+    freeTmpPD();
+    freeTmpPDP();
+    return phyPDP;
+}
+
+
+void Paging::TLBflush(){
+    asm volatile(
+        "mov %%cr3,%%rax;" // globally flush the TLB (except the pages marked as global)
+        "mov %%rax,%%cr3" : : :
+        "%eax"
+        );
+}
+
+void Paging::switchUser(void* usPDP){
+    if(usPDP == PML4[0].getAddr()) return; // if this is already the active mapping
+    PML4[0].activeAddr(usPDP);
+    TLBflush();
+}
+
+
+void Paging::freePTs(void* PD, bool start){
+    actTmpPD(PD);
+    for(int i = start ? 1 : 0 ; i < 512 ; ++i){
+        if(tmpPD[i].getAddr()){
+            physmemalloc.free(tmpPD[i].getAddr());
+        }
+    }
+    freeTmpPD();
+}
+void Paging::freePDs(void* PDP){
+    actTmpPDP(PDP);
+    for(int i = 0 ; i < 512 ; ++i){
+        void * PD;
+        if( (PD = tmpPDP[i].getAddr()) ){
+            freePTs(PD,i == 0);
+            physmemalloc.free(PD);
+        }
+    }
+    freeTmpPDP();
+}
+
+void Paging::freeUserPDP(void* usPDP){
+    assert(usPDP != pagePT[6].getAddr()); // ensure we do not delete the kernel userPDP.
+    if(usPDP == PML4[0].getAddr()){ // if this mapping is active return to the default mapping
+        switchUser(pagePT[6].getAddr());
+    }
+    /*freePDs(usPDP);
+      physmemalloc.free(usPDP);*/
+}
+
 
 Paging paging;
 

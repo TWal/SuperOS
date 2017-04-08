@@ -50,7 +50,8 @@ u64 rdmsr(u32 num){
 u64 rdmsr(u32 num);
 
 
-void vbsod(const char* s, va_list ap) {
+[[noreturn]]void vbsod(const char* s, va_list ap) {
+    cli;
     const char fg = FrameBuffer::WHITE;
     const char fgOut = FrameBuffer::LIGHTRED;
     const char bg = FrameBuffer::BLUE;
@@ -84,7 +85,7 @@ void vbsod(const char* s, va_list ap) {
     }
 }
 
-void bsod(const char* s, ...) {
+[[noreturn]]void bsod(const char* s, ...) {
     va_list ap;
     va_start(ap, s);
     vbsod(s, ap);
@@ -92,11 +93,13 @@ void bsod(const char* s, ...) {
 }
 
 #ifdef SUP_OS_KERNEL
-void reboot() {
+[[noreturn]]void reboot() {
     IDT[0].present = false; //remove div0
     IDT[8].present = false; //remove double fault;
     volatile int i = 0;
     volatile int j = 42/i;
+    (void)j;
+    while(true);
 }
 
 vector<string> split(std::string str,char separator,bool keepEmpty){
