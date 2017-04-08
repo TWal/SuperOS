@@ -46,6 +46,9 @@ static_assert(sizeof(int32_t)==4);
 static_assert(sizeof(uint32_t)==4);
 static_assert(sizeof(int64_t)==8);
 static_assert(sizeof(uint64_t)==8);
+#ifdef SUP_OS_KERNEL
+static_assert(sizeof(size_t)==8);
+#endif
 static_assert(sizeof(iptr) == sizeof(void*));
 static_assert(sizeof(uptr) == sizeof(void*));
 
@@ -90,6 +93,11 @@ inline void* getCR2(){
 extern "C" [[noreturn]]  void bsod(const char* s, ...);
 
 void reboot();
+
+template<typename T> T alignup(T n, T multiple) {
+    if(n == 0) return 0; //we don't want to use -1 when T is unsigned
+    return (n-1) + (multiple - ((n-1)%multiple));
+}
 
 //Trick to have S__LINE _ a string containing the line number
 #define __S(x) #x
