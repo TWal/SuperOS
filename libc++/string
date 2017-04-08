@@ -146,8 +146,13 @@ namespace std {
         const charT* c_str() const noexcept {return data();};
 
         reference operator [](size_type i){
-            return _data + i;
+            return _data[i];
         }
+
+        const reference operator [](size_type i) const {
+            return _data[i];
+        }
+
         reference at(size_type i){
             assert(i < _size && "At assert failed");
             return _data + i;
