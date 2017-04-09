@@ -52,8 +52,6 @@ FS::FS(Partition* part) : FileSystem(part) {
     assert(S_ISDIR(mode)); //TODO handle this better
     u32 inode = getNewInode(true);
     //update bgd
-    uint blockGroup = (inode-1) / _sb.inodes_per_group;
-    _bgd[blockGroup].used_dirs_count += 1;
     _writeBlockGroupDescriptor();
     //write inode
     InodeData dat;
@@ -568,9 +566,22 @@ static DirectoryFileType inodeToDirType(u16 mode) {
     return FT_UNKNOWN;
 }
 
-void Directory::addFile(const std::string& name, ::File* file) {
-    if(file->getType() ==  FileType::Directory && !(name.size() == 2 && name[0] == '.' && name[1] == '.')){ //name != ".."
-        file->dir()->addFile("..", this);
+void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
+    ::File* f = nullptr;
+    if(S_ISREG(mode)) {
+        f = _fs->getNewFile(uid, gid, mode);
+    } else if(S_ISDIR(mode)) {
+        f = _fs->getNewDirectory(uid, gid, mode);
+    } else {
+        bsod("Ext2::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
+    }
+    addEntry(name, f);
+    f->link();
+}
+
+void Directory::addEntry(const std::string& name, ::File* file) {
+    if(file->getType() ==  FileType::Directory && std::string("..") != name) {
+        file->dir()->addEntry("..", this);
         link();
     }
     u32 neededSize = sizeof(DirectoryEntry) + name.size();
@@ -625,38 +636,72 @@ void Directory::addFile(const std::string& name, ::File* file) {
     }
 }
 
+
 void Directory::removeFile(const std::string& name) {
+    File* f = (*this)[name];
+    assert(f != nullptr);
+    f->unlink();
+    removeEntry(name);
+}
+
+void Directory::removeDirectory(const std::string& name) {
+    File* f = (*this)[name];
+    assert(f != nullptr);
+    assert(f->getType() == FileType::Directory);
+    removeEntry(name);
+    f->dir()->deleteDir();
+}
+
+
+void Directory::removeEntry(const std::string& name) {
     DirIterator* d = (DirIterator*)open();
     u32 lastPos = 0;
     u32 curPos = 0;
+    u32 inode;
+    u32 rec_len;
+    u8 type = FT_UNKNOWN;
     dirent* dir;
     while(true) {
         lastPos = curPos;
         curPos = d->pos;
         dir = read(d);
         if(dir == nullptr) break;
-        if(std::string(dir->d_name) == name) break;
+        inode = d->entry.inode;
+        type = d->entry.type;
+        rec_len = d->entry.rec_len;
+        if(std::string(dir->d_name) == name) {
+            break;
+        }
     }
     close(d);
     if(dir == nullptr) {
-        bsod("Ext2::Directory::removeFile called with a file that doesn't exists!\n");
+        bsod("Ext2::Directory::removeEntry called with a file that doesn't exists!\n");
+    }
+
+    if(type == FT_DIR && std::string("..") != name) {
+        InodeData dat;
+        _fs->getInodeData(inode, &dat);
+        Directory directory(inode, dat, _fs);
+        directory.removeEntry("..");
+        unlink();
     }
 
     if(curPos == 0) {
-        d->entry.inode = 0;
-        d->entry.name_len = 0;
-        d->entry.type = FT_UNKNOWN;
-        readaddr(0, &d->entry, sizeof(DirectoryEntry));
+        DirectoryEntry entry;
+        entry.inode = 0;
+        entry.name_len = 0;
+        entry.type = FT_UNKNOWN;
+        writeaddr(0, &entry, sizeof(DirectoryEntry));
         return;
     }
 
     DirectoryEntry lastEntry;
     readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
-    lastEntry.rec_len += d->entry.rec_len;
+    lastEntry.rec_len += rec_len;
     writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
 }
 
-void Directory::removeDir() {
+void Directory::deleteDir() {
     void* d = open();
     dirent* dir;
     while((dir = read(d)) != nullptr) {

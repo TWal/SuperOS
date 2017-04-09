@@ -100,7 +100,6 @@ CommandLine::CommandLine(table_type table):_table(table){
                 continue;
             }
             cl->pwd->removeFile(file);
-            f->unlink();
         }
     }));
 
@@ -126,8 +125,39 @@ CommandLine::CommandLine(table_type table):_table(table){
                 printf("rmdir: %s: Is not empty\n", file.c_str());
                 continue;
             }
-            cl->pwd->removeFile(file);
-            d->removeDir();
+            cl->pwd->removeDirectory(file);
+        }
+    }));
+
+    _table.insert(make_pair("touch", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        for(const string& file : args) {
+            File* f = (*cl->pwd)[file];
+            if(f != nullptr) {
+                continue;
+            }
+            cl->pwd->addEntry(file, 0, 0, S_IFREG | S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+        }
+    }));
+
+
+    _table.insert(make_pair("mkdir", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        for(const string& file : args) {
+            File* f = (*cl->pwd)[file];
+            if(f != nullptr) {
+                printf("mkdir: file %s already exists\n", file.c_str());
+                continue;
+            }
+            cl->pwd->addEntry(file, 0, 0, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
         }
     }));
 

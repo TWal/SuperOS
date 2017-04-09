@@ -153,14 +153,23 @@ namespace fat {
         virtual void close(void* d) {
             bsod("fat::Directory::close not implemented");
         }
-        virtual void addFile(const std::string& name, ::File* file) {
-            bsod("fat::Directory::addFile not implemented");
+        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
+            bsod("fat::Directory::addEntry not implemented");
+        }
+        virtual void addEntry(const std::string& name, ::File* file) {
+            bsod("fat::Directory::addEntry not implemented");
         }
         virtual void removeFile(const std::string& name) {
             bsod("fat::Directory::removeFile not implemented");
         }
-        virtual void removeDir() {
-            bsod("fat::Directory::removeDir not implemented");
+        virtual void removeDirectory(const std::string& name) {
+            bsod("fat::Directory::removeDirectory not implemented");
+        }
+        virtual void removeEntry(const std::string& name) {
+            bsod("fat::Directory::removeEntry not implemented");
+        }
+        virtual void deleteDir() {
+            bsod("fat::Directory::deleteDir not implemented");
         }
 
     };

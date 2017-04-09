@@ -202,9 +202,14 @@ class Directory : public virtual File, public virtual ::Directory {
         virtual long int tell(void* d);
         virtual void seek(void* d, long int loc);
         virtual void close(void* d);
-        virtual void addFile(const std::string& name, ::File* file);
+
+        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
+        virtual void addEntry(const std::string& name, ::File* file);
         virtual void removeFile(const std::string& name);
-        virtual void removeDir();
+        virtual void removeDirectory(const std::string& name);
+        virtual void removeEntry(const std::string& name);
+
+        virtual void deleteDir();
         void init();
 
     private:

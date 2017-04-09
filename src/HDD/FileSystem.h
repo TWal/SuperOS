@@ -87,8 +87,11 @@ class File : public HDDBytes {
     //undefined behavior if the file is a directory
     //no guarantees when it augments the size on what is after the old size
     virtual void resize(size_t size) = 0;
+
+    //TODO: remove this?
     virtual void link() = 0;
     virtual void unlink() = 0;
+
     virtual void getStats(stat* buf) = 0;
     virtual Directory* dir() {return nullptr;};
 };
@@ -105,10 +108,14 @@ public :
     virtual void seek(void* d, long int loc) = 0;
     virtual void close(void* d) = 0;
 
-    virtual void addFile(const std::string& name, File* file) = 0;
+    virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) = 0;
+    virtual void addEntry(const std::string& name, File* file) = 0;
     virtual void removeFile(const std::string& name) = 0;
+    virtual void removeDirectory(const std::string& name) = 0;
+    virtual void removeEntry(const std::string& name) = 0;
 
-    virtual void removeDir() = 0;
+    //TODO: remove this?
+    virtual void deleteDir() = 0;
 
     virtual bool isEmpty();
 };
@@ -119,6 +126,7 @@ protected :
 public:
     explicit FileSystem (Partition * part);
     virtual Directory* getRoot() = 0;
+    //TODO: remove this?
     virtual File* getNewFile(u16 uid, u16 gid, u16 mode) = 0;
     virtual Directory* getNewDirectory(u16 uid, u16 gid, u16 mode) = 0;
 };
