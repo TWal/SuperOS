@@ -109,6 +109,8 @@ public :
     virtual void removeFile(const std::string& name) = 0;
 
     virtual void removeDir() = 0;
+
+    virtual bool isEmpty();
 };
 
 class FileSystem {

@@ -28,7 +28,6 @@ CommandLine::CommandLine(table_type table):_table(table){
             return;
         }
         void* d = cl->pwd->open();
-
         dirent* dir;
         while((dir = cl->pwd->read(d)) != nullptr) {
             printf("%s ", dir->d_name);
@@ -83,6 +82,55 @@ CommandLine::CommandLine(table_type table):_table(table){
             printf("\n");
         }
     }));
+
+    _table.insert(make_pair("rm", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        for(const string& file : args) {
+            File* f = (*cl->pwd)[file];
+            if(f == nullptr) {
+                printf("rm: %s: No such file or directory\n", file.c_str());
+                continue;
+            }
+            if(f->getType() == FileType::Directory) {
+                printf("rm: %s: Is a directory\n", file.c_str());
+                continue;
+            }
+            cl->pwd->removeFile(file);
+            f->unlink();
+        }
+    }));
+
+
+    _table.insert(make_pair("rmdir", [](CommandLine* cl, const vector<string>& args) {
+        if(!cl->pwd) {
+            printf("fatal error : no pwd set\n");
+            return;
+        }
+        if(args.empty()) return;
+        for(const string& file : args) {
+            File* f = (*cl->pwd)[file];
+            if(f == nullptr) {
+                printf("rmdir: %s: No such file or directory\n", file.c_str());
+                continue;
+            }
+            if(f->getType() != FileType::Directory) {
+                printf("rmdir: %s: Is not a directory\n", file.c_str());
+                continue;
+            }
+            Directory* d = f->dir();
+            if(!d->isEmpty()) {
+                printf("rmdir: %s: Is not empty\n", file.c_str());
+                continue;
+            }
+            cl->pwd->removeFile(file);
+            d->removeDir();
+        }
+    }));
+
     _table.insert(make_pair("reboot", [](CommandLine*, const vector<string>&) {
         reboot();
     }));
