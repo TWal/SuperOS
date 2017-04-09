@@ -107,6 +107,8 @@ public :
 
     virtual void addFile(const std::string& name, File* file) = 0;
     virtual void removeFile(const std::string& name) = 0;
+
+    virtual void removeDir() = 0;
 };
 
 class FileSystem {

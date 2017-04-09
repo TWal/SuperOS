@@ -136,8 +136,8 @@ class FS : public FileSystem {
         void writeInodeData(u32 inode, const InodeData* data);
         u32 getNewBlock(u32 nearInode);
         void freeBlock(u32 block);
-        u32 getNewInode();
-        void freeInode(u32 inode);
+        u32 getNewInode(bool isDirectory);
+        void freeInode(u32 inode, bool isDirectory);
 
     private:
         friend class File;
@@ -204,6 +204,7 @@ class Directory : public virtual File, public virtual ::Directory {
         virtual void close(void* d);
         virtual void addFile(const std::string& name, ::File* file);
         virtual void removeFile(const std::string& name);
+        virtual void removeDir();
         void init();
 
     private:

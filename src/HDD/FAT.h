@@ -159,6 +159,9 @@ namespace fat {
         virtual void removeFile(const std::string& name) {
             bsod("fat::Directory::removeFile not implemented");
         }
+        virtual void removeDir() {
+            bsod("fat::Directory::removeDir not implemented");
+        }
 
     };
 

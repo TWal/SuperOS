@@ -28,7 +28,6 @@ FS::FS(Partition* part) : FileSystem(part) {
     assert(_sb.magic == 0xef53);
     assert(_sb.log_block_size == (u32)_sb.log_frag_size);
     _loadBlockGroupDescriptor();
-
 }
 
 ::Directory* FS::getRoot() {
@@ -39,7 +38,7 @@ FS::FS(Partition* part) : FileSystem(part) {
 
 ::File* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
     assert(S_ISREG(mode)); //TODO handle this better
-    u32 inode = getNewInode();
+    u32 inode = getNewInode(false);
     InodeData dat;
     memset(&dat, 0, sizeof(InodeData));
     dat.uid = uid;
@@ -51,7 +50,7 @@ FS::FS(Partition* part) : FileSystem(part) {
 
 ::Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
     assert(S_ISDIR(mode)); //TODO handle this better
-    u32 inode = getNewInode();
+    u32 inode = getNewInode(true);
     //update bgd
     uint blockGroup = (inode-1) / _sb.inodes_per_group;
     _bgd[blockGroup].used_dirs_count += 1;
@@ -133,7 +132,7 @@ void FS::freeBlock(u32 block) {
     free(bitmap);
 }
 
-u32 FS::getNewInode() {
+u32 FS::getNewInode(bool isDirectory) {
     u8* bitmap = (u8*)malloc(_blockSize);
     for(uint i = 0; i < _nbBgd; ++i) {
         if(_bgd[i].free_inodes_count == 0) continue;
@@ -146,6 +145,9 @@ u32 FS::getNewInode() {
                 _part->writeaddr(_bgd[i].inode_bitmap*_blockSize, bitmap, _blockSize);
                 _bgd[i].free_inodes_count -= 1;
                 _sb.free_inodes_count -= 1;
+                if(isDirectory) {
+                    _bgd[i].used_dirs_count += 1;
+                }
                 _writeBlockGroupDescriptor();
                 _writeSuperBlock();
                 free(bitmap);
@@ -157,7 +159,7 @@ u32 FS::getNewInode() {
     bsod("No more inodes on disk :-("); //TODO handle this properly
 }
 
-void FS::freeInode(u32 inode) {
+void FS::freeInode(u32 inode, bool isDirectory) {
     u32 inodeGroup = (inode - 1) / _sb.inodes_per_group;
     u32 inodeIndex = (inode - 1) % _sb.inodes_per_group;
     u8* bitmap = (u8*)malloc(_blockSize);
@@ -174,6 +176,9 @@ void FS::freeInode(u32 inode) {
 
     _bgd[inodeGroup].free_inodes_count += 1;
     _sb.free_inodes_count += 1;
+    if(isDirectory) {
+        _bgd[inodeGroup].used_dirs_count -= 1;
+    }
 
     _writeBlockGroupDescriptor(); //TODO do this less often
     _writeSuperBlock();
@@ -464,7 +469,7 @@ void File::link() {
 void File::unlink() {
     if(_data.links_count == 1) {
         resize(0);
-        _fs->freeInode(_inode);
+        _fs->freeInode(_inode, S_ISDIR(_data.mode));
         memset(&_data, 0, sizeof(InodeData));
     } else {
         _data.links_count -= 1;
@@ -649,6 +654,23 @@ void Directory::removeFile(const std::string& name) {
     readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
     lastEntry.rec_len += d->entry.rec_len;
     writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+}
+
+void Directory::removeDir() {
+    void* d = open();
+    dirent* dir;
+    while((dir = read(d)) != nullptr) {
+        if(dir->d_ino == _inode) {
+            unlink();
+        } else {
+            InodeData dat;
+            _fs->getInodeData(dir->d_ino, &dat);
+            File f(dir->d_ino, dat, _fs);
+            f.unlink();
+        }
+    }
+    close(d);
+    unlink();
 }
 
 void Directory::init() {
