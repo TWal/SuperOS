@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include "../User/Syscall.h"
 
+const void* tidBitset = (void*)(-0x80000000 - 0x8000);
+
+
 Scheduler::Scheduler() : _current(nullptr),RemainingTime(0){
     Pit::set(0,50000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when its stable.
@@ -18,7 +21,6 @@ void Scheduler::init(Thread* initThread){
     pic.activate(Pic::TIMER);
     Process* pro = initThread->getProcess();
     _processes[pro->getPid()] = pro;
-    _isAlive[initThread] = true;
     _threadFIFO.push_back(initThread);
 
     //declare scheduler syscalls :
@@ -55,7 +57,6 @@ void Scheduler::init(Thread* initThread){
 }
 
 void Scheduler::timerHandler(const InterruptParams& params){
-    breakpoint;
     if(!_current){
         if(RemainingTime) -- RemainingTime;
         pic.endOfInterrupt(0);
@@ -66,7 +67,8 @@ void Scheduler::timerHandler(const InterruptParams& params){
         pic.endOfInterrupt(0);
         return; // return to current execution
     }
-    _current->storeContext(params);
+    //breakpoint;
+    _current->context = params;
     _threadFIFO.push_back((Thread*)_current);
     _current = nullptr;
     pic.endOfInterrupt(0); // if there is another timer interrupt during run, it will

@@ -15,8 +15,9 @@ public :
     [[noreturn]] void exit(u64 returnCode);
     void timerHandler(const InterruptParams&);
 private :
-    std::map<int,Process*> _processes;
-    std::map<Thread*,bool> _isAlive;
+    std::map<u16,Process*> _processes;
+    std::map<u16,Thread*> _threads;
+    std::map<u16,ProcessGroup*> _groups;
     std::deque<Thread*> _threadFIFO; // no priority queue for now.
     Thread* volatile _current; // nullptr when no thread is active (in kernel mode)
     u8 RemainingTime; // number of tick remaining for _current

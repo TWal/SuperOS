@@ -2,19 +2,21 @@
 #include"../Memory/Paging.h"
 #include"../Memory/PhysicalMemoryAllocator.h"
 #include"../User/Elf64.h"
-#include"../User/launch.h"
 
 void* const loadedProcess = (void*)-0x100000000ll; // -4G
 const uptr stackStart =  0x8000000000ull; // 512 G
 
 
 Process::Process(u32 pid,std::vector<FileDescriptor*> fds) :
-    _pid(pid),_threadNum(0),_terminated(false),_returnCode(0),
+    _pid(pid),_terminated(false),_returnCode(0),
     _fds(fds),_userPDP(paging.newUserPDP()){
 }
-Thread* Process::loadFromBytes(Bytes* file){
-    assert(_threadNum == 0);
 
+
+
+
+
+Thread* Process::loadFromBytes(Bytes* file){
     std::vector<void*> allocPages;
     paging.switchUser(_userPDP);
 
@@ -87,9 +89,13 @@ Thread* Process::loadFromBytes(Bytes* file){
     //TODO preparing Heap
     //printf("Creating thread\n");
     //the file is now ready to be executed. Creating main thread
-    _threadNum = 1;
     return new Thread(elf.entry,this);
 }
+
+
+
+
+
 
 void Process::addThread(Thread* thread){
     _threads.push_back(thread);
@@ -116,33 +122,15 @@ void Process::prepare(){
 }
 
 
-Thread::Thread(u64 rip,Process* parent) : _rip(rip),_process(parent),wr(nullptr),
-                                          _rflags(2 | (1 << 9)){
-    _registers.rsp = stackStart;
+Thread::Thread(u64 rip,Process* parent) : _process(parent),wr(nullptr){
+    parent->addThread(this);
+    context.rip = rip;
+    context.rflags = 2 | (1 << 9);
+    context.rsp = stackStart;
 }
 
 [[noreturn]] void Thread::run(){
     printf("Starting thread\n");
     _process->prepare();
-    launch(_rip,&_registers,_rflags);
-}
-void Thread::storeContext(const InterruptParams& params){
-    _rip = (u64)params.rip; // moving context from stack to heap
-    _rflags = params.flags;
-    _registers.rax = params.rax;
-    _registers.rbx = params.rbx;
-    _registers.rcx = params.rcx;
-    _registers.rdx = params.rdx;
-    _registers.rdi = params.rdi;
-    _registers.rsi = params.rsi;
-    _registers.rbp = params.rbp;
-    _registers.rsp = params.oldrsp;
-    _registers.r8 = params.r8;
-    _registers.r9 = params.r9;
-    _registers.r10 = params.r10;
-    _registers.r11 = params.r11;
-    _registers.r12 = params.r12;
-    _registers.r13 = params.r13;
-    _registers.r14 = params.r14;
-    _registers.r15 = params.r15;
+    context.launch();
 }

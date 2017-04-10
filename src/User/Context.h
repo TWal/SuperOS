@@ -29,13 +29,15 @@ struct Context{
     // any modification to its content means that you can't return normally
     // from interrupt or system call.
 
-    explicit Context(InterruptParams* params);
+    Context(): other(nullptr){}
+    explicit Context(const InterruptParams& params);
+    Context& operator= (const InterruptParams& params);
     [[noreturn]] void launchlast(){lastContext->launch();}
     [[noreturn]] void launch();
     void save(){
         lastContext = this;
     }
-    static void save(InterruptParams* params);
+    static void save(const InterruptParams& params);
 }__attribute__((packed));
 
 

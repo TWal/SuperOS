@@ -8,6 +8,7 @@
 #include "../Bytes.h"
 #include "../Memory/Heap.h"
 #include "../Interrupts/Interrupt.h"
+#include "../User/Context.h"
 
 #define FIXED_SIZE_STACK 1
 
@@ -31,10 +32,18 @@ struct GeneralRegisters{
 };
 
 class Thread;
+class Process;
+
+class ProcessGroup{
+    u16 _gid;
+    u16 _uid;
+    std::vector<Process*> _processes;
+};
 
 class Process{
-    u32 _pid;
-    u32 _threadNum;
+    u16 _pid;
+    u16 _gid;
+    u16 _uid;
     // Descriptor table
     bool _terminated; // i.e zombie
     u64 _returnCode; // valid iff terminated = true
@@ -54,20 +63,25 @@ public :
     void prepare();
 };
 
-class WaitingReason;
+class WaitingReason; // TODO implement that
 
 class Thread{
-    u64 _rip;
+    u16 _tid;
+    u16 _pid; // must be equal to _process->getPid();
+    u16 _gid;
+    u16 _uid;
+    /*u64 _rip;
     u64 _rflags;
-    GeneralRegisters _registers; // the thread stack is contained here
+    GeneralRegisters _registers; // the thread stack is contained here*/
     Process* _process;
+    std::vector<Thread*> _childs;
+    // but the one of its last stack-independent parent)
 public :
+    Context context;
     Thread(u64 rip,Process* parent);
     WaitingReason* wr; // if wr == nullptr, the thread is runnable.
     [[noreturn]] void run(); // launch the thread until the next timer interruption
     Process* getProcess(){return _process;}
-    void storeContext(const InterruptParams& params);
-
 };
 
 #endif

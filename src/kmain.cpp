@@ -17,10 +17,11 @@
 #include "Memory/Heap.h"
 #include <stdlib.h>
 #include "IO/Serial.h"
-#include "User/Context.h"
 #include "Interrupts/TaskSegment.h"
 #include "User/Syscall.h"
 #include "Processes/Scheduler.h"
+#include "Bitset.h"
+#include "User/Context.h"
 
 #include<vector>
 #include<string>
@@ -99,6 +100,7 @@ void hello(const InterruptParams&){
 #define KBD_TEST 2
 #define CL_TEST 3
 #define EXT2_TEST 4
+#define USER_TEST 5
 
 
 #define NO_TEST 42
@@ -144,9 +146,13 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA TMP_TEST
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
+
+
+
+#elif BLA == USER_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
     breakpoint;
     HDD first(1,true);

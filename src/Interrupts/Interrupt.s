@@ -17,7 +17,7 @@ geneInt: # by default interruption on user stack.
     push %rcx
     push %rax
     push %rdx
-    push 0x30(%rsp)             #push oldrsp
+    push 0x40(%rsp)             #push oldrsp
     push %rbp
     push %rsi
     push %rdi
