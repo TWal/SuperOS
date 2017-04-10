@@ -7,7 +7,7 @@ int factorial(int i){
 void systest(){
     asm volatile(
         "mov $42,%%rax;"
-        "int $0x80": : :
+        "syscall": : :
         "%eax"
         );
 }

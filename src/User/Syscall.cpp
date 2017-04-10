@@ -2,6 +2,7 @@
 #include "Syscall.h"
 #include <stdio.h>
 #include"../Interrupts/Interrupt.h"
+#include "Context.h"
 
 #define STAR 0xC0000081
 #define LSTAR 0xC0000082
@@ -21,6 +22,8 @@ void syserror(){
 
 u64 systest(u64 a,u64 b,u64 c,u64 d,u64 e,u64 f){
     printf("Systest called with %lld, %lld, %lld, %lld, %lld, %lld \n",a,b,c,d,e,f);
+    printf("And rsp at %p and rip at %p\n",Context::lastContext->rsp,Context::lastContext->rip);
+    Context::lastContext->launch(); // same behavior than normal return
     return 0;
 }
 
@@ -32,7 +35,6 @@ u64 syscallInt(const InterruptParams& par){
 
     return hand(par.rbx,par.rcx,par.rdx,par.rsi,par.rdi,par.rbp);
 }
-
 
 void syscallInit(){
     wrmsr(STAR,(0x1bull << 48) + (0x8ull << 32)); // set segment of OS and usermode
@@ -49,7 +51,12 @@ void syscallInit(){
     handlers[SYSTEST] = systest;
 
     idt.addInt(0x80,syscallInt);
+
     // Other pieces of code should register their handlers AFTER calling this function.
+}
+
+extern "C" void syssave(){
+    Context::lastContext = (Context*)-sizeof(Context);
 }
 
 
