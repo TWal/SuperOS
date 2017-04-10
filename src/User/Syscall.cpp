@@ -9,6 +9,7 @@
 #define CSTAR 0xC0000083
 #define SFMASK 0xC0000084
 
+extern "C" void syscall(); // syscall asm handler : save register then call the other one
 
 syscallHandler systable[SYSCALLNUM+1];
 

@@ -32,6 +32,7 @@ class Bitset{
     u64* _data;
     size_t _size;
 public:
+    Bitset() : _data(nullptr),_size(0){}
     Bitset(void* data,size_t size) : _data((u64*)data),_size(size){}
     void init(void* data,size_t size){
         _data = (u64*)data;

@@ -8,7 +8,7 @@
 #include "Memory/Segmentation.h"
 #include "HDD/HardDrive.h"
 #include "Memory/PhysicalMemoryAllocator.h"
-#include "HDD/FAT.h"
+//#include "HDD/FAT.h"
 #include <stdarg.h>
 #include "IO/CommandLine.h"
 //#include <functional>
@@ -25,6 +25,7 @@
 
 #include<vector>
 #include<string>
+#include<set>
 #include<deque>
 
 using namespace std;
@@ -152,6 +153,7 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
 
 
 
+
 #elif BLA == USER_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
     breakpoint;
@@ -164,7 +166,8 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
 
     File* init = (*(fs.getRoot()))["init"];
     assert(init);
-    Process initp(1);
+    ProcessGroup pg(1);
+    Process initp(1,&pg);
     Thread* initt = initp.loadFromBytes(init);
     schedul.init(initt);
     schedul.run();

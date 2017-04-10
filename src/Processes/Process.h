@@ -4,6 +4,7 @@
 #include "../utility.h"
 #include "../Memory/Paging.h"
 #include <vector>
+#include <set>
 #include "FileDescriptor.h"
 #include "../Bytes.h"
 #include "../Memory/Heap.h"
@@ -12,55 +13,52 @@
 
 #define FIXED_SIZE_STACK 1
 
-struct GeneralRegisters{
-    u64 rax;
-    u64 rbx;
-    u64 rcx;//10
-    u64 rdx;
-    u64 rsp;//20
-    u64 rbp;
-    u64 rsi;//30
-    u64 rdi;
-    u64 r8; //40
-    u64 r9;
-    u64 r10;//50
-    u64 r11;
-    u64 r12;//60
-    u64 r13;
-    u64 r14;//70
-    u64 r15;
-};
-
 class Thread;
 class Process;
 
 class ProcessGroup{
     u16 _gid;
+public :
     u16 _uid;
-    std::vector<Process*> _processes;
+private:
+    std::set<Process*> _processes;
+public :
+    explicit ProcessGroup(u16 gid) : _gid(gid){}
+    void addProcess(Process* pro){_processes.insert(pro);}
+    u32 getGid(){return _gid;}
 };
 
 class Process{
     u16 _pid;
     u16 _gid;
+public :
     u16 _uid;
+private:
+    std::set<Thread*> _threads;
+    Process * _parent;
+    std::set<Process *> _sons;
+    bool _terminated; // process is a zombie and can be waited.
+    bool _mainTerminated; // main thread has terminated but others may not.
+    u64 _returnCode;
     // Descriptor table
-    bool _terminated; // i.e zombie
-    u64 _returnCode; // valid iff terminated = true
     std::vector<FileDescriptor*> _fds;
     void * _userPDP;
-    std::vector<Thread*> _threads;
     //Heap* heap;
 public :
-    Process(u32 pid,std::vector<FileDescriptor*> fds = std::vector<FileDescriptor*>() );
+    Process(u32 pid,ProcessGroup* pg,
+            std::vector<FileDescriptor*> fds = std::vector<FileDescriptor*>());
     ~Process();
     // load the elf64 file Bytes and create the main thread starting on its entry point.
     Thread* loadFromBytes(Bytes* file);
     void clear(); // clear the process : no thread, clean mapped memory
     u32 getPid(){return _pid;}
+    u32 getGid(){return _gid;}
     void addThread(Thread* thread);
     void terminate(u64 returnCode);
+    void mainTerm(Thread* main,u64 returnCode);
+    void remThread(Thread* thread);
     void prepare();
+    bool isLeader(){return _pid == _gid;}
 };
 
 class WaitingReason; // TODO implement that
@@ -69,18 +67,21 @@ class Thread{
     u16 _tid;
     u16 _pid; // must be equal to _process->getPid();
     u16 _gid;
+public :
     u16 _uid;
-    /*u64 _rip;
-    u64 _rflags;
-    GeneralRegisters _registers; // the thread stack is contained here*/
-    Process* _process;
-    std::vector<Thread*> _childs;
-    // but the one of its last stack-independent parent)
+private :
+    Process* _process; // process of the thread, redundant with _pid for speed
 public :
     Context context;
-    Thread(u64 rip,Process* parent);
+    Thread(u16 tid,u64 rip,Process* process);
     WaitingReason* wr; // if wr == nullptr, the thread is runnable.
     [[noreturn]] void run(); // launch the thread until the next timer interruption
+    u16 getTid(){return _tid;}
+    u16 getPid(){return _pid;}
+    u16 getGid(){return _gid;}
+    bool isMain(){return _tid == _pid;}
+    // close the thread, returnCode is ignored if this thread is not the main thread
+    void terminate(u64 returnCode);
     Process* getProcess(){return _process;}
 };
 

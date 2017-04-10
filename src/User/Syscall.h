@@ -17,13 +17,13 @@
 
 #define SYSTEST 42
 
+#define SYSPEXIT 58 // vfork is useless and 231 for exit_group is too far away
 #define SYSEXIT 60
 
 void syscallInit();
 
 using syscallHandler = u64(*)(u64,u64,u64,u64,u64,u64);
 
-extern "C" void syscall(); // syscall asm handler : save register then call the other one
 
 
 extern "C" syscallHandler * const handlers;

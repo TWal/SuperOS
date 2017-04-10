@@ -2,14 +2,16 @@
 #include"../Memory/Paging.h"
 #include"../Memory/PhysicalMemoryAllocator.h"
 #include"../User/Elf64.h"
+#include "Scheduler.h"
 
 void* const loadedProcess = (void*)-0x100000000ll; // -4G
 const uptr stackStart =  0x8000000000ull; // 512 G
 
 
-Process::Process(u32 pid,std::vector<FileDescriptor*> fds) :
-    _pid(pid),_terminated(false),_returnCode(0),
-    _fds(fds),_userPDP(paging.newUserPDP()){
+Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
+    _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
+    _returnCode(0), _fds(fds), _userPDP(paging.newUserPDP()){
+    pg->addProcess(this);
 }
 
 
@@ -89,7 +91,7 @@ Thread* Process::loadFromBytes(Bytes* file){
     //TODO preparing Heap
     //printf("Creating thread\n");
     //the file is now ready to be executed. Creating main thread
-    return new Thread(elf.entry,this);
+    return new Thread(_pid,elf.entry,this);
 }
 
 
@@ -98,7 +100,7 @@ Thread* Process::loadFromBytes(Bytes* file){
 
 
 void Process::addThread(Thread* thread){
-    _threads.push_back(thread);
+    _threads.insert(thread);
 }
 
 Process::~Process(){
@@ -109,21 +111,38 @@ void Process::terminate(u64 returnCode){
     _returnCode = returnCode;
     _terminated = true;
     paging.freeUserPDP(_userPDP);
-    for(auto t : _threads){
-        delete t;
+    for(auto th : _threads){
+        delete th;
     }
     /*for(auto fd : _fds){
         fd->drop();
         }*/
     // this process is now a zombie
 }
+
+
+void Process::mainTerm(Thread* main,u64 returnCode){
+    assert(main->getTid() == _pid);
+    _mainTerminated = true;
+    _returnCode = returnCode;
+    remThread(main);
+}
+void Process::remThread(Thread* thread){
+    _threads.erase(thread);
+}
+
+
 void Process::prepare(){
     paging.switchUser(_userPDP);
 }
 
 
-Thread::Thread(u64 rip,Process* parent) : _process(parent),wr(nullptr){
-    parent->addThread(this);
+//------------------------------Thread-----------------------------
+
+
+Thread::Thread(u16 tid, u64 rip,Process* process)
+    : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process), wr(nullptr){
+    process->addThread(this);
     context.rip = rip;
     context.rflags = 2 | (1 << 9);
     context.rsp = stackStart;
@@ -133,4 +152,8 @@ Thread::Thread(u64 rip,Process* parent) : _process(parent),wr(nullptr){
     printf("Starting thread\n");
     _process->prepare();
     context.launch();
+}
+void Thread::terminate(u64 returnCode){
+    if(isMain())_process->mainTerm(this,returnCode);
+    else _process->remThread(this);
 }

@@ -3,13 +3,15 @@
 #include "../Interrupts/Pit.h"
 #include <stdio.h>
 #include "../User/Syscall.h"
+#include "../Memory/Paging.h"
+#include "../Memory/PhysicalMemoryAllocator.h"
 
-const void* tidBitset = (void*)(-0x80000000 - 0x8000);
+void* const tidBitset = (void*)(-0x80000000 - 0x8000);
 
 
 Scheduler::Scheduler() : _current(nullptr),RemainingTime(0){
     Pit::set(0,50000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
-    // we will speed up later when its stable.
+    // we will speed up later when it's stable.
 
 }
 u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
@@ -17,8 +19,19 @@ u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
 }
 
 void Scheduler::init(Thread* initThread){
+    assert(initThread->getTid() == 1);
+    //activate timer interrupts
     idt.addInt(0x20,::timerHandler);
     pic.activate(Pic::TIMER);
+
+    //activate tid bitset;
+    paging.createMapping((u64)physmemalloc.alloc(),(u64)tidBitset);
+    _tids.init(tidBitset,0x1000*8);
+    _tids.fill();
+    _tids[0] = false; // no thread with number 0.
+    _tids[1] = false;
+
+    //install first thread
     Process* pro = initThread->getProcess();
     _processes[pro->getPid()] = pro;
     _threadFIFO.push_back(initThread);
