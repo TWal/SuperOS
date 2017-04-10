@@ -35,8 +35,8 @@ namespace std {
 
         map(){}
         explicit map(const allocator_type& alloc):vector<pair<Key,T>>(alloc),_comp(){}
-        map(const map& oth):vector<pair<Key,T>>(oth),_comp(){}
-        map(map&& oth):vector<pair<Key,T>>(move(oth)),_comp(){}
+        //map(const map& oth):vector<pair<Key,T>>(oth),_comp(){}
+        //map(map&& oth):vector<pair<Key,T>>(move(oth)),_comp(){}
         //default ~map is Ok.
         /*map& operator= (const map& x){
             _data = x._data;
@@ -101,12 +101,12 @@ namespace std {
         mapped_type& at (const key_type& k){
             auto it = find(k);
             assert(it != end() && "map at");
-            return *it;
+            return it->second;
         }
         const mapped_type& at (const key_type& k) const{
             auto it = find(k);
             assert(it != end() && "map at");
-            return *it;
+            return it->second;
         }
         pair<iterator,bool> insert (const value_type& val){
             //printf("map insert  beg : %p, end : %p!\n",begin(),end());

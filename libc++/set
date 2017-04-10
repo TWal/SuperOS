@@ -1,0 +1,83 @@
+#ifndef __SUPOS_CPP_SET
+#define __SUPOS_CPP_SET
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <algorithm>
+#include <functional>
+#include <stdio.h>
+
+namespace std{
+    template < class T,                        // set::key_type/value_type
+               class Compare = less<T>,        // set::key_compare/value_compare
+               class Alloc = allocator<T>      // set::allocator_type
+               > class set : private vector<T>{
+    public :
+        typedef T key_type;
+        typedef T value_type;
+        typedef Compare key_compare;
+        typedef Alloc allocator_type;
+        typedef value_type* pointer;
+        typedef const value_type* const_pointer;
+        typedef value_type& reference;
+        typedef size_t size_type;
+        typedef pointer iterator;
+        typedef const_pointer const_iterator;
+    private :
+        key_compare _comp;
+    public:
+
+        set(){}
+        explicit set(const allocator_type& alloc):vector<T>(alloc),_comp(){}
+        using vector<T>::operator=;
+        using vector<T>::erase;
+        using vector<T>::empty;
+        using vector<T>::clear;
+        using vector<T>::begin;
+        using vector<T>::end;
+        iterator lower_bound (const key_type& k){
+            return reinterpret_cast<iterator>(std::lower_bound(begin(),end(),
+                                                               k,_comp));
+        }
+        iterator find (const key_type& k){
+            auto it = lower_bound(k);
+            if (it == end()) return end();
+            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            else return end();
+        }
+        size_type count (const key_type& k) const{
+            return find(k) == end() ? 0 : 1;
+        }
+        pair<iterator,bool> insert (const value_type& val){
+            //printf("map insert  beg : %p, end : %p!\n",begin(),end());
+            iterator it = lower_bound(val);
+            //printf("lower bound done %p \n",it);
+            //for(volatile int i = 0 ; i < 100000000 ; ++i);
+            if (it == end()){
+                vector<T>::push_back(val);
+                return make_pair(end()-1,true);
+            }
+            if (!_comp(*it,val) && !_comp(val,*it)){
+                return make_pair(it,false);
+            }
+            else{
+                //++it;
+                return make_pair(
+                    reinterpret_cast<iterator>(
+                        vector<T>::insert(
+                            reinterpret_cast<T*>(it),val)),true);
+            }
+        }
+        size_type erase (const value_type& val){
+            auto it = find(val);
+            if(it == end()) return 0;
+            vector<T>::erase(it);
+            return 1;
+        }
+    };
+};
+
+
+#endif
