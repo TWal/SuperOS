@@ -163,6 +163,22 @@ private:
 
 extern Paging paging;
 
+/* Kernel space mappings :
+   from -1G to 0 : kernel stack
+   from -2G to -1G kernel code and heap.
+   from -2G-8K to -2G-4K : tid bitset.
+   At -2.5G : physical memory bitset
+   At -3G fixed place page address
+   At -4G temporary space for loading user mode programs
+ */
+
+/* User space mappings
+   From 0 to 1M : identity mappings to physical devices.
+   From 2M to ?? : user code and heap.
+   From ?? to 512G users stacks (each thread stack has a 1G space)
+
+ */
+
 #endif // SUP_OS_KERNEL
 
 #endif // PAGING_H
