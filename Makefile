@@ -1,4 +1,4 @@
-.PHONY: all run rund runs runqemu runqemud runqemus load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count dofsck fsck
+.PHONY: all run rund runs runqemu runqemud runqemus load partition unload mount umount lm ulm grubinst mvtoimg builddisk updatedsk clean mrproper dasm count dofsck fsck doc
 
 AS = as
 CC = gcc
@@ -361,12 +361,14 @@ clean: cleanunit
 	rm -f crt0.o
 	rm -f init
 	rm -f diskout.img
+	rm -f index.html
 
 
 mrproper: clean
 	rm -f disk.img
 	rm -f iso/boot/kernel.elf
 	rm -f iso/boot/loader.elf
+	rm -rf doc
 
 dasm:
 	objdump -D -C kernel.elf > disassembly
@@ -380,8 +382,11 @@ count:
 dofsck:
 	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p1
 
-
 fsck: load dofsck unload
+
+doc:
+	doxygen Doxyfile
+	ln -sf doc/html/index.html index.html
 
 include $(DEPF)
 

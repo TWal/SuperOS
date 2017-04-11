@@ -24,3 +24,5 @@ logqemu.txt
 logqemu_*.txt
 crt0.o
 init
+index.html
+doc/*
