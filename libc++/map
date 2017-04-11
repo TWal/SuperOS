@@ -71,13 +71,13 @@ namespace std {
         }
 
 
-        iterator lower_bound (const key_type& k){
+        iterator lower_bound (const key_type& k)const {
             bool(*func)(const value_type,const value_type)=
                 [](const value_type p1,const value_type p2)-> bool {
                 //printf("lambda ! ");
                 return p1.first < p2.first;};
             //printf("map lower_bound");
-            return reinterpret_cast<iterator>(std::lower_bound(begin(),end(),
+            return const_cast<iterator>(std::lower_bound(begin(),end(),
                                                                make_pair(k,mapped_type()),func));
         }
         /*const_iterator lower_bound (const key_type& k) const{
@@ -132,6 +132,12 @@ namespace std {
             //printf("map operator[] !\n");
             return (*((insert(make_pair(k,mapped_type()))).first)).second;
         }
+        size_type erase(const key_type& k){
+            auto it = find(k);
+            if(it ==  end()) return 0;
+            vector<pair<Key,T>>::erase(reinterpret_cast<typename vector<pair<Key,T>>::iterator>(it));
+            return 1;
+            }
 
 
     };

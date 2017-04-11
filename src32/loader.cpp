@@ -52,7 +52,9 @@ extern "C" void load(multibootInfo * mb){
     printf("Stack start %p",kernelStack);
     char * kernelrsp = kernelStack + 0X1000;
     char * freeMem = kernelrsp;
+    assert(freeMem + 0x1000 < (char*)0x600000 && "Initial identity paging too small");
     int occupAreaSize = 1;
+    printf("Stack start %p",kernelStack);
     push(kernelrsp,OccupArea{(u32)kernelStack,1});
     printf("loader from 1MB to %p\n",&loader_code_end);
 

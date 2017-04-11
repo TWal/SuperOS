@@ -4,13 +4,19 @@
 #include"../User/Elf64.h"
 #include "Scheduler.h"
 
+ProcessGroup::ProcessGroup(u16 gid) : _gid(gid){
+    schedul.addG(_gid,this);
+}
+
+
 void* const loadedProcess = (void*)-0x100000000ll; // -4G
 const uptr stackStart =  0x8000000000ull; // 512 G
 
 
 Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
     _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
-    _returnCode(0), _fds(fds), _userPDP(paging.newUserPDP()){
+    _returnCode(0), _fds(fds){
+    schedul.addP(_pid,this);
     pg->addProcess(this);
 }
 
@@ -20,7 +26,8 @@ Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
 
 Thread* Process::loadFromBytes(Bytes* file){
     std::vector<void*> allocPages;
-    paging.switchUser(_userPDP);
+    //paging.switchUser(_userPDP);
+    _usermem.activate();
 
     // smart reader to allow reading beyond end
     auto readaddr = [file](uptr addr, void* buffer,size_t size){
@@ -89,6 +96,7 @@ Thread* Process::loadFromBytes(Bytes* file){
         paging.createMapping((uptr)block,stackStart - i * 0x1000);
     }
     //TODO preparing Heap
+
     //printf("Creating thread\n");
     //the file is now ready to be executed. Creating main thread
     return new Thread(_pid,elf.entry,this);
@@ -105,12 +113,15 @@ void Process::addThread(Thread* thread){
 
 Process::~Process(){
     assert(_terminated); // check the process is effectively a zombie
+    schedul.freeP(_pid);
 }
 
 void Process::terminate(u64 returnCode){
     _returnCode = returnCode;
     _terminated = true;
-    paging.freeUserPDP(_userPDP);
+    _usermem.clear();
+    //printf("middle termination\n");
+    //paging.freeUserPDP(_userPDP);
     for(auto th : _threads){
         delete th;
     }
@@ -129,11 +140,17 @@ void Process::mainTerm(Thread* main,u64 returnCode){
 }
 void Process::remThread(Thread* thread){
     _threads.erase(thread);
+    if(_threads.empty()){
+        assert(_mainTerminated);
+        _terminated = true;
+        // send something like SIGCHILD
+    }
 }
 
 
 void Process::prepare(){
-    paging.switchUser(_userPDP);
+    //paging.switchUser(_userPDP);
+    _usermem.activate();
 }
 
 
@@ -142,14 +159,20 @@ void Process::prepare(){
 
 Thread::Thread(u16 tid, u64 rip,Process* process)
     : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process), wr(nullptr){
+    schedul.addT(_tid,this);
     process->addThread(this);
     context.rip = rip;
     context.rflags = 2 | (1 << 9);
     context.rsp = stackStart;
 }
+Thread::~Thread(){
+    printf("Deletion of thread %d\n",_tid);
+    schedul.freeT(_tid);
+    //("thread %d deleted\n",_tid);
+}
 
 [[noreturn]] void Thread::run(){
-    printf("Starting thread\n");
+    printf("Starting thread %d in %d at %p\n",_tid,_pid,context.rip);
     _process->prepare();
     context.launch();
 }

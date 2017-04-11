@@ -127,8 +127,10 @@ void* malloc(size_t size) {
 }
 
 void free(void* ptr) {
+    if(!ptr) return;
     //printf("freeing %p",ptr);
     MallocHeader* head = ptrToHeader(ptr);
+    assert(head->seemsValid());
     //free the block
     assert(!head->free && "This is probably a double free!");
     head->setFree(true);

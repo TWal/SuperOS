@@ -1,6 +1,6 @@
     .global syscall
 syscall:
-    xchg %bx,%bx
+    #xchg %bx,%bx
     mov %rsp, -0x38
     xor %rsp,%rsp               # zero %rsp
     ## Stack is operational

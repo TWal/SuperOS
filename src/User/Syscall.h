@@ -17,6 +17,7 @@
 
 #define SYSTEST 42
 
+#define SYSFORK 57
 #define SYSPEXIT 58 // vfork is useless and 231 for exit_group is too far away
 #define SYSEXIT 60
 

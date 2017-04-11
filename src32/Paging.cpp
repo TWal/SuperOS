@@ -83,10 +83,12 @@ void setupBasicPaging() {
     PDs[0][0].isSizeMega = true;
     PDs[0][0].writeThrough = true;
     PDs[0][0].addr = 0;
-    ++nbPDused;
     PDs[0][1].present = true;
     PDs[0][1].isSizeMega = true;
     PDs[0][1].setAddr(0x200000);
+    PDs[0][2].present = true;
+    PDs[0][2].isSizeMega = true;
+    PDs[0][2].setAddr(0x400000);
 
 }
 

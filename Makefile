@@ -16,7 +16,7 @@ LIBCXX = libc++
 LIB32GCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*/32
 LIBGCC = /usr/lib/gcc/x86_64-*linux-gnu/6.*
 
-OPTILVL = -O1 -mno-sse
+OPTILVL = -Og -g -mno-sse
 
 ASFLAGS =
 AS32FLAGS = --32

@@ -22,6 +22,7 @@
 #include "Processes/Scheduler.h"
 #include "Bitset.h"
 #include "User/Context.h"
+#include "Memory/PageHeap.h"
 
 #include<vector>
 #include<string>
@@ -138,6 +139,8 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
     paging.removeIdent(); // remove the identity paging necessary for boot process
     __setbrk(kheap.init(&kernel_code_end));// creating kernel heap
     __initmalloc(); // initializing kernel malloc : no heap access before this point.
+    pageHeap.init(); // initializing page Heap to map physical pages on will.
+    // (i.e a heap with 4K aligned malloc).
     syscallInit(); // intialize syscall API
     tss.load(); // load TSS for enabling interrupts from usermode
     tss.RSP[0] = nullptr; // the kernel stack really start from 0.
@@ -150,9 +153,6 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
 #define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
-
-
-
 
 #elif BLA == USER_TEST
     fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");

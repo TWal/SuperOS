@@ -14,19 +14,14 @@ u64 PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupAr
     _bitset.fill();
 
     u64 bitsetSize = (RAMSize/0x1000 + 63) / 64;
-    //printf("\n");
-    //printfirst(64);
 
     u64 bitsetPageSize = (bitsetSize * 8 + 0x1000 -1) / 0x1000;
     for(u64 i = 0 ; i < bitsetPageSize ; ++i){ // allocate itself
         unset(((uchar*)_bitset.getAddr()) + 0x1000 * i);
     }
-    //printfirst(1);
 
     for(u64 i = 0 ; i < occupSize ; ++i){
         //printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
-        //printfirst(64);
-        //breakpoint;
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){
             unset(reinterpret_cast<char*>(occupArea[i].addr) + j * 0x1000);
         }
@@ -43,11 +38,7 @@ void PhysicalMemoryAllocator::set(void* addr){
 }
 void PhysicalMemoryAllocator::unset(void* addr){
     assert(((u64)addr & (0x1000 -1)) == 0);
-    //printf(" unset 0x%p / %d\n",addr,_bitset.size());
-    //breakpoint;
-    // printfirst(64);
     _bitset.unset(((u64)addr - 0x100000)/ 0x1000);
-    // printfirst(64);
 }
 
 void PhysicalMemoryAllocator::printfirst(int nb){
@@ -58,12 +49,12 @@ void PhysicalMemoryAllocator::printfirst(int nb){
 }
 
 void* PhysicalMemoryAllocator::alloc() {
-    size_t bsr = _bitset.bsr();
-    assert(bsr != (size_t)-1 && "out of memory");
+    size_t bsf = _bitset.bsf();
+    assert(bsf != (size_t)-1 && "Kernel is out of physical memory");
 
-    _bitset[bsr] = false;
+    _bitset[bsf] = false;
     //printf("allocating %p",(0x100000 + ((64*i+pos)<<12)));
-    return (void*)(0x100000 + (bsr<<12)); //4kb page = 2^12 byte
+    return (void*)(0x100000 + (bsf<<12)); //4kb page = 2^12 byte
 }
 
 void PhysicalMemoryAllocator::free(void* page) {
@@ -72,7 +63,9 @@ void PhysicalMemoryAllocator::free(void* page) {
     assert((index&((1<<12)-1)) == 0);
     index >>= 12;
 
-    assert(!_bitset[index]);
+    if(_bitset[index]){
+        bsod("Trying to free physical page %p which is already free",page);
+    }
     _bitset[index] = true;
 }
 

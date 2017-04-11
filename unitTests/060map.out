@@ -5,3 +5,11 @@ zero, 0
 Do not crash on find invalid elements : OK
 find valid elements : OK
 3
+eight, 8
+five, 5
+four, 4
+one, 1
+seven, 7
+three, 3
+two, 2
+Do not find deleted elements : OK

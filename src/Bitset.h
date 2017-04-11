@@ -63,7 +63,7 @@ public:
     size_t bsr()const { // -1 if out
         size_t i;
         u64 pos = 0;
-        for(i = 0; i < _size/64; ++i) {
+        for(i = _size/64; i != (size_t)(-1); --i) {
             if(_data[i]) {
                 asm("bsr %1,%0" : "=r"(pos) : "r"(_data[i]));
                 return pos + i *64;
@@ -71,6 +71,19 @@ public:
         }
         return (-1);
     }
+
+    size_t bsf()const { // -1 if out
+        size_t i;
+        u64 pos = 0;
+        for(i = 0; i < _size/64; ++i) {
+            if(_data[i]) {
+                asm("bsf %1,%0" : "=r"(pos) : "r"(_data[i]));
+                return pos + i *64;
+            }
+        }
+        return (-1);
+    }
+
     // count ?
     size_t size() const {
         return _size;

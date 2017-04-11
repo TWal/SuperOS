@@ -1,6 +1,6 @@
     .global launcht
 launcht:
-    xchg %bx,%bx
+    #xchg %bx,%bx
     pushq $0x23
 	  push 0x60(%rdi)           #this is target rsp
 	  push 0x80(%rdi)           # push flags

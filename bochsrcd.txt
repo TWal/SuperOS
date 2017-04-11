@@ -8,6 +8,7 @@ log:             bochslog.txt
 clock:           sync=realtime, time0=local
 cpu:             count=1, ips=1000000
 magic_break:     enabled=1
+com1: enabled=1, mode=file, dev=log.txt
 keyboard:        serial_delay=200, paste_delay=100000
 debug: action=ignore, pic=report, keyboard=report, bios=report, harddrv=ignore
 info: action=report

@@ -126,7 +126,10 @@ inline int getPTindex(u64 addr){
 #ifdef SUP_OS_KERNEL
 
 
+class UserMemory;
+
 class Paging {
+    friend UserMemory;
 public:
     Paging();
     void init(PageEntry* PML4);
@@ -139,6 +142,9 @@ public:
     void* newUserPDP(); // physical address
     void switchUser(void* usPDP);
     void freeUserPDP(void* usPDP);
+    void copyUserPDP(void* dest,void* src); // TODO copy on Write
+    void copyPhyPages(void*dest,void* src);
+
 private:
     void actTmpPDP (void* PDPphyAddr); // activate temporary PD
     void actTmpPD (void* PDphyAddr); // activate temporary PD
@@ -157,9 +163,34 @@ private:
     void freePTs(void* PD, bool start);
     void freePDs(void* PDP);
     void TLBflush();
+    void copyPages(void* PD, bool start);
+    void copyPTs(void* PDdest,void*PDsrc, bool start);
+    void copyPDs(void* PDPdest,void*PDPsrc);
 
 };
 
+// fixed emplacement in virtual memory.
+PageEntry* const virtTables =  (PageEntry*)-0xC0000000ll;
+
+u64* const bitset =  (u64*)-0xA0000000ll; // physmemalloc
+
+PageEntry* const PML4 = virtTables;
+PageEntry* const kernelPDP = virtTables + 1*512; // -512G to 0
+PageEntry* const kernelPD = virtTables + 2*512; // -2G to -1G
+PageEntry* const stackPD = virtTables + 3*512; // -1G to 0
+PageEntry* const pagePD = virtTables + 4*512; // -3G to -2G
+PageTable* const pagePT = (PageTable*)virtTables + 5*512; // -3G to -3G + 2M
+PageEntry* const userPDP = virtTables + 6*512; // 0 to 512G
+PageEntry* const firstPD = virtTables + 7*512; // 0 to 1G
+PageTable* const firstPT = (PageTable*)virtTables + 8*512; // 0 to 2M
+PageTable* const bitsetPT = (PageTable*)virtTables + 9 * 512; // from -2,5G to -2,5G + 2M
+
+#define TMPPDPOFF 0xA
+PageEntry* const tmpPDP = virtTables + TMPPDPOFF*512; // temporary manipulation
+#define TMPPDOFF 0xB
+PageEntry* const tmpPD = virtTables + TMPPDOFF*512; // temporary manipulation
+#define TMPPTOFF 0xC
+PageTable* const tmpPT = (PageTable*)virtTables + TMPPTOFF * 512; // temporary manipulation
 
 extern Paging paging;
 
@@ -168,7 +199,9 @@ extern Paging paging;
    from -2G to -1G kernel code and heap.
    from -2G-8K to -2G-4K : tid bitset.
    At -2.5G : physical memory bitset
+   At -2.5G - 8K : pageHeap bitset
    At -3G fixed place page address
+   from -3G to -3.5G : page Heap
    At -4G temporary space for loading user mode programs
  */
 

@@ -8,6 +8,7 @@
 #include "FileDescriptor.h"
 #include "../Bytes.h"
 #include "../Memory/Heap.h"
+#include "../Memory/UserMemory.h"
 #include "../Interrupts/Interrupt.h"
 #include "../User/Context.h"
 
@@ -23,7 +24,7 @@ public :
 private:
     std::set<Process*> _processes;
 public :
-    explicit ProcessGroup(u16 gid) : _gid(gid){}
+    explicit ProcessGroup(u16 gid);
     void addProcess(Process* pro){_processes.insert(pro);}
     u32 getGid(){return _gid;}
 };
@@ -40,11 +41,10 @@ private:
     bool _terminated; // process is a zombie and can be waited.
     bool _mainTerminated; // main thread has terminated but others may not.
     u64 _returnCode;
-    // Descriptor table
-    std::vector<FileDescriptor*> _fds;
-    void * _userPDP;
     //Heap* heap;
 public :
+    UserMemory _usermem;
+    std::vector<FileDescriptor*> _fds;
     Process(u32 pid,ProcessGroup* pg,
             std::vector<FileDescriptor*> fds = std::vector<FileDescriptor*>());
     ~Process();
@@ -59,6 +59,7 @@ public :
     void remThread(Thread* thread);
     void prepare();
     bool isLeader(){return _pid == _gid;}
+    //void orphan(); // call to orphan a process (becom init child).
 };
 
 class WaitingReason; // TODO implement that
@@ -74,6 +75,7 @@ private :
 public :
     Context context;
     Thread(u16 tid,u64 rip,Process* process);
+    ~Thread();
     WaitingReason* wr; // if wr == nullptr, the thread is runnable.
     [[noreturn]] void run(); // launch the thread until the next timer interruption
     u16 getTid(){return _tid;}

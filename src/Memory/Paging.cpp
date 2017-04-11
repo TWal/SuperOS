@@ -2,29 +2,6 @@
 #include "PhysicalMemoryAllocator.h"
 #include <new>
 
-// fixed emplacement in virtual memory.
-
-u64* const bitset =  (u64*)-0xA0000000ll;
-
-PageEntry* const virtTables =  (PageEntry*)-0xC0000000ll;
-PageEntry* const PML4 = virtTables;
-PageEntry* const kernelPDP = virtTables + 1*512; // -512G to 0
-PageEntry* const kernelPD = virtTables + 2*512; // -2G to -1G
-PageEntry* const stackPD = virtTables + 3*512; // -1G to 0
-PageEntry* const pagePD = virtTables + 4*512; // -3G to -2G
-PageTable* const pagePT = (PageTable*)virtTables + 5*512; // -3G to -3G + 2M
-PageEntry* const userPDP = virtTables + 6*512; // 0 to 512G
-PageEntry* const firstPD = virtTables + 7*512; // 0 to 1G
-PageTable* const firstPT = (PageTable*)virtTables + 8*512; // 0 to 2M
-PageTable* const bitsetPT = (PageTable*)virtTables + 9 * 512; // from -2,5G to -2,5G + 2M
-
-#define TMPPDPOFF 0xA
-PageEntry* const tmpPDP = virtTables + TMPPDPOFF*512; // temporary manipulation
-#define TMPPDOFF 0xB
-PageEntry* const tmpPD = virtTables + TMPPDOFF*512; // temporary manipulation
-#define TMPPTOFF 0xC
-PageTable* const tmpPT = (PageTable*)virtTables + TMPPTOFF * 512; // temporary manipulation
-
 // initialization routines
 
 PageEntry::PageEntry() : present(false),readWrite(true),user(true),writeThrough(false),
@@ -115,9 +92,9 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     // we don't activate firstPT i.e removing identity map of RAM begining now.
 
     // from now all constant address like PML4 or kernelPDP are valid.
-    firstPPT[10].writeThrough = true;
+    /*firstPPT[10].writeThrough = true;
     firstPPT[11].writeThrough = true;
-    firstPPT[12].writeThrough = true;
+    firstPPT[12].writeThrough = true;*/
 
     for(int i = 0 ; i < 12 ; ++i){
         firstPPT[i].global = true;
@@ -144,8 +121,10 @@ void Paging::removeIdent(){
     firstPD[0].activeAddr(pagePT[8].getAddr());
     firstPD[0].isSizeMega = false;
     firstPD[1].present = false;
+    firstPD[2].present = false;
     invlpg(0x000000);
     invlpg(0x200000);
+    invlpg(0x400000);
 }
 
 void Paging::actTmpPDP (void* PDPphyAddr){
@@ -284,23 +263,6 @@ void Paging::freeMappingAndPhy(uptr virt,int nbPages){
     freeMapping(virt,nbPages);
 }
 
-void* Paging::newUserPDP(){
-    void* phyPDP = physmemalloc.alloc();
-    actTmpPDP(phyPDP);
-    new(tmpPDP) PageEntry[512];
-    void* phyPD = physmemalloc.alloc();
-    actTmpPD(phyPD);
-    new(tmpPD) PageEntry[512];
-
-    tmpPDP[0].activeAddr(phyPD);
-    assert(firstPD[0].getAddr());
-    tmpPD[0].activeAddr(firstPD[0].getAddr());
-    freeTmpPD();
-    freeTmpPDP();
-    return phyPDP;
-}
-
-
 void Paging::TLBflush(){
     asm volatile(
         "mov %%cr3,%%rax;" // globally flush the TLB (except the pages marked as global)
@@ -311,41 +273,14 @@ void Paging::TLBflush(){
 
 void Paging::switchUser(void* usPDP){
     if(usPDP == PML4[0].getAddr()) return; // if this is already the active mapping
+    //printf("before activating\n");
+    //breakpoint;
     PML4[0].activeAddr(usPDP);
+    //printf("before TLBflush\n");
+    //breakpoint;
     TLBflush();
+    //printf("after TLBflush\n");
 }
-
-
-void Paging::freePTs(void* PD, bool start){
-    actTmpPD(PD);
-    for(int i = start ? 1 : 0 ; i < 512 ; ++i){
-        if(tmpPD[i].getAddr()){
-            physmemalloc.free(tmpPD[i].getAddr());
-        }
-    }
-    freeTmpPD();
-}
-void Paging::freePDs(void* PDP){
-    actTmpPDP(PDP);
-    for(int i = 0 ; i < 512 ; ++i){
-        void * PD;
-        if( (PD = tmpPDP[i].getAddr()) ){
-            freePTs(PD,i == 0);
-            physmemalloc.free(PD);
-        }
-    }
-    freeTmpPDP();
-}
-
-void Paging::freeUserPDP(void* usPDP){
-    assert(usPDP != pagePT[6].getAddr()); // ensure we do not delete the kernel userPDP.
-    if(usPDP == PML4[0].getAddr()){ // if this mapping is active return to the default mapping
-        switchUser(pagePT[6].getAddr());
-    }
-    /*freePDs(usPDP);
-      physmemalloc.free(usPDP);*/
-}
-
 
 Paging paging;
 
