@@ -1,4 +1,5 @@
     .global loader
+    .global LMcheck
     .global enableLM
     .global startKernel
 
@@ -23,17 +24,25 @@ loader:
     cli
     mov $(STACKSIZE + loader_stack),%esp
     push %ebx                 # multiboot info pointer is in %ebx
-    ## checking long mode
-    mov $0x80000000,%eax      # is there high code request ?
-    cpuid                     # CPU identification.
-    cmp $0x80000001, %eax     # Compare the A-register with 0x80000001.
-    jb invProc
-    mov $0x80000001,%eax
-    cpuid
-    test $(1<<29),%edx
-    jz invProc
-
     call load
+
+
+LMcheck:
+    push %eax
+    push %edx
+    ## checking long mode
+	mov $0x80000000,%eax      # is there high code request ?
+	cpuid                     # CPU identification.
+	cmp $0x80000001, %eax     # Compare the A-register with 0x80000001.
+	jb LMunav
+	mov $0x80000001,%eax
+	cpuid
+	test $(1<<29),%edx
+    jz LMunav
+    pop %edx
+    pop %eax
+    ret
+
 
 enableLM:
     push %eax
@@ -65,10 +74,6 @@ enableLM:
     pop %eax
 
     ret
-
-invProc:                        #TODO real error handling (bsod).
-	    cli
-	    hlt
 
 
 startKernel:

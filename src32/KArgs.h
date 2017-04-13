@@ -52,7 +52,7 @@ struct OccupArea{
 
    The code of the loader is also marked as free.
 
-   @sa OccupArea
+   @sa OccupArea, kinit, load
 
 */
 

@@ -123,6 +123,8 @@ void unittest();
 /**
     @brief This is the entry point of the kernel
 
+    @param kargs : The description of memory state after loading.
+
     It calls initialization routines, do startup configuration (like setting exception handlers) and
     then, when the kernel is operational, it calls the Scheduler method run.
 
