@@ -3,8 +3,6 @@
 
 #include<iterator>
 #include <stdio.h>
-#include <vector>
-#include <string>
 
 namespace std {
     template <class ForwardIterator, class T>

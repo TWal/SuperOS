@@ -44,6 +44,8 @@ extern "C" {
 
 extern "C" void* kernel_code_end;
 
+
+/// C++ global constructors initialization.
 void init(){
     funcp *beg = &__init_array_start, *end = & __init_array_end;
     for (funcp*p = beg; p < end; ++p){
@@ -51,30 +53,34 @@ void init(){
     }
 }
 
-//int 0
+/// Division by 0 exception handler
 void div0 (const InterruptParams& par){
     bsod("1/0 is not infinity at %p", par.rip);
 }
 
-//int 6
+/// Invalid opcode exception handler
 void invalidOpcode(const InterruptParams& par) {
     bsod("Invalid opcode at %p", par.rip);
 }
 
-//int 8
+/// Double fault exception handler
 void doublefault(const InterruptParamsErr& par){
     bsod("Double fault at %p\nIt may be an uncaught interruption.", par.rip);
     //should not return, rip is UB.
 }
 
-//int 13
+/// General protection fault exception handler
 void gpfault(const InterruptParamsErr& par){
     printf("General Protection fault at %p with code %x", par.rip, par.errorCode);
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
 
-//int 14
+/**
+   @brief Page fault exception handler
+   @todo Not crash on user page fault
+*/
+
 void pagefault(const InterruptParamsErr& par){
     printf("Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
     breakpoint;
@@ -96,6 +102,7 @@ void hello(const InterruptParams&){
 }
 
 
+
 //--------------------TESTING MACRO
 #define TMP_TEST (-1)
 #define FAT_TEST 1
@@ -113,8 +120,16 @@ void hello(const InterruptParams&){
 void unittest();
 #endif
 
+/**
+    @brief This is the entry point of the kernel
+
+    It calls initialization routines, do startup configuration (like setting exception handlers) and
+    then, when the kernel is operational, it calls the Scheduler method run.
+
+*/
+
 // WARNING : kmain local var should not exceed 2K for stack switching
-extern "C" [[noreturn]] void kmain(KArgs* kargs) {
+extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
     gdt.init();
@@ -295,6 +310,28 @@ extern "C" [[noreturn]] void kmain(KArgs* kargs) {
     kend();
 }
 
+
+
+
+/**
+   @brief This function is called as often as possible by scheduler to update the kernel
+
+   No large code in this function should run at each call. it is better to just make a
+   condition check and maybe do something if the condition is met
+
+   @todo Do something in kloop like event handling
+
+ */
+
+void kloop(){
+}
+
+
+
+
+/**
+   @brief This function is called to end the kernel, and may, one day, shutdown the computer
+*/
 [[noreturn]] void kend(){
     cli;
     //fb.clear();

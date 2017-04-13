@@ -7,8 +7,7 @@
 #include <utility>
 #include <new>
 #include <algorithm>
-#include <stdio.h>
-#include <string>
+//#include <stdio.h>
 
 namespace std{
     template<class T, class Alloc = allocator<T> >
