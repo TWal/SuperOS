@@ -5,7 +5,6 @@
 #include "Segmentation.h"
 #include "../src/IO/FrameBuffer.h"
 #include "../src/User/Elf64.h"
-#include "mapping.h"
 
 
 extern "C" void enableLM(void* PML4); // physical adress for PML4
