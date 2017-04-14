@@ -3,15 +3,6 @@
 
 const uint MAX_INIT_PAGE = 4;
 
-void PageEntry::setAddr32(u32 a){
-    assert((a & ((1<<12)-1)) == 0);
-    addr = a >> 12;
-}
-
-void PageEntry::setAddr32(void* a){
-    setAddr32((u32)a);
-}
-
 void setupBasicPaging() {
     for(int i = 0 ; i < 512 ; ++i){
         PML4[i].present = false;
@@ -73,11 +64,9 @@ void setupBasicPaging() {
         }
     }
     //Identity map the first 4MB (loader must not use more than 3 MB)
-    PML4[0].present = true;
-    PML4[0].setAddr32(PDPs[0]);
+    PML4[0].activeAddr(PDPs[0]);
     ++nbPDPused;
-    PDPs[0][0].present = true;
-    PDPs[0][0].setAddr32(PDs[0]);
+    PDPs[0][0].activeAddr(PDs[0]);
     ++nbPDused;
     PDs[0][0].present = true;
     PDs[0][0].isSizeMega = true;
@@ -138,7 +127,7 @@ PageTable* getPTphy(u64 addr){ // safe version
     return PTs[nbPTused-1];
 }
 
-inline void* getphyu(u64 addr){ // unsafe version
+inline uptr getphyu(u64 addr){ // unsafe version
     return getPTphyu(addr)[getPTindex(addr)].getAddr();
 }
 // there is no safe version getphy.

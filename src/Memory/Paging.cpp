@@ -2,6 +2,26 @@
 #include "PhysicalMemoryAllocator.h"
 #include <new>
 
+PageEntry* const Paging::virtTables =  (PageEntry*)-0xC0000000ll;
+u64* const Paging::bitset =  (u64*)-0xA0000000ll; // physmemalloc
+
+PageEntry* const Paging::PML4 = virtTables;
+PageEntry* const Paging::kernelPDP = virtTables + 1*512; // -512G to 0
+PageEntry* const Paging::kernelPD = virtTables + 2*512; // -2G to -1G
+PageEntry* const Paging::stackPD = virtTables + 3*512; // -1G to 0
+PageEntry* const Paging::pagePD = virtTables + 4*512; // -3G to -2G
+PageTable* const Paging::pagePT = (PageTable*)virtTables + 5*512; // -3G to -3G + 2M
+PageEntry* const Paging::userPDP = virtTables + 6*512; // 0 to 512G
+PageEntry* const Paging::firstPD = virtTables + 7*512; // 0 to 1G
+PageTable* const Paging::firstPT = (PageTable*)virtTables + 8*512; // 0 to 2M
+PageTable* const Paging::bitsetPT = (PageTable*)virtTables + 9 * 512; // from -2,5G to -2,5G + 2M
+
+#define TMPPDPOFF 0xA
+PageEntry* const Paging::tmpPDP = virtTables + TMPPDPOFF*512; // temporary manipulation
+#define TMPPDOFF 0xB
+PageEntry* const Paging::tmpPD = virtTables + TMPPDOFF*512; // temporary manipulation
+#define TMPPTOFF 0xC
+PageTable* const Paging::tmpPT = (PageTable*)virtTables + TMPPTOFF * 512; // temporary manipulation
 // initialization routines
 
 PageEntry::PageEntry() : present(false),readWrite(true),user(true),writeThrough(false),
@@ -27,14 +47,14 @@ static inline void invlpg(void* addr) {
 Paging::Paging(){
 }
 
-void Paging::init(PageEntry * pPML4){ // physical PML4
+void Paging::init(PageEntry* pPML4){ // physical PML4
     assert(pPML4[511].getAddr());
     PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
-    PageEntry* PPD = new (physmemalloc.alloc()) PageEntry[512]; // paging page directory
+    PageEntry* PPD = new ((void*)physmemalloc.alloc()) PageEntry[512]; // paging page directory
     KPDP[509].activeAddr(PPD);
 
-    PageTable* firstPPT = new(physmemalloc.alloc()) PageTable[512]; // first paging page table
+    PageTable* firstPPT = new((void*)physmemalloc.alloc()) PageTable[512]; // first paging page table
     PPD[0].activeAddr(firstPPT); // activate first page PT
     firstPPT[5].activeAddr(firstPPT); // activate variable pagePT
     invlpg(pagePT);
@@ -51,7 +71,7 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     invlpg(kernelPD);
 
     //stack PD
-    PageEntry * stackPDphy = new(physmemalloc.alloc()) PageEntry[512];
+    PageEntry * stackPDphy = new((void*)physmemalloc.alloc()) PageEntry[512];
     firstPPT[3].activeAddr(stackPDphy); // stackPD
     invlpg(stackPD);
     kernelPDP[511].activeAddr(stackPDphy);
@@ -61,7 +81,7 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     invlpg(pagePD);
 
     //bitset setup
-    PageTable* pbitsetPT = new(physmemalloc.alloc()) PageTable[512];
+    PageTable* pbitsetPT = new((void*)physmemalloc.alloc()) PageTable[512];
     firstPPT[9].activeAddr(pbitsetPT); // access via bisetPT.
     invlpg(bitsetPT);
     pagePD[256].activeAddr(pbitsetPT); // bitset PageTable activated
@@ -82,7 +102,7 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
     invlpg(firstPD);
 
     // mapping of physical RAM from 4K to 1M
-    firstPPT[8].activeAddr(new(physmemalloc.alloc()) PageTable[512]);
+    firstPPT[8].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     invlpg(firstPT);
     for(int i = 1 ; i < 256 ; ++ i){ // RAM mapping to devices
         firstPT[i].activeAddr((char*)nullptr + 0x1000 * i);
@@ -105,7 +125,7 @@ void Paging::init(PageEntry * pPML4){ // physical PML4
 
 void Paging::allocStack(void*stackPos,size_t nbPages){
     assert(nbPages < 512); // TODO support more than 2M of stack
-    stackPD[511].activeAddr(new(physmemalloc.alloc()) PageTable[512]);
+    stackPD[511].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     actTmpPT(stackPD[511].getAddr());
 
     tmpPT[511].activeAddr(stackPos); // getBack current stack
@@ -127,20 +147,20 @@ void Paging::removeIdent(){
     invlpg(0x400000);
 }
 
-void Paging::actTmpPDP (void* PDPphyAddr){
+void Paging::actTmpPDP (uptr PDPphyAddr){
     assert(!pagePT[TMPPDPOFF].present);
     pagePT[TMPPDPOFF].activeAddr(PDPphyAddr);
-    invlpg((uptr)tmpPDP);
+    invlpg(tmpPDP);
 }
-void Paging::actTmpPD (void* PDphyAddr){
+void Paging::actTmpPD (uptr PDphyAddr){
     assert(!pagePT[TMPPDOFF].present);
     pagePT[TMPPDOFF].activeAddr(PDphyAddr);
-    invlpg((uptr)tmpPD);
+    invlpg(tmpPD);
 }
-void Paging::actTmpPT (void* PTphyAddr){
+void Paging::actTmpPT (uptr PTphyAddr){
     assert(!pagePT[TMPPTOFF].present);
     pagePT[TMPPTOFF].activeAddr(PTphyAddr);
-    invlpg((uptr)tmpPT);
+    invlpg(tmpPT);
 }
 void Paging::freeTmpPDP (){
     pagePT[TMPPDPOFF].present = false;
@@ -153,30 +173,30 @@ void Paging::freeTmpPT (){
 }
 
 
-void* Paging::getPDPphyu(u64 addr){ // unsafe version
+uptr Paging::getPDPphyu(void* addr){ // unsafe version
     return PML4[getPML4index(addr)].getAddr();
 }
 
-void* Paging::getPDPphy(u64 addr){ // safe version
+uptr Paging::getPDPphy(void* addr){ // safe version
     auto PDP = getPDPphyu(addr);
     //printf("Accessing PML4 at %d %p\n",getPML4index(addr),PDP);
     //breakpoint;
     if(PDP) return PDP;
     bsod("More than 2 PDPs ?"); // I only want to support 2 PDPs
-    return nullptr; // just for warning
 }
-void* Paging::getPDphyu(u64 addr){ // unsafe version
+
+uptr Paging::getPDphyu(void* addr){ // unsafe version
     actTmpPDP(getPDPphyu(addr));
-    void* res = tmpPDP[getPDPindex(addr)].getAddr();
+    uptr res = tmpPDP[getPDPindex(addr)].getAddr();
     freeTmpPDP();
     return res;
 }
 
-void* Paging::getPDphy(u64 addr){ // safe version
-    auto PDP = getPDPphy(addr);
+uptr Paging::getPDphy(void* addr){ // safe version
+    uptr PDP = getPDPphy(addr);
     actTmpPDP(PDP);
 
-    auto PD = tmpPDP[getPDPindex(addr)].getAddr();
+    uptr PD = tmpPDP[getPDPindex(addr)].getAddr();
     //printf("Accessing PDP at %d %p\n",getPDPindex(addr),PD);
     if(PD){
         freeTmpPDP();
@@ -191,13 +211,13 @@ void* Paging::getPDphy(u64 addr){ // safe version
     return PD;
 }
 
-void* Paging::getPTphyu(u64 addr){ // unsafe version
+uptr Paging::getPTphyu(void* addr){ // unsafe version
     actTmpPD(getPDphyu(addr));
-    void* res = tmpPD[getPDindex(addr)].getAddr();
+    uptr res = tmpPD[getPDindex(addr)].getAddr();
     freeTmpPD();
     return res;
 }
-void* Paging::getPTphy(u64 addr){ // safe version
+uptr Paging::getPTphy(void* addr){ // safe version
     auto PD = getPDphy(addr);
     actTmpPD(PD);
 
@@ -217,9 +237,9 @@ void* Paging::getPTphy(u64 addr){ // safe version
 
   }
 
-void* Paging::getphyu(u64 addr){ // unsafe version
+uptr Paging::getphyu(void* addr){ // unsafe version
     actTmpPT(getPTphyu(addr));
-    void* res = tmpPT[getPTindex(addr)].getAddr();
+    uptr res = tmpPT[getPTindex(addr)].getAddr();
     freeTmpPT();
     return res;
 }
@@ -227,38 +247,38 @@ void* Paging::getphyu(u64 addr){ // unsafe version
 
 
 
-void Paging::createMapping(uptr phy,uptr virt){
-    assert(!(phy & ((1<< 12 )-1)) && !(virt & ((1<< 12 )-1))
+void Paging::createMapping(uptr phy,void* virt){
+    assert(!(phy & ((1<< 12 )-1)) && !((uptr)virt & ((1<< 12 )-1))
            && !(phy >> 52));
     //printf("activating %p\n",phy);
-    auto PT = getPTphy(virt);
+    uptr PT = getPTphy(virt);
     //printf("PT address get %p\n",PT);
     actTmpPT(PT);
     assert(!tmpPT[getPTindex(virt)].present);
-    tmpPT[getPTindex(virt)].activeAddr((void*)phy);
+    tmpPT[getPTindex(virt)].activeAddr(phy);
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;
     }
     freeTmpPT();
     invlpg(virt);
 }
-void Paging::createMapping(uptr phy,uptr virt,int numPg){
+void Paging::createMapping(uptr phy,void* virt,int numPg){
     for(int i = 0 ; i < numPg ; ++i){
-        createMapping(phy + i * 0x1000,virt+i*0x1000);
+        createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000);
     }
 }
-void Paging::freeMapping(uptr virt,int nbPages){
+void Paging::freeMapping(void* virt,int nbPages){
     for(int i=0 ; i < nbPages ; ++i){
-        void * PT = getPTphy(virt+i*0x1000);
+        uptr PT = getPTphy((u8*)virt+i*0x1000);
         actTmpPT(PT);
-        assert(tmpPT[getPTindex(virt+i*0x1000)].present);
-        tmpPT[getPTindex(virt+i*0x1000)].present = false;
+        assert(tmpPT[getPTindex((u8*)virt+i*0x1000)].present);
+        tmpPT[getPTindex((u8*)virt+i*0x1000)].present = false;
         freeTmpPT();
     }
 }
-void Paging::freeMappingAndPhy(uptr virt,int nbPages){
+void Paging::freeMappingAndPhy(void* virt,int nbPages){
     for(int i = 0 ; i < nbPages ; ++i){
-        physmemalloc.free(getphyu(virt +i * 0x1000));
+        physmemalloc.free(getphyu((u8*)virt +i * 0x1000));
     }
     freeMapping(virt,nbPages);
 }
@@ -271,7 +291,7 @@ void Paging::TLBflush(){
         );
 }
 
-void Paging::switchUser(void* usPDP){
+void Paging::switchUser(uptr usPDP){
     if(usPDP == PML4[0].getAddr()) return; // if this is already the active mapping
     //printf("before activating\n");
     //breakpoint;

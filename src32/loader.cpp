@@ -63,7 +63,7 @@ void init(){
    @brief Push an object on another stack than the current one.
 
    @param t The object to be pushed
-   @param the rsp pointer to this stack
+   @param rsp the rsp pointer to this stack
 
    The function is used by \ref load to fill the physical kernel stack
    while still being on loader stack (cf. \ref stack).

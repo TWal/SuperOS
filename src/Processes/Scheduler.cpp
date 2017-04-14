@@ -29,7 +29,7 @@ void Scheduler::init(Thread* initThread){
     pic.activate(Pic::TIMER);
 
     //activate tid bitset;
-    paging.createMapping((u64)physmemalloc.alloc(),(u64)tidBitset);
+    paging.createMapping(physmemalloc.alloc(),tidBitset);
     _tids.init(tidBitset,0x1000*8);
     _tids.fill();
     _tids[0] = false; // no thread with number 0.

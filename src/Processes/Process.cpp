@@ -25,7 +25,7 @@ Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
 
 
 Thread* Process::loadFromBytes(Bytes* file){
-    std::vector<void*> allocPages;
+    std::vector<uptr> allocPages;
     //paging.switchUser(_userPDP);
     _usermem.activate();
 
@@ -35,9 +35,9 @@ Thread* Process::loadFromBytes(Bytes* file){
     };
 
     //loading first page of file
-    void* firstblock = physmemalloc.alloc();
+    uptr firstblock = physmemalloc.alloc();
     allocPages.push_back(firstblock);
-    paging.createMapping((uptr)firstblock,(uptr)loadedProcess);
+    paging.createMapping(firstblock,loadedProcess);
     readaddr(0,loadedProcess,0x1000);
 
     // Parsing executable
@@ -48,9 +48,9 @@ Thread* Process::loadFromBytes(Bytes* file){
 
     //loading enough to have all information in kernel Space
     for(size_t i = 1 ; i < toLoad ; ++i){
-        void* block = physmemalloc.alloc();
+        uptr block = physmemalloc.alloc();
         allocPages.push_back(block);
-        paging.createMapping((uptr)block,(uptr)loadedProcess + i * 0x1000);
+        paging.createMapping(block,(char*)loadedProcess + i * 0x1000);
         readaddr(i*0x1000,(char*)loadedProcess+i*0x1000,0x1000);
     }
 
@@ -71,14 +71,14 @@ Thread* Process::loadFromBytes(Bytes* file){
                 size_t nbPages = (ph.filesz + 0x1000-1) / 0x1000;
                 //mapping page by page
                 for(size_t i = po ; i < nbPages ; ++i){
-                    void* phyblock;
+                    uptr phyblock;
                     if(i < toLoad){
                         phyblock = allocPages[i];
-                        allocPages[i] = nullptr;
+                        allocPages[i] = 0;
                     }
                     else phyblock = physmemalloc.alloc();
                     assert(phyblock);
-                    paging.createMapping((uptr)phyblock,ph.vaddr + i * 0x1000);
+                    paging.createMapping(phyblock,(char*)ph.vaddr + i * 0x1000);
                     if( i >= toLoad){
                         readaddr(offset + i * 0x1000,(char*)ph.vaddr + i * 0x1000,0x1000);
                     }
@@ -92,8 +92,8 @@ Thread* Process::loadFromBytes(Bytes* file){
 
     // allocating stack
     for(size_t i = 1 ; i <= FIXED_SIZE_STACK ; ++i){
-        void * block = physmemalloc.alloc();
-        paging.createMapping((uptr)block,stackStart - i * 0x1000);
+        uptr block = physmemalloc.alloc();
+        paging.createMapping(block,(char*)stackStart - i * 0x1000);
     }
     //TODO preparing Heap
 

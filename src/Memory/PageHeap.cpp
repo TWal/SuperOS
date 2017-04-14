@@ -13,13 +13,13 @@ void* PageHeap::ialloc(u64 phy){
     assert(i != -1);
     //printf("found %d",i);
     u8* addr = base - i * 0x1000;
-    paging.createMapping(phy,(u64)addr);
+    paging.createMapping(phy,addr);
     return addr;
 }
 PageHeap::PageHeap(){
 }
 void PageHeap::init(){
-    paging.createMapping((u64)physmemalloc.alloc(),(uptr)phBitset);
+    paging.createMapping(physmemalloc.alloc(),phBitset);
     _bitset.init(phBitset,0x1000);
     _bitset.fill();
 }
@@ -27,7 +27,7 @@ void PageHeap::free(void* virt){
     size_t pos = uptr(base - (u8*)virt) / 0x1000;
     //printf("base : %p, virt : %p, pos : %d",base,virt,pos);
     assert(pos < 0x1000);
-    paging.freeMapping((uptr)virt);
+    paging.freeMapping(virt);
     _bitset.set(pos);
 }
 

@@ -14,16 +14,16 @@ int Heap::brk(void*addr){
     uptr dist = (char*)addr - _virtAddrStart;
     if(dist > _Brk){ // if we should allocate new page
         int nbNewPages = (dist - _Brk + 0x1000 -1)/0x1000;
-        uptr startAddr = (uptr)_virtAddrStart + _Brk;
+        char* startAddr = _virtAddrStart + _Brk;
         for(int i = 0 ; i < nbNewPages ; ++ i){
-            void * phy = physmemalloc.alloc();
-            paging.createMapping((uptr)phy,startAddr + i * 0x1000);
+            uptr phy = physmemalloc.alloc();
+            paging.createMapping(phy,startAddr + i * 0x1000);
         }
         _Brk+= nbNewPages * 0x1000;
     }
     else if(dist + 0x1000 < _Brk){ // if we should free some page
         int nbPages = (_Brk - dist) / 0x1000;
-        paging.freeMappingAndPhy((uptr)_virtAddrStart + _Brk - nbPages * 0x1000,nbPages);
+        paging.freeMappingAndPhy(_virtAddrStart + _Brk - nbPages * 0x1000,nbPages);
         _Brk -= nbPages * 0x1000;
     }
     // else do nothing.

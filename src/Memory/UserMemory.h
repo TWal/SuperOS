@@ -3,22 +3,23 @@
 
 #include"../utility.h"
 #include"../Bitset.h"
+#include "Paging.h"
 
 //#define NBUSERSTACK 1
 
 class UserMemory{
-    u64 _PDP;
+    uptr _PDP;
     //u64 _bitdata[NBUSERSTACK]; idea for multiple non-heap thread stack
     //Bitset _bitset;
-    static void freePages(void* PT);
-    static void freePTs(void* PD, bool start);
-    static void freePDs(void* PDP);
-    static void copyPages(void* PTdest,void*PTsrc); // copy untested
-    static void copyPTs(void* PDdest,void*PDsrc, bool start);
-    static void copyPDs(void* PDPdest,void*PDPsrc);
-    static void printPages(void* PT);
-    static void printPTs(void* PD,bool start);
-    static void printPDs(void* PDP);
+    static void freePages(uptr PT);
+    static void freePTs(uptr PD, bool start);
+    static void freePDs(uptr PDP);
+    static void copyPages(uptr PTdest,uptr PTsrc); // copy untested
+    static void copyPTs(uptr PDdest,uptr PDsrc, bool start);
+    static void copyPDs(uptr PDPdest,uptr PDPsrc);
+    static void printPages(uptr PT);
+    static void printPTs(uptr PD,bool start);
+    static void printPDs(uptr PDP);
 
 public :
     UserMemory();

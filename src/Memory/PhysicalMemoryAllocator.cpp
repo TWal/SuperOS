@@ -17,26 +17,26 @@ u64 PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupAr
 
     u64 bitsetPageSize = (bitsetSize * 8 + 0x1000 -1) / 0x1000;
     for(u64 i = 0 ; i < bitsetPageSize ; ++i){ // allocate itself
-        unset(((uchar*)_bitset.getAddr()) + 0x1000 * i);
+        unset(((uptr)_bitset.getAddr()) + 0x1000 * i);
     }
 
     for(u64 i = 0 ; i < occupSize ; ++i){
         //printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){
-            unset(reinterpret_cast<char*>(occupArea[i].addr) + j * 0x1000);
+            unset(occupArea[i].addr + j * 0x1000);
         }
     }
     return bitsetPageSize;
 }
-bool PhysicalMemoryAllocator::get(void* addr){
+bool PhysicalMemoryAllocator::get(uptr addr){
     assert(((u64)addr & (0x1000 -1)) == 0);
     return _bitset.get(((u64)addr - 0x100000)/ 0x1000);
 }
-void PhysicalMemoryAllocator::set(void* addr){
+void PhysicalMemoryAllocator::set(uptr addr){
     assert(((u64)addr & (0x1000 -1)) == 0);
     _bitset.set(((u64)addr - 0x100000)/ 0x1000);
 }
-void PhysicalMemoryAllocator::unset(void* addr){
+void PhysicalMemoryAllocator::unset(uptr addr){
     assert(((u64)addr & (0x1000 -1)) == 0);
     _bitset.unset(((u64)addr - 0x100000)/ 0x1000);
 }
@@ -48,18 +48,18 @@ void PhysicalMemoryAllocator::printfirst(int nb){
     printf("\n");
 }
 
-void* PhysicalMemoryAllocator::alloc() {
+uptr PhysicalMemoryAllocator::alloc() {
     size_t bsf = _bitset.bsf();
     assert(bsf != (size_t)-1 && "Kernel is out of physical memory");
 
     _bitset[bsf] = false;
     //printf("allocating %p",(0x100000 + ((64*i+pos)<<12)));
-    return (void*)(0x100000 + (bsf<<12)); //4kb page = 2^12 byte
+    return 0x100000 + (bsf<<12); //4kb page = 2^12 byte
 }
 
-void PhysicalMemoryAllocator::free(void* page) {
+void PhysicalMemoryAllocator::free(uptr page) {
     //printf("freeing %p",page);
-    u64 index = (u64)((u8*)page - 0x100000);
+    u64 index = page - 0x100000;
     assert((index&((1<<12)-1)) == 0);
     index >>= 12;
 

@@ -130,7 +130,7 @@ void unittest();
 
 */
 
-// WARNING : kmain local var should not exceed 2K for stack switching
+// WARNING : kinit local variables should not exceed 2K for stack switching
 extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
