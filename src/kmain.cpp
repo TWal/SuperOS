@@ -146,7 +146,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     physmemalloc.init((void*)kargs->freeAddr,kargs->RAMSize,
                       (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
     paging.init((PageEntry*)kargs->PML4); // initializing paging
-    paging.allocStack((void*)kargs->stackAddr,10); // allocation of kernel stack (fixed size )
+    paging.allocStack(kargs->stackAddr,10); // allocation of kernel stack (fixed size )
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);

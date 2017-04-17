@@ -226,25 +226,25 @@ extern "C" void load(multibootInfo * mb){
 /**
    @page stack Stacks
 
-   @brief description of the different stacks of the OS.
+   @brief Description of the different stacks of the OS.
 
-   There is 4 different stack the apears in this project :
+   There are 4 different stacks that appear in this project :
        - Loader Stack.
        - Kernel physical stack
        - Kernel stack
        - User mode stack (one by thread actually)
 
    The loader stack is simple a 4KB block in the data segment of the loader that
-   implement the stack, esp is set up to its end just before entering \ref load.
+   implement the stack, esp is set to its end just before entering @ref load.
 
    The kernel physical stack is the first page after the area of memory where kernel.elf is loaded
-   by the bootloader. rsp is set to it by \ref startKernel just before entering \ref kinit.
+   by the bootloader. rsp is set to it by @ref startKernel just before entering @ref kinit.
 
-   The kernel stack is the last GB of virtual memory (from -1G to 0). the last page of
+   The kernel stack is the last GB of virtual memory (from -1G to 0). The last page of
    the virtual memory is mapped to the physical kernel stack and other page are added under it by
    Paging::allocStack.
 
-   The user stack is somewhere in user-space, by default starting under 512G.
+   The user stack is somewhere in user-space, by default starting just under 512G.
 
  */
 

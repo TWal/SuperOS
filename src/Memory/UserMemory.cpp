@@ -24,7 +24,8 @@ void UserMemory::activate(){
 void UserMemory::freePages(uptr PT){
     paging.actTmpPT(PT);
     for(int i =  0 ; i < 512 ; ++i){
-        if(Paging::tmpPT[i].getAddr()&& Paging::tmpPT[i].present){
+        if(Paging::tmpPT[i].present){
+            assert(Paging::tmpPT[i].getAddr());
             physmemalloc.free(Paging::tmpPT[i].getAddr());
         }
     }

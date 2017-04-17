@@ -45,7 +45,13 @@ static inline void invlpg(void* addr) {
 
 // Paging manipulation
 Paging::Paging(){
+    assert(this == &paging); // singleton.
 }
+
+
+
+
+
 
 void Paging::init(PageEntry* pPML4){ // physical PML4
     assert(pPML4[511].getAddr());
@@ -116,14 +122,19 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
     firstPPT[11].writeThrough = true;
     firstPPT[12].writeThrough = true;*/
 
-    for(int i = 0 ; i < 12 ; ++i){
+    for(int i = 0 ; i < 10 ; ++i){
         firstPPT[i].global = true;
     }
 
     TLBflush();
 }
 
-void Paging::allocStack(void*stackPos,size_t nbPages){
+
+
+
+
+
+void Paging::allocStack(uptr stackPos,size_t nbPages){
     assert(nbPages < 512); // TODO support more than 2M of stack
     stackPD[511].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     actTmpPT(stackPD[511].getAddr());
@@ -171,6 +182,11 @@ void Paging::freeTmpPD (){
 void Paging::freeTmpPT (){
     pagePT[TMPPTOFF].present = false;
 }
+
+
+
+
+
 
 
 uptr Paging::getPDPphyu(void* addr){ // unsafe version
@@ -247,6 +263,8 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 
+
+
 void Paging::createMapping(uptr phy,void* virt){
     assert(!(phy & ((1<< 12 )-1)) && !((uptr)virt & ((1<< 12 )-1))
            && !(phy >> 52));
@@ -262,11 +280,15 @@ void Paging::createMapping(uptr phy,void* virt){
     freeTmpPT();
     invlpg(virt);
 }
+
+
 void Paging::createMapping(uptr phy,void* virt,int numPg){
     for(int i = 0 ; i < numPg ; ++i){
         createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000);
     }
 }
+
+
 void Paging::freeMapping(void* virt,int nbPages){
     for(int i=0 ; i < nbPages ; ++i){
         uptr PT = getPTphy((u8*)virt+i*0x1000);
@@ -276,12 +298,19 @@ void Paging::freeMapping(void* virt,int nbPages){
         freeTmpPT();
     }
 }
+
+
 void Paging::freeMappingAndPhy(void* virt,int nbPages){
     for(int i = 0 ; i < nbPages ; ++i){
         physmemalloc.free(getphyu((u8*)virt +i * 0x1000));
     }
     freeMapping(virt,nbPages);
 }
+
+
+
+
+
 
 void Paging::TLBflush(){
     asm volatile(
