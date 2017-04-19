@@ -95,8 +95,7 @@ extern "C" [[noreturn]]  void bsod(const char* s, ...);
 void reboot();
 
 template<typename T> T alignup(T n, T multiple) {
-    if(n == 0) return 0; //we don't want to use -1 when T is unsigned
-    return (n-1) + (multiple - ((n-1)%multiple));
+    return ((n+multiple-1)/multiple)*multiple;
 }
 
 //Trick to have S__LINE _ a string containing the line number

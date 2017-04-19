@@ -5,6 +5,12 @@ FileType File::getType(){
     return FileType::File;
 }
 
+u32 File::getInode() const {
+    stat st;
+    getStats(&st);
+    return st.st_ino;
+}
+
 FileType Directory::getType(){
     return FileType::Directory;
 }

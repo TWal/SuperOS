@@ -92,8 +92,10 @@ class File : public HDDBytes {
     virtual void link() = 0;
     virtual void unlink() = 0;
 
-    virtual void getStats(stat* buf) = 0;
+    virtual void getStats(stat* buf) const = 0;
     virtual Directory* dir() {return nullptr;};
+
+    virtual u32 getInode() const;
 };
 
 class Directory : public virtual File {
@@ -126,9 +128,6 @@ protected :
 public:
     explicit FileSystem (Partition * part);
     virtual Directory* getRoot() = 0;
-    //TODO: remove this?
-    virtual File* getNewFile(u16 uid, u16 gid, u16 mode) = 0;
-    virtual Directory* getNewDirectory(u16 uid, u16 gid, u16 mode) = 0;
 };
 
 

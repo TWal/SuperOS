@@ -23,6 +23,7 @@
 #include "Bitset.h"
 #include "User/Context.h"
 #include "Memory/PageHeap.h"
+#include "HDD/VFS.h"
 
 #include<vector>
 #include<string>
@@ -196,9 +197,21 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     HDD first(1,true);
     first.init();
     PartitionTableEntry part1 = first[1];
-    fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
-    Partition pa1 (&first,part1);
-    Ext2::FS fs (&pa1);
+    PartitionTableEntry part2 = first[2];
+    printf("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
+    printf("Partition 2 beginning at %8x of size %8x \n",part2.begLBA,part2.size);
+    Partition pa1(&first,part1);
+    Partition pa2(&first,part2);
+    Ext2::FS fs1(&pa1);
+    Ext2::FS fs2(&pa2);
+    VFS::FS fs(&fs1);
+
+    VFS::File* f = fs.vgetRoot()->get("mnt");
+    assert(f != nullptr);
+    assert(f->vgetType() == FileType::Directory);
+    VFS::Directory* d = f->vdir();
+
+    fs.mount(d, &fs2);
 
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interrruption

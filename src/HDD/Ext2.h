@@ -129,8 +129,8 @@ class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
         virtual ::Directory* getRoot();
-        virtual ::File* getNewFile(u16 uid, u16 gid, u16 mode);
-        virtual ::Directory* getNewDirectory(u16 uid, u16 gid, u16 mode);
+        File* getNewFile(u16 uid, u16 gid, u16 mode);
+        Directory* getNewDirectory(u16 uid, u16 gid, u16 mode);
 
         void getInodeData(u32 inode, InodeData* res) const;
         void writeInodeData(u32 inode, const InodeData* data);
@@ -160,7 +160,7 @@ class File : public virtual ::File {
         virtual void resize(size_t size);
         virtual void link();
         virtual void unlink();
-        virtual void getStats(stat* buf);
+        virtual void getStats(stat* buf) const;
         virtual size_t getSize() const;
 
     protected:

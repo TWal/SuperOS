@@ -300,9 +300,11 @@ load: disk.img
 	sudo partprobe $(LOOPDEV)
 
 partition:
-	sudo echo "," | sudo sfdisk $(LOOPDEV)
+	#sudo echo "," | sudo sfdisk $(LOOPDEV)
+	sudo echo -e ",32MiB\n,32MiB" | sudo sfdisk $(LOOPDEV)
 	sudo partprobe $(LOOPDEV)
 	sudo mkfs.$(FSTYPE) $(MKFSARGS) $(LOOPDEV)p1
+	sudo mkfs.$(FSTYPE) $(MKFSARGS) $(LOOPDEV)p2
 
 unload:
 	sudo losetup -d $(LOOPDEV)
@@ -381,6 +383,7 @@ count:
 
 dofsck:
 	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p1
+	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p2
 
 fsck: load dofsck unload
 

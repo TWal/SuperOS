@@ -475,7 +475,7 @@ void File::unlink() {
     _fs->writeInodeData(_inode, &_data);
 }
 
-void File::getStats(stat* buf) {
+void File::getStats(stat* buf) const {
     buf->st_ino = _inode;
     buf->st_mode = _data.mode;
     buf->st_nlink = _data.links_count;
@@ -612,14 +612,14 @@ void Directory::addEntry(const std::string& name, ::File* file) {
                 targetPos = curPos + curSize;
             } else {
                 targetPos = alignup(curPos+curSize, _fs->_blockSize);
-                if(!(atEnd || targetPos + neededSize < curPos + entry.rec_len)) {
+                if(!(atEnd || targetPos + neededSize < nextPos)) {
                     continue;
                 }
             }
             DirectoryEntry newEntry;
             newEntry.inode = inode;
             if(atEnd) {
-                newEntry.rec_len = _data.blocks*512 - targetPos;
+                newEntry.rec_len = alignup(targetPos+neededSize, _fs->_blockSize) - targetPos;
             } else {
                 newEntry.rec_len = nextPos - targetPos;
             }

@@ -117,7 +117,7 @@ namespace fat {
         virtual void unlink() {
             bsod("fat::File::unlink not implemented!");
         }
-        virtual void getStats(stat* buf) {
+        virtual void getStats(stat* buf) const {
             bsod("fat::File::getStats not implemented!");
         }
 
@@ -185,12 +185,6 @@ namespace fat {
         u32 nbRemainingCluster(u32 cluster)const;
         virtual ::Directory* getRoot();
         Directory* getRootFat();
-        virtual File* getNewFile(u16 uid, u16 gid, u16 mode) {
-            bsod("fat::FS::getNewFile not implemented");
-        }
-        virtual Directory* getNewDirectory(u16 uid, u16 gid, u16 mode) {
-            bsod("fat::FS::getNewDirectory not implemented");
-        }
     };
 
 
