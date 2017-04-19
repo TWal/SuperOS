@@ -8,12 +8,15 @@ namespace VFS {
 
 class Directory;
 
+/// @brief VFS filesystem
 class FS : public FileSystem {
     public:
         FS(FileSystem* fsroot);
         virtual ::Directory* getRoot();
         Directory* vgetRoot();
+        ///Mount `fs` at directory `dir`
         void mount(Directory* dir, FileSystem* fs);
+        ///Unmount directory `dir`
         void umount(Directory* dir);
 
     private:
@@ -26,6 +29,7 @@ class FS : public FileSystem {
         std::map<std::pair<u32, u32>, Directory*> _reverseMountedDirs;
 };
 
+/// @brief VFS file
 class File : public virtual ::File {
     public:
         File(::File* impl, u32 dev);
@@ -50,6 +54,7 @@ class File : public virtual ::File {
         ::File* _impl;
 };
 
+/// @brief VFS directory
 class Directory : public File, public ::Directory {
     public :
         Directory(::Directory* impl, u32 dev, FS* fs);
