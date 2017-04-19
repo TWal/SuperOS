@@ -114,6 +114,7 @@ void Process::addThread(Thread* thread){
 Process::~Process(){
     assert(_terminated); // check the process is effectively a zombie
     schedul.freeP(_pid);
+    // TODO orphan children ...
 }
 
 void Process::terminate(u64 returnCode){
@@ -121,7 +122,6 @@ void Process::terminate(u64 returnCode){
     _terminated = true;
     _usermem.clear();
     //printf("middle termination\n");
-    //paging.freeUserPDP(_userPDP);
     for(auto th : _threads){
         delete th;
     }

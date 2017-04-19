@@ -60,7 +60,7 @@ struct Context{
     Context& operator= (const InterruptParams& params);
 
     /// Launch last context.
-    [[noreturn]] void launchlast(){lastContext->launch();}
+    [[noreturn]] static void launchlast(){lastContext->launch();}
     /**
        @brief Start executing the code from this context.
 

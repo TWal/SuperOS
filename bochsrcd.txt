@@ -5,8 +5,8 @@ vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
 ata0-master:     type=disk, path=disk.img, mode=flat
 boot:            disk
 log:             bochslog.txt
-clock:           sync=realtime, time0=local
-cpu:             count=1, ips=1000000
+clock:           time0=local
+cpu:             count=1, ips=10000000
 magic_break:     enabled=1
 com1: enabled=1, mode=file, dev=log.txt
 keyboard:        serial_delay=200, paste_delay=100000

@@ -36,8 +36,6 @@ public :
         _tids.set(gid);
     }
 private :
-private :
-private :
     std::map<u16,Process*> _processes;
     std::map<u16,Thread*> _threads;
     std::map<u16,ProcessGroup*> _groups;

@@ -30,21 +30,21 @@ geneInt: # by default interruption on user stack.
     push %r14
     push %r15
     push $0                     #for mmx saving if needed
-  	mov %rsp,%rdi
+    mov %rsp,%rdi
     movabs $intIDT, %rbp
     call *(%rbp,%rbx,8)         #%rbx is callee-saved
     add $8,%rsp
- 	  pop %r15
-	  pop %r14
-	  pop %r13
-	  pop %r12
-	  pop %r11
-	  pop %r10
-	  pop %r9
-	  pop %r8
+    pop %r15
+    pop %r14
+    pop %r13
+    pop %r12
+    pop %r11
+    pop %r10
+    pop %r9
+    pop %r8
     pop %rdi
-	  pop %rsi
-	  pop %rbp
+    pop %rsi
+    pop %rbp
     add $8,%rsp
     pop %rdx
     pop %rcx
@@ -53,11 +53,11 @@ geneInt: # by default interruption on user stack.
     pop %rcx
     add $8,%rsp
     testb $4,params(,%rbx)
-	  jnz errEnd
+    jnz errEnd
     pop %rbx
     iretq
 
 errEnd:
-	  pop %rbx
+    pop %rbx
     add $8,%rsp
-	  iretq
+    iretq
