@@ -14,6 +14,8 @@ extern "C" {
     void  free (void* ptr);
     void __initmalloc();
     void __setbrk(void*addr);
+    void _exit(int status);
+    void debug(long long int l);
 
 
 #ifdef __cplusplus

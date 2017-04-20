@@ -272,7 +272,9 @@ void Paging::createMapping(uptr phy,void* virt){
     uptr PT = getPTphy(virt);
     //printf("PT address get %p\n",PT);
     actTmpPT(PT);
-    assert(!tmpPT[getPTindex(virt)].present);
+    if(tmpPT[getPTindex(virt)].present){
+        bsod("The virtual page %p was already mapped to %p",virt,tmpPT[getPTindex(virt)].getAddr());
+    }
     tmpPT[getPTindex(virt)].activeAddr(phy);
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;

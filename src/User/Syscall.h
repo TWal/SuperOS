@@ -16,11 +16,15 @@
 #define SYSLSTAT 6
 #define SYSPOLL 7 // not sure if we implement this
 
+
+#define SYSBRK 12 // not sure if we implement this
+
 #define SYSTEST 42
 
-#define SYSFORK 57
-#define SYSPEXIT 58 // vfork is useless and 231 for exit_group is too far away
-#define SYSEXIT 60
+#define SYSCLONE 56 ///< Clone is only for thread: clone(new rip, new rsp).
+#define SYSFORK 57 ///< Fork t create a new process.
+#define SYSEXIT 58 // vfork is useless and 231 for exit_group is too far away
+#define SYSTEXIT 60
 
 void syscallInit();
 
@@ -54,6 +58,9 @@ extern "C" syscallHandler * const handlers;
    When the user call a disable syscall (or a number outside of [0,@ref SYSCALLNUM[ ),
    the syscall -1 is called, This is the function @ref syserror that just does
    a @ref bsof "Blue Screen".
+
+   The syscall handler can assume that the global var Context::lastContext is
+   correctly set on entry.
 
    @section sys_conv Syscall calling convention
 

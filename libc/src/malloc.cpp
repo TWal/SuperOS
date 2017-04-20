@@ -4,14 +4,54 @@
 
 
 
-static void* Brk;
+static void* Brk = 0;
+#ifdef SUP_OS_KERNEL
 
-void __setbrk(void* newBrk){
-    Brk = newBrk;
+extern "C" void* getBrk();
+
+#else
+
+int brk(void* addr){
+    int res;
+    asm volatile(
+        "mov $12,%%eax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(addr)
+        : "%rcx", "%r11"
+        );
+        return res;
 }
+ 
+#endif
 
 void* sbrk(intptr_t offset){
+#ifndef SUP_OS_KERNEL
+    debug(242);
+    debug((long long int)Brk);
+#endif
+    if(!Brk){
+#ifdef SUP_OS_KERNEL
+        Brk = getBrk();
+#else
+
+        asm volatile(
+            "mov $12,%%eax;"
+            "xor %%rdi, %%rdi;"
+            "xchg %%bx,%%bx;"
+            "syscall"
+            : "=a"(Brk)
+            : : "%rcx", "%r11"
+            );
+        
+#endif
+    }
+#ifndef SUP_OS_KERNEL
+    debug(342);
+    debug((long long int)Brk);
+#endif
     char * before = (char*)Brk;
+    assert(before);
     int err = brk(before + offset);
     if (!err){
         Brk = before + offset;
@@ -24,6 +64,9 @@ void* sbrk(intptr_t offset){
 static MallocHeader* firstHeader;
 
 void __initmalloc() {
+#ifndef SUP_OS_KERNEL
+    debug(142);
+#endif
     firstHeader = (MallocHeader*)sbrk(sizeof(MallocHeader));
     firstHeader->size = 0;
     firstHeader->prevFree = false;

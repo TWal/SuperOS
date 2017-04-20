@@ -21,6 +21,18 @@ Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
 }
 
 
+Process::Process(const Process& other,Thread* toth, u16 pid): Process(pid,schedul.getG(other.getGid()),other._fds){
+
+    _usermem = other._usermem;
+    _heap = other._heap;
+    // Creating the new thread and coping the context of the calling thread
+    // the new process has only one thread : the copy of the thread that called fork
+    Thread* tcopy = new Thread(pid,0,this);
+    tcopy->context = toth->context;
+
+    // child process has 0 as a return.
+    tcopy->context.rax = 0;
+}
 
 
 
@@ -28,6 +40,12 @@ Thread* Process::loadFromBytes(Bytes* file){
     std::vector<uptr> allocPages;
     //paging.switchUser(_userPDP);
     _usermem.activate();
+
+    // get last addr used;
+    void* lastUsedAddr = 0;
+    auto usedAddr = [&lastUsedAddr](void* addr){
+        if(u64(addr) > (u64)lastUsedAddr) lastUsedAddr = addr;
+    };
 
     // smart reader to allow reading beyond end
     auto readaddr = [file](uptr addr, void* buffer,size_t size){
@@ -60,29 +78,40 @@ Thread* Process::loadFromBytes(Bytes* file){
         //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
 
         if(ph.type == Elf64::PT_LOAD){
-            printf("loading\n");
+            printf("loading at %p\n",ph.vaddr);
             // if this program header is to be loaded
             assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
 
             size_t offset = ph.offset;
+            printf("offset is %llu",offset);
             if(offset % 0x1000 == 0){
                 // the mapping is 4K aligned : better case
                 size_t po = offset / 0x1000;
-                size_t nbPages = (ph.filesz + 0x1000-1) / 0x1000;
+                size_t nbfPages = (ph.filesz + 0x1000-1) / 0x1000;
+                size_t nbvPages = (ph.memsz + 0x1000-1) / 0x1000;
+                printf("file pages : %llu ans virtual pages %llu\n",nbfPages,nbvPages);
                 //mapping page by page
-                for(size_t i = po ; i < nbPages ; ++i){
+                for(size_t i = 0 ; i < nbvPages ; ++i){
+                    if(i>= nbfPages){
+                        paging.createMapping(physmemalloc.alloc()
+                                             ,(char*)ph.vaddr + i * 0x1000);
+                        __builtin_memset((char*)ph.vaddr + i * 0x1000,0,0x1000);
+                        printf("Mapping %p to nothing",(char*)ph.vaddr + i * 0x1000);
+                        continue;
+                    }
                     uptr phyblock;
-                    if(i < toLoad){
-                        phyblock = allocPages[i];
-                        allocPages[i] = 0;
+                    if(po + i < toLoad){
+                        phyblock = allocPages[po + i];
+                        allocPages[po + i] = 0;
                     }
                     else phyblock = physmemalloc.alloc();
                     assert(phyblock);
                     paging.createMapping(phyblock,(char*)ph.vaddr + i * 0x1000);
-                    if( i >= toLoad){
+                    if( po + i >= toLoad){
                         readaddr(offset + i * 0x1000,(char*)ph.vaddr + i * 0x1000,0x1000);
                     }
                 }
+                usedAddr((void*)(ph.vaddr + nbvPages * 0x1000));
             }
             else bsod("Loading unaligned elf64 is not supported for now");
         }
@@ -96,6 +125,11 @@ Thread* Process::loadFromBytes(Bytes* file){
         paging.createMapping(block,(char*)stackStart - i * 0x1000);
     }
     //TODO preparing Heap
+    printf("Initializing heap with %p",lastUsedAddr);
+    _heap.init(lastUsedAddr);
+
+    printf("User mem after loading :");
+    _usermem.DumpTree();
 
     //printf("Creating thread\n");
     //the file is now ready to be executed. Creating main thread
@@ -174,6 +208,7 @@ Thread::~Thread(){
 [[noreturn]] void Thread::run(){
     printf("Starting thread %d in %d at %p\n",_tid,_pid,context.rip);
     _process->prepare();
+    printf("started\n");
     context.launch();
 }
 void Thread::terminate(u64 returnCode){

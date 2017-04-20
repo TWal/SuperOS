@@ -56,7 +56,8 @@ void init(){
 
 /// Division by 0 exception handler
 void div0 (const InterruptParams& par){
-    bsod("1/0 is not infinity at %p", par.rip);
+    printf("1/0 is not infinity at %p", par.rip);
+    stop;
 }
 
 /// Invalid opcode exception handler
@@ -155,7 +156,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
     paging.removeIdent(); // remove the identity paging necessary for boot process
-    __setbrk(kheap.init(&kernel_code_end));// creating kernel heap
+    kheap.init(&kernel_code_end);// creating kernel heap
     __initmalloc(); // initializing kernel malloc : no heap access before this point.
     pageHeap.init(); // initializing page Heap to map physical pages on will.
     // (i.e a heap with 4K aligned malloc).
@@ -169,17 +170,33 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #endif
 
 #define BLA USER_TEST
-#define EMUL // comment for LORDI version
+//#define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
 #elif BLA == USER_TEST
-    fb.printf("64 bits kernel booted, paging, stack and heap initialized!!\n");
+    fb.printf("64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
     breakpoint;
     HDD first(1,true);
     first.init();
-    PartitionTableEntry part1 = first[1];
+    //PartitionTableEntry part1 = first[1];
     //fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
-    Partition pa1 (&first,part1);
+    //Partition pa1 (&first,part1);
+#ifdef EMUL
+
+    PartitionTableEntry part1 = first[1];
+    Partition pa1 (&first,part1); // load first partition
+
+#else
+
+    const PartitionTableEntry *part1 = first.partWithPred([](const Partition&part){
+            //u32 UUID[4] = {0xe9be36b1,0x894793a2,0x32db3294,0xa907a74a};
+            u32 UUID[4]= {0x1e0a2799,0x9e4e1c52,0x1868dc89,0x0397fcb7};
+            return Ext2::CheckUUID(UUID,part);
+        });
+    if(part1 == nullptr)bsod("Main partition not found");
+    Partition pa1 (&first,*part1); // load partition with FAT UUID 04728457
+#endif
+
     Ext2::FS fs (&pa1);
 
     File* init = (*(fs.getRoot()))["init"];

@@ -3,7 +3,7 @@
 
 #include<stddef.h>
 #include<stdint.h>
-#include<assert.h>
+#include"../assert.h"
 
 struct MallocHeader {
     size_t size : 61;
@@ -25,7 +25,6 @@ struct MallocHeader {
 static_assert(sizeof(MallocHeader) == 8, "MallocHeader has the wrong size");
 
 extern "C" void* sbrk(intptr_t offset);
-extern "C" void __setbrk(void* newBrk);
 extern "C" void __initmalloc();
 extern "C" void* malloc(size_t size);
 extern "C" void free(void* ptr);

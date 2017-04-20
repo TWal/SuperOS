@@ -1,6 +1,8 @@
 #ifndef __SUPOS_ASSERT_H
 #define __SUPOS_ASSERT_H
 
+#include "stdlib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,6 +18,16 @@ extern "C" {
             bsod("Assertion failed at " __FILE__ ":" S__LINE__ ": " #cond); \
         }                                                               \
     }
+#else
+
+    // TODO printf something.
+#define assert(cond) {                                                  \
+        if(!(cond)) {                                                   \
+            _exit(-42);                                                  \
+        }                                                               \
+    }
+
+
 #endif
 
 #ifdef __cplusplus

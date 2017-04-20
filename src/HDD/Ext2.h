@@ -34,20 +34,32 @@ struct SuperBlock {
     u16 def_resuid;
     u16 def_resgid;
 
-    u32 first_ino;         ///< First non-reserved inode 
-    u16 inode_size;        ///< Size of inode structure 
-    u16 block_group_nr;    ///< Block group # of this superblock 
-    u32 feature_compat;    ///< Compatible feature set 
-    u32 feature_incompat;  ///< Incompatible feature set 
-    u32 feature_ro_compat; ///< Readonly-compatible feature set 
-    u32 uuid[4];           ///< 128-bit uuid for volume 
-    char volume_name[16];  ///< Volume name 
-    char last_mounted[64]; ///< Directory where last mounted 
-    u32 algo_bitmap;       ///< For compression 
+    u32 first_ino;         ///< First non-reserved inode
+    u16 inode_size;        ///< Size of inode structure
+    u16 block_group_nr;    ///< Block group # of this superblock
+    u32 feature_compat;    ///< Compatible feature set
+    u32 feature_incompat;  ///< Incompatible feature set
+    u32 feature_ro_compat; ///< Readonly-compatible feature set
+    u32 uuid[4];           ///< 128-bit uuid for volume
+    char volume_name[16];  ///< Volume name
+    char last_mounted[64]; ///< Directory where last mounted
+    u32 algo_bitmap;       ///< For compression
     u32 reserved[205];     ///< Padding to 1024 bytes
 } __attribute__((packed));
 
 static_assert(sizeof(SuperBlock) == 1024, "SuperBlock has the wrong size");
+
+inline bool CheckUUID(u32 UUID[4],const Partition& part){
+    SuperBlock sb;
+    part.readaddr(1024,&sb,sizeof(SuperBlock));
+    printf("UUID : ");
+    for(int i = 0 ; i < 4 ; ++i){
+        printf("%8x-",(sb.uuid)[i]);
+    }printf("\n");
+    return sb.uuid[0] == UUID[0] && sb.uuid[1] == UUID[1] &&
+        sb.uuid[2] == UUID[2] && sb.uuid[3] == UUID[3];
+}
+
 
 enum FileSystemState {
     FSS_CLEAN = 1,

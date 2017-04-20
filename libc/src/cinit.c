@@ -1,5 +1,5 @@
-void initmalloc();
+void __initmalloc();
 
 void __cinit(){ // all c runtime initialization
-    //initmalloc();
+    __initmalloc();
 }

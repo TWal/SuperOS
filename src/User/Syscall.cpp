@@ -25,7 +25,7 @@ void syserror(){
 
 /// Test handler for debbuging, currently syscall 42.
 u64 systest(u64 a,u64 b,u64 c,u64 d,u64 e,u64 f){
-    printf("Systest called with %lld, %lld, %lld, %lld, %lld, %lld \n",a,b,c,d,e,f);
+    printf("Systest called with %lld ",a,b,c,d,e,f);
     printf("And rsp at %p and rip at %p\n",Context::lastContext->rsp,Context::lastContext->rip);
     //Context::lastContext->launch(); // same behavior than normal return
     return 0;
@@ -38,7 +38,7 @@ u64 syscallInt(const InterruptParams& par){
     if(par.rax > 255) hand = handlers[SYSERROR];
     else if(handlers[par.rax]) hand = handlers[par.rax];
     else hand = handlers[SYSERROR];
-
+    Context::save(par); // saving context.
     return hand(par.rbx,par.rcx,par.rdx,par.rsi,par.rdi,par.rbp);
 }
 

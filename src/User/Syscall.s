@@ -45,7 +45,7 @@ syscall:
     pop %rbp
     add $8,%rsp
     pop %rdx
-    pop %rax
+    add $8,%rsp
     pop %rcx
     pop %r11                    # get back RFLAGS
     pop %rbx

@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <stdlib.h>
 
 
 int factorial(int i){
@@ -25,23 +26,30 @@ void systesti(int i){
 
 int main(){
     //systest();
-    for(volatile int i = 0 ; i < 10 ; ++i){
+    char* buffer = malloc(40);
+    buffer[0] = 42;
+    buffer[1] = -12;
+    for(volatile int i = 0 ; i < 2 ; ++i){
         systesti(i);
         for(volatile int j = 0 ; j < 10000000; ++j);
     }
     int pid = fork();
     if(pid){
-        systesti(1000+pid);
+        buffer[0] = 56;
+        systesti(buffer[0]);
+        systesti(buffer[1]);
     }
     else{
-        systesti(55);
-        for(volatile int i = 0 ; i < 5 ; ++i){
+        for(volatile int i = 0 ; i < 2 ; ++i){
             systesti(i+100);
             for(volatile int j = 0 ; j < 10000000; ++j);
         }
+        free(buffer);
+        buffer = malloc(5);
+        buffer[0] = 89;
         return 13;
     }
-    for(volatile int i = 0 ; i < 20 ; ++i){
+    for(volatile int i = 0 ; i < 2 ; ++i){
         systesti(i+500);
         for(volatile int j = 0 ; j < 10000000; ++j);
     }

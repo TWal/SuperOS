@@ -7,13 +7,23 @@
 #include <map>
 #include <deque>
 
+/**
+   @brief This class Handles the scheduling of the different user programs.
+
+
+ */
 class Scheduler{
 public :
     Scheduler();
     void init(Thread* pro);// load init process
     [[noreturn]] void run(); // run the next program, the previous context should have been saved
     [[noreturn]] void exit(u64 returnCode);
-    u16 fork(); // fork current process;
+    Thread* enterSys();
+    void stopCurent();
+    u16 fork(); ///< fork current process;
+    /// Creates a Thread stating at rip with stack rsp.
+    u16 clone(u64 rip, u64 stack);
+    u64 brk(void* addr);
     void timerHandler(const InterruptParams&);
     Thread* getT(u16 tid){return _threads.at(tid);}
     Process* getP(u16 pid){return _processes.at(pid);}

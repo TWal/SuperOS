@@ -74,12 +74,17 @@ OBJ = $(patsubst $(SRCDIR)/%, $(OUTDIR)/%.o, $(SRCASM)) \
 LOOPDEV = /dev/loop0
 MNTPATH = /mnt/test# must be absolute and not relative
 
+LIBCSRCASM = $(wildcard $(LIBC)/src/*.s)
 LIBCSRC = $(wildcard $(LIBC)/src/*.c)
 LIBCSRCXX = $(wildcard $(LIBC)/src/*.cpp)
 LIBCOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRC)) \
-	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRCXX))
+	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRCXX)) \
+	$(patsubst $(LIBC)/src/%.s,$(OUTDIR)/$(LIBC)/%.o,$(LIBCSRCASM))
+
 LIBKOBJ = $(patsubst $(LIBC)/src/%.c,$(OUTDIR)/libk/%.o,$(LIBCSRC)) \
-	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/libk/%.o,$(LIBCSRCXX))
+	$(patsubst $(LIBC)/src/%.cpp,$(OUTDIR)/libk/%.o,$(LIBCSRCXX)) \
+	$(patsubst $(LIBC)/src/%.s,$(OUTDIR)/libk/%.o,$(LIBCSRCASM))
+
 LIBCH = $(wildcard $(LIBC)/*.h)
 
 LIBCXXSRC = $(wildcard $(LIBCXX)/src/*.cpp)
@@ -196,6 +201,11 @@ $(OUT32DIR)/%.cpp.o: $(SRC32DIR)/%.cpp Makefile
 
 #----------------------------------libc rules-----------------------------------
 
+$(OUTDIR)/libc/%.o: $(LIBC)/src/%.s Makefile
+	@mkdir -p $(OUTDIR)/libc
+	@echo Assembling libc file : $<
+	@$(AS) $(ASFLAGS) $< -o $@
+
 $(OUTDIR)/$(LIBC)/%.o: $(LIBC)/src/%.c Makefile
 	@mkdir -p $(OUTDIR)/libc
 	@mkdir -p $(DEPDIR)/libc
@@ -216,6 +226,11 @@ libc.a: $(LIBCOBJ) $(LIBCH) Makefile
 	@echo
 
 #----------------------------------libk rules-----------------------------------
+
+$(OUTDIR)/libk/%.o: $(LIBC)/src/%.s Makefile
+	@mkdir -p $(OUTDIR)/libk
+	@echo Assembling libk file : $<
+	@$(AS) $(ASFLAGS) $< -o $@
 
 $(OUTDIR)/libk/%.o: $(LIBC)/src/%.c Makefile
 	@mkdir -p $(OUTDIR)/libk
@@ -286,7 +301,7 @@ crt0.o: $(OUTDIR)/start/crt0.s.o $(OUTDIR)/start/crt0.c.o
 
 #---------------------------------Init Process------------------------------------
 
-init: user/init/init.c
+init: user/init/init.c libc.a crt0.o
 	./gcc-supos $< -o $@
 
 #---------------------------------Disk building------------------------------------

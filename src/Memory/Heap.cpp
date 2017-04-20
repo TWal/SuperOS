@@ -8,7 +8,8 @@ void* Heap::init(void* startAddr){
     //printf("Heap base : %p\n",_virtAddrStart);
 }
 
-int Heap::brk(void*addr){
+iptr Heap::brk(void*addr){
+    if(!addr) return (iptr)_virtAddrStart;
     //printf("brk recieved address %p and virt : %p \n",addr,_virtAddrStart);
     assert((char*)addr >= _virtAddrStart);
     uptr dist = (char*)addr - _virtAddrStart;
@@ -31,6 +32,10 @@ int Heap::brk(void*addr){
 }
 
 Heap kheap;
+
+void* getBrk(){
+    return (void*)kheap.brk(nullptr);
+}
 
 int brk(void* addr){
     return kheap.brk(addr);

@@ -41,24 +41,25 @@ private:
     bool _terminated; // process is a zombie and can be waited.
     bool _mainTerminated; // main thread has terminated but others may not.
     u64 _returnCode;
-    //Heap* heap;
 public :
+    Heap _heap;
     UserMemory _usermem;
     std::vector<FileDescriptor*> _fds;
     Process(u32 pid,ProcessGroup* pg,
             std::vector<FileDescriptor*> fds = std::vector<FileDescriptor*>());
+    Process(const Process& other,Thread* toth, u16 pid); ///< fork;
     ~Process();
     // load the elf64 file Bytes and create the main thread starting on its entry point.
     Thread* loadFromBytes(Bytes* file);
     void clear(); // clear the process : no thread, clean mapped memory
-    u32 getPid(){return _pid;}
-    u32 getGid(){return _gid;}
+    u32 getPid()const {return _pid;}
+    u32 getGid()const {return _gid;}
     void addThread(Thread* thread);
     void terminate(u64 returnCode);
     void mainTerm(Thread* main,u64 returnCode);
     void remThread(Thread* thread);
     void prepare();
-    bool isLeader(){return _pid == _gid;}
+    bool isLeader()const{return _pid == _gid;}
     //void orphan(); // call to orphan a process (becom init child).
 };
 
@@ -78,10 +79,10 @@ public :
     ~Thread();
     WaitingReason* wr; // if wr == nullptr, the thread is runnable.
     [[noreturn]] void run(); // launch the thread until the next timer interruption
-    u16 getTid(){return _tid;}
-    u16 getPid(){return _pid;}
-    u16 getGid(){return _gid;}
-    bool isMain(){return _tid == _pid;}
+    u16 getTid()const{return _tid;}
+    u16 getPid()const{return _pid;}
+    u16 getGid()const{return _gid;}
+    bool isMain()const{return _tid == _pid;}
     // close the thread, returnCode is ignored if this thread is not the main thread
     void terminate(u64 returnCode);
     Process* getProcess(){return _process;}

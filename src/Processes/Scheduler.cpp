@@ -10,7 +10,7 @@ void* const tidBitset = (void*)(-0x80000000ll - 0x2000ll);
 
 
 Scheduler::Scheduler() : _current(nullptr),RemainingTime(0){
-    Pit::set(0,50000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
+    Pit::set(0,10000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
 
 }
@@ -19,6 +19,14 @@ static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
 }
 static u64 sysfork(u64,u64,u64,u64,u64,u64){
     return schedul.fork();
+}
+static u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
+    return schedul.clone(rip,rsp);
+}
+static u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
+    printf("sysbrk with %p\n",addr);
+    assert((i64)addr >= 0);
+    return schedul.brk((void*)addr);
 }
 
 void Scheduler::init(Thread* initThread){
@@ -38,6 +46,8 @@ void Scheduler::init(Thread* initThread){
     //declare scheduler syscalls :
     handlers[SYSEXIT] = sysexit;
     handlers[SYSFORK] = sysfork;
+    handlers[SYSCLONE] = sysclone;
+    handlers[SYSBRK] = sysbrk;
 
 }
 
@@ -45,17 +55,17 @@ void Scheduler::init(Thread* initThread){
     assert(!_current);
     assert(_threadFIFO.size() > 0 && "Empty Scheduler");
 
-    printf("current queue is :");
+    printf("current queue is : ");
     for(auto t : _threadFIFO){
-        printf(" %d",t->getTid());
-    }printf("\n");
+        printf("%d ",t->getTid());
+    }//printf("\n");
 
     // pop the next candidate
     _current = _threadFIFO[0];
     _threadFIFO.pop_front();
 
     // If this thread has been deleted
-    if(!_threads.count(_current->getTid())){ 
+    if(!_threads.count(_current->getTid())){
          _current = nullptr;
         run(); // stack will disappear no return cost.
     }
@@ -88,43 +98,59 @@ void Scheduler::init(Thread* initThread){
         run();
     }
 }
-
-u16 Scheduler::fork(){
+Thread* Scheduler::enterSys(){
     // we must be in a thread
     assert(_current);
+    // we save that thread context.
+    _current->context = *Context::lastContext;
+    Context::lastContext = nullptr;
+    return _current;
+}
+void Scheduler::stopCurent(){
+    if(Context::lastContext) enterSys();
+    _current = nullptr;
+}
+u16 Scheduler::fork(){
+    Thread* old = enterSys();
 
     printf("Fork on instruction %p\n",_current->context.rip);
 
-    // we save that thread context.
-    _current->context = *Context::lastContext;
-
     // get its process
-    Process* pro = _current->getProcess();
+    Process* pro = old->getProcess();
 
-    // creating a fresh Tid and a new process on it
+    // creating a fresh Tid.
     u16 newTid = getFreshTid();
-    Process* copy = new Process(newTid,getG(pro->getGid()),pro->_fds);
 
-    // Copy RAM mappings.
-    //printf("origin RAM Mapping : \n");
-    //pro->_usermem.DumpTree();
-    copy->_usermem = pro->_usermem; // this step can be very long.
-    //printf("new RAM Mapping : \n");
-    //copy->_usermem.DumpTree();
+    // Copy process onto the new tid.
+    new Process(*pro,old,newTid);
 
-    // Creating the new thread and coping the context of the calling thread
-    // the new process has only one thread : the copy of the thread that called fork
-    Thread* tcopy = new Thread(newTid,0,copy);
-    tcopy->context = _current->context;
-
-    // child process has 0 as a return.
-    tcopy->context.rax = 0;
-
-    printf("End of fork\n");
+    printf("End of fork, created %d\n",newTid);
     // return to parent process the new pid
     return newTid;
 }
+u16 Scheduler::clone(u64 rip, u64 stack){
+    assert(stack && (i64)rip > 0);
+    Thread* old = enterSys();
+    printf("Clone on instruction %p to instruction %p \n",_current->context.rip,rip);
+    Process* pro = old->getProcess();
+    u16 newTid = getFreshTid();
 
+    // creating a new thread with all his register UB except rip and rsp.
+    Thread* newTh = new Thread(newTid,rip,pro);
+    newTh->context.rsp = stack;
+
+
+    printf("End of clone, created %d\n",newTid);
+    return newTid;
+}
+
+u64 Scheduler::brk(void* addr){
+    Thread* t = enterSys();
+    auto tmp = t->getProcess()->_heap.brk(addr);
+    printf("brk on %d called with %p return %p\n",t->getTid(),addr,tmp);
+    t->getProcess()->_usermem.DumpTree();
+    return tmp;
+}
 
 
 void Scheduler::timerHandler(const InterruptParams& params){
