@@ -42,12 +42,12 @@ CommandLine::CommandLine(table_type table):_table(table){
             return;
         }
         if(args.empty()) return;
-        File* f = (*cl->pwd)[args[0]];
+        HDD::File* f = (*cl->pwd)[args[0]];
         if(f == nullptr) {
             printf("%s doesn't exist in current directory\n",args[0].c_str());
             return;
         }
-        Directory* d = f->dir();
+        HDD::Directory* d = f->dir();
         if(d == nullptr) {
             printf("%s is not a directory\n",args[0].c_str());
             return;
@@ -62,12 +62,12 @@ CommandLine::CommandLine(table_type table):_table(table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            File* f = (*cl->pwd)[file];
+            HDD::File* f = (*cl->pwd)[file];
             if(f == nullptr) {
                 printf("cat: %s: No such file or directory\n", file.c_str());
                 continue;
             }
-            if(f->getType() == FileType::Directory) {
+            if(f->getType() == HDD::FileType::Directory) {
                 printf("cat: %s: Is a directory\n", file.c_str());
                 continue;
             }
@@ -90,12 +90,12 @@ CommandLine::CommandLine(table_type table):_table(table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            File* f = (*cl->pwd)[file];
+            HDD::File* f = (*cl->pwd)[file];
             if(f == nullptr) {
                 printf("rm: %s: No such file or directory\n", file.c_str());
                 continue;
             }
-            if(f->getType() == FileType::Directory) {
+            if(f->getType() == HDD::FileType::Directory) {
                 printf("rm: %s: Is a directory\n", file.c_str());
                 continue;
             }
@@ -111,16 +111,16 @@ CommandLine::CommandLine(table_type table):_table(table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            File* f = (*cl->pwd)[file];
+            HDD::File* f = (*cl->pwd)[file];
             if(f == nullptr) {
                 printf("rmdir: %s: No such file or directory\n", file.c_str());
                 continue;
             }
-            if(f->getType() != FileType::Directory) {
+            if(f->getType() != HDD::FileType::Directory) {
                 printf("rmdir: %s: Is not a directory\n", file.c_str());
                 continue;
             }
-            Directory* d = f->dir();
+            HDD::Directory* d = f->dir();
             if(!d->isEmpty()) {
                 printf("rmdir: %s: Is not empty\n", file.c_str());
                 continue;
@@ -136,7 +136,7 @@ CommandLine::CommandLine(table_type table):_table(table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            File* f = (*cl->pwd)[file];
+            HDD::File* f = (*cl->pwd)[file];
             if(f != nullptr) {
                 continue;
             }
@@ -152,7 +152,7 @@ CommandLine::CommandLine(table_type table):_table(table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            File* f = (*cl->pwd)[file];
+            HDD::File* f = (*cl->pwd)[file];
             if(f != nullptr) {
                 printf("mkdir: file %s already exists\n", file.c_str());
                 continue;

@@ -184,32 +184,32 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
 #elif BLA == USER_TEST
     breakpoint;
-    HDD first(1,true);
+    HDD::HDD first(1,true);
     first.init();
     //PartitionTableEntry part1 = first[1];
     //fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
     //Partition pa1 (&first,part1);
 #ifdef EMUL
 
-    PartitionTableEntry part1 = first[1];
-    Partition pa1 (&first,part1); // load first partition
+    HDD::PartitionTableEntry part1 = first[1];
+    HDD::Partition pa1 (&first,part1); // load first partition
 
 #else
 
-    const PartitionTableEntry *part1 = first.partWithPred([](const Partition&part){
+    const HDD::PartitionTableEntry *part1 = first.partWithPred([](const HDD::Partition&part){
             //u32 UUID[4] = {0xe9be36b1,0x894793a2,0x32db3294,0xa907a74a};
             u32 UUID[4]= {0x1e0a2799,0x9e4e1c52,0x1868dc89,0x0397fcb7};
-            return Ext2::CheckUUID(UUID,part);
+            return HDD::Ext2::CheckUUID(UUID,part);
         });
     if(part1 == nullptr)bsod("Main partition not found");
-    Partition pa1 (&first,*part1); // load partition with FAT UUID 04728457
+    HDD::Partition pa1 (&first,*part1); // load partition with FAT UUID 04728457
 #endif
 
-    Ext2::FS fs (&pa1);
+    HDD::Ext2::FS fs (&pa1);
 
     ProcessInit();
 
-    File* init = (*(fs.getRoot()))["init"];
+    HDD::File* init = (*(fs.getRoot()))["init"];
     assert(init);
     ProcessGroup pg(1);
     Process initp(1,&pg);
@@ -226,22 +226,22 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
 #elif BLA == EXT2_TEST
 
-    HDD first(1,true);
+    HDD::HDD first(1,true);
     first.init();
-    PartitionTableEntry part1 = first[1];
-    PartitionTableEntry part2 = first[2];
+    HDD::PartitionTableEntry part1 = first[1];
+    HDD::PartitionTableEntry part2 = first[2];
     printf("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
     printf("Partition 2 beginning at %8x of size %8x \n",part2.begLBA,part2.size);
-    Partition pa1(&first,part1);
-    Partition pa2(&first,part2);
-    Ext2::FS fs1(&pa1);
-    Ext2::FS fs2(&pa2);
-    VFS::FS fs(&fs1);
+    HDD::Partition pa1(&first,part1);
+    HDD::Partition pa2(&first,part2);
+    HDD::Ext2::FS fs1(&pa1);
+    HDD::Ext2::FS fs2(&pa2);
+    HDD::VFS::FS fs(&fs1);
 
-    VFS::File* f = fs.vgetRoot()->get("mnt");
+    HDD::VFS::File* f = fs.vgetRoot()->get("mnt");
     assert(f != nullptr);
-    assert(f->vgetType() == FileType::Directory);
-    VFS::Directory* d = f->vdir();
+    assert(f->vgetType() == HDD::FileType::Directory);
+    HDD::VFS::Directory* d = f->vdir();
 
     fs.mount(d, &fs2);
 

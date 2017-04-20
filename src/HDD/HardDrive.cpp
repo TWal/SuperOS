@@ -2,6 +2,8 @@
 #include "HardDrive.h"
 #include <stdio.h>
 
+namespace HDD {
+
 static const u16 bus1BasePort = 0x1F0;
 static const u16 bus1SpecialPort = 0x3F6;
 static const u16 bus2BasePort = 0x170;
@@ -177,4 +179,6 @@ const PartitionTableEntry*  HDD::partWithPred(std::function<bool(const Partition
     }
     return nullptr;
 }
+
+} //end of namespace HDD
 

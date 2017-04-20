@@ -85,6 +85,8 @@ enum FileMode {
 #define S_ISLNK(m)  (((m) & S_IFMT) == S_IFLNK)
 #define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
 
+namespace HDD {
+
 class Directory;
 
 enum class FileType {
@@ -166,8 +168,6 @@ public:
     virtual Directory* getRoot() = 0;
 };
 
-
-
-
+} //end of namespace HDD
 
 #endif

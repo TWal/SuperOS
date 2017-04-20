@@ -1,6 +1,8 @@
 #include "Ext2.h"
 #include "../IO/FrameBuffer.h"
 
+namespace HDD {
+
 namespace Ext2 {
 
 u32 InodeData::getBlockCount(const SuperBlock& sb) const {
@@ -30,13 +32,13 @@ FS::FS(Partition* part) : FileSystem(part) {
     _loadBlockGroupDescriptor();
 }
 
-::Directory* FS::getRoot() {
+::HDD::Directory* FS::getRoot() {
     InodeData dat;
     getInodeData(2, &dat);
     return new Directory(2, dat, this);
 }
 
-::File* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
+::HDD::File* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
     assert(S_ISREG(mode)); //TODO handle this better
     u32 inode = getNewInode(false);
     InodeData dat;
@@ -48,7 +50,7 @@ FS::FS(Partition* part) : FileSystem(part) {
     return new File(inode, dat, this);
 }
 
-::Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
+::HDD::Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
     assert(S_ISDIR(mode)); //TODO handle this better
     u32 inode = getNewInode(true);
     //update bgd
@@ -567,7 +569,7 @@ static DirectoryFileType inodeToDirType(u16 mode) {
 }
 
 void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
-    ::File* f = nullptr;
+    ::HDD::File* f = nullptr;
     if(S_ISREG(mode)) {
         f = _fs->getNewFile(uid, gid, mode);
     } else if(S_ISDIR(mode)) {
@@ -579,7 +581,7 @@ void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
     f->link();
 }
 
-void Directory::addEntry(const std::string& name, ::File* file) {
+void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     if(file->getType() ==  FileType::Directory && std::string("..") != name) {
         file->dir()->addEntry("..", this);
         link();
@@ -731,5 +733,7 @@ void Directory::init() {
     link(); //reference for '.'
 }
 
-}
+} //end of namespace Ext2
+
+} //end of namespace HDD
 

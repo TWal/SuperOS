@@ -19,7 +19,7 @@ public :
     std::string readCommandText();
     std::vector<std::string> readCommand();
     void add(std::string name,command_func func);
-    Directory * pwd;
+    HDD::Directory * pwd;
 };
 
 

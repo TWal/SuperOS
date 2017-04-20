@@ -1,3 +1,4 @@
+#if 0
 #include <string.h>
 #include "FAT.h"
 
@@ -222,3 +223,4 @@ namespace fat {
     }
 
 };
+#endif

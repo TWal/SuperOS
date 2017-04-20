@@ -4,6 +4,8 @@
 #include "FileSystem.h"
 #include <map>
 
+namespace HDD {
+
 namespace VFS {
 
 class Directory;
@@ -12,7 +14,7 @@ class Directory;
 class FS : public FileSystem {
     public:
         FS(FileSystem* fsroot);
-        virtual ::Directory* getRoot();
+        virtual ::HDD::Directory* getRoot();
         Directory* vgetRoot();
         ///Mount `fs` at directory `dir`
         void mount(Directory* dir, FileSystem* fs);
@@ -30,9 +32,9 @@ class FS : public FileSystem {
 };
 
 /// @brief VFS file
-class File : public virtual ::File {
+class File : public virtual ::HDD::File {
     public:
-        File(::File* impl, u32 dev);
+        File(::HDD::File* impl, u32 dev);
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual size_t getSize() const;
@@ -51,14 +53,14 @@ class File : public virtual ::File {
     protected:
         u32 _dev;
     private:
-        ::File* _impl;
+        ::HDD::File* _impl;
 };
 
 /// @brief VFS directory
-class Directory : public File, public ::Directory {
+class Directory : public File, public ::HDD::Directory {
     public :
-        Directory(::Directory* impl, u32 dev, FS* fs);
-        virtual ::File* operator[](const std::string& name);
+        Directory(::HDD::Directory* impl, u32 dev, FS* fs);
+        virtual ::HDD::File* operator[](const std::string& name);
         virtual File* get(const std::string& name);
 
         virtual void* open();
@@ -68,7 +70,7 @@ class Directory : public File, public ::Directory {
         virtual void close(void* d);
 
         virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
-        virtual void addEntry(const std::string& name, ::File* file);
+        virtual void addEntry(const std::string& name, ::HDD::File* file);
         virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
@@ -84,11 +86,13 @@ class Directory : public File, public ::Directory {
         }
     private:
         friend class FS;
-        ::Directory* _impl;
+        ::HDD::Directory* _impl;
         FS* _fs;
 };
 
-}
+} //end of namespace VFS
+
+} //end of namespace HDD
 
 #endif
 

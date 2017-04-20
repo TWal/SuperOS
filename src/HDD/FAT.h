@@ -1,6 +1,7 @@
 #ifndef FAT_H
 #define FAT_H
 
+#if 0
 #include "FileSystem.h"
 #include <string>
 #include <map>
@@ -197,4 +198,5 @@ namespace fat {
 
 }
 
+#endif
 #endif

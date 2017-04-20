@@ -4,6 +4,8 @@
 #include "../utility.h"
 #include "FileSystem.h"
 
+namespace HDD {
+
 namespace Ext2 {
 
 /// @brief Ext2's superblock structure
@@ -146,7 +148,7 @@ static_assert(sizeof(DirectoryEntry) == 8, "DirectoryEntry has the wrong size");
 class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
-        virtual ::Directory* getRoot();
+        virtual ::HDD::Directory* getRoot();
         /// Create a fresh new file
         File* getNewFile(u16 uid, u16 gid, u16 mode);
         /// Create a fresh new directory
@@ -183,7 +185,7 @@ class FS : public FileSystem {
 };
 
 /// @brief Ext2 file
-class File : public virtual ::File {
+class File : public virtual ::HDD::File {
     public:
         File(u32 inode, InodeData data, FS* fs);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
@@ -225,7 +227,7 @@ class File : public virtual ::File {
 };
 
 /// @brief Ext2 directory
-class Directory : public virtual File, public virtual ::Directory {
+class Directory : public virtual File, public virtual ::HDD::Directory {
     public :
         Directory(u32 inode, InodeData data, FS* fs);
         virtual Ext2::File* operator[](const std::string& name);
@@ -236,7 +238,7 @@ class Directory : public virtual File, public virtual ::Directory {
         virtual void close(void* d);
 
         virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
-        virtual void addEntry(const std::string& name, ::File* file);
+        virtual void addEntry(const std::string& name, ::HDD::File* file);
         virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
@@ -253,7 +255,9 @@ class Directory : public virtual File, public virtual ::Directory {
         };
 };
 
-}
+} //end of namespace Ext2
+
+} //end of namespace HDD
 
 #endif
 

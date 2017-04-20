@@ -1,13 +1,15 @@
 #include "VFS.h"
 #include <string.h>
 
+namespace HDD {
+
 namespace VFS {
 
 FS::FS(FileSystem* fsroot) :
     FileSystem(nullptr), _nextDev(1), _root(fsroot) {}
 
 
-::Directory* FS::getRoot() {
+::HDD::Directory* FS::getRoot() {
     return vgetRoot();
 }
 
@@ -18,7 +20,7 @@ Directory* FS::vgetRoot() {
 void FS::mount(Directory* dir, FileSystem* fs) {
     stat st;
     dir->getStats(&st);
-    ::Directory* root = fs->getRoot();
+    ::HDD::Directory* root = fs->getRoot();
     _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(root, _nextDev, this)));
     _reverseMountedDirs.insert(std::make_pair(std::make_pair(_nextDev, root->getInode()), dir));
 }
@@ -45,7 +47,7 @@ Directory* FS::fromMounted(u32 inode, u32 dev) {
     }
 }
 
-File::File(::File* impl, u32 dev) : _dev(dev), _impl(impl) {}
+File::File(::HDD::File* impl, u32 dev) : _dev(dev), _impl(impl) {}
 
 void File::writeaddr(u64 addr, const void* data, size_t size) {
     _impl->writeaddr(addr, data, size);
@@ -77,11 +79,11 @@ void File::getStats(stat* buf) const {
     buf->st_dev = _dev;
 }
 
-Directory::Directory(::Directory* impl, u32 dev, FS* fs) : File(impl, dev), _impl(impl), _fs(fs) {
+Directory::Directory(::HDD::Directory* impl, u32 dev, FS* fs) : File(impl, dev), _impl(impl), _fs(fs) {
 }
 
 
-::File* Directory::operator[](const std::string& name) {
+::HDD::File* Directory::operator[](const std::string& name) {
     return get(name);
 }
 
@@ -91,7 +93,7 @@ File* Directory::get(const std::string& name) {
         return d->get("..");
     }
 
-    ::File* res = (*_impl)[name];
+    ::HDD::File* res = (*_impl)[name];
     if(res == nullptr) {
         return nullptr;
     }
@@ -146,7 +148,7 @@ void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
     _impl->addEntry(name, uid, gid, mode);
 }
 
-void Directory::addEntry(const std::string& name, ::File* file) {
+void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     _impl->addEntry(name, file);
 }
 
@@ -167,5 +169,7 @@ void Directory::deleteDir() {
 }
 
 
-}
+} //end of namespace VFS
+
+} //end of namespace HDD
 

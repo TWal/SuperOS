@@ -4,6 +4,8 @@
 #include "../utility.h"
 #include "../Bytes.h"
 
+namespace HDD {
+
 class HDD;
 
 struct CHS {
@@ -40,5 +42,6 @@ public:
     virtual void readaddr (u64 addr, void* data, size_t size) const;
 };
 
+} //end of namespace HDD
 
 #endif

@@ -6,6 +6,7 @@
 #include "Partition.h"
 #include <functional>
 
+namespace HDD {
 
 struct StatusByte{
     StatusByte(u8 byte);
@@ -48,6 +49,6 @@ public :
 
 };
 
-
+} //end of namespace HDD
 
 #endif

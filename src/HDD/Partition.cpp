@@ -1,6 +1,7 @@
 #include "Partition.h"
 #include "HardDrive.h"
 
+namespace HDD {
 
 Partition::Partition (HDD*HDD,PartitionTableEntry descriptor):_descriptor(descriptor),_HDD(HDD){
     assert(HDD != nullptr);
@@ -26,3 +27,6 @@ void Partition::readaddr (u64 addr, void * data, size_t size)const{
     assert (addr + size < getSize());
     _HDD->readaddr(addr + u64(_descriptor.begLBA)*512ull,data,size);
 }
+
+} //end of namespace HDD
+

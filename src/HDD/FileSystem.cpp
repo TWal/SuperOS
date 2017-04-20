@@ -1,5 +1,6 @@
 #include "FileSystem.h"
 
+namespace HDD {
 
 FileType File::getType(){
     return FileType::File;
@@ -39,3 +40,6 @@ bool Directory::isEmpty() {
     close(d);
     return res;
 }
+
+} //end of namespace HDD
+
