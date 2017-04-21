@@ -122,6 +122,28 @@ void hello(const InterruptParams&){
 void unittest();
 #endif
 
+struct A{
+    int i;
+    virtual ~A(){}
+};
+
+struct B : public virtual A{
+    int j;
+    ~B(){}
+};
+
+struct C : public virtual A{
+    int k;
+    ~C(){}
+};
+
+struct D : public virtual B,C{
+    int l;
+};
+
+
+
+
 /**
     @brief This is the entry point of the kernel
 
@@ -156,6 +178,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
     paging.removeIdent(); // remove the identity paging necessary for boot process
+    gdt.initkernelTLS(1); // Initialize kernel TLS with 1 page.
     kheap.init(&kernel_code_end);// creating kernel heap
     __initmalloc(); // initializing kernel malloc : no heap access before this point.
     pageHeap.init(); // initializing page Heap to map physical pages on will.
@@ -169,9 +192,25 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA USER_TEST
-//#define EMUL // comment for LORDI version
+#define BLA TMP_TEST
+#define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
+
+    D d;
+    d.i = 42;
+    printf("val : %d\n",d.i);
+    B* b = &d;
+    b->i = 15;
+    printf("val : %d\n",d.i);
+    A* a = b;
+    a->i = 89;
+    printf("val : %d\n",d.i);
+
+    D* d2 = dynamic_cast<D*>(a);
+    printf("pt : %p\n",d2);
+    d2->i = 152;
+    printf("val : %d\n",d.i);
+
 
 #elif BLA == USER_TEST
     fb.printf("64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);

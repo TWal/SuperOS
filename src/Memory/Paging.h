@@ -419,7 +419,8 @@ extern Paging paging;
        - At -2.5G - 8K : @ref pageHeap bitset
        - At -3G fixed place page address of Paging's private variables
          (Paging::pagePD and Paging::pagePT)
-       - From -3G to -3.5G : @ref pageHeap space
+       - From -3G to -3.1G : @ref pageHeap space
+       - At -3.5G : kernel TLS, cf. GDTDescriptor.
        - At -4G temporary space for loading user mode programs
 
 

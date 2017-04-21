@@ -14,4 +14,6 @@ switchSegReg_rec :
 	mov %eax,%ds
 	mov %eax,%ss
 	mov %eax,%es
+	mov %eax,%fs
+	mov %eax,%gs
     ret

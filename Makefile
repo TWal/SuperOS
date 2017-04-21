@@ -33,7 +33,7 @@ CNKFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
 					 -fno-builtin $(OPTILVL)
 
 
-CXXBASEFLAGS = -fno-exceptions -fno-rtti -std=c++14
+CXXBASEFLAGS = -fno-exceptions -std=c++14
 CXX32FLAGS = $(C32FLAGS) $(CXXBASEFLAGS)
 CXXFLAGS = $(CFLAGS) $(CXXBASEFLAGS)
 CXXNKFLAGS = $(CNKFLAGS) $(CXXBASEFLAGS)
@@ -42,7 +42,7 @@ LDFLAGS =  -nostdlib -Wl,--build-id=none
 LD32FLAGS = $(LDFLAGS) -m32 -T $(SRC32DIR)/link.ld -Wl,-melf_i386
 LIBS32 = -L $(LIB32GCC) -lgcc
 LD64FLAGS = $(LDFLAGS) -T $(SRCDIR)/link.ld -Wl,-melf_x86_64
-LIBS64 = -L. -L $(LIBGCC) -lk -lgcc -lc++
+LIBS64 = -L. -L $(LIBGCC) -lc++ -lsupc++ -lgcc -lk
 
 SRC32ASM = $(wildcard $(SRC32DIR)/*.s)
 SRC32CXX = $(wildcard $(SRC32DIR)/*.cpp)

@@ -47,6 +47,17 @@ public :
     void init();
     void stdGDT();
     void lgdt();
+    /**
+       @brief Allocate kernel Thread Local Storage (for libsupc++)
+       @param nbPage Number of page to be allocated.
+
+       @ref paging must have been initialized.
+    */
+    void initkernelTLS(size_t nbPage);
+    /// Set a user-mode TLS.
+    void setTLS(void* TLS);
+    /// Set kernel TLS. To be called before calling any kernel important code
+    void setKernelTLS();
 private:
     u16 _size;
     GDTEntry* _GDT;

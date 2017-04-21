@@ -1,6 +1,8 @@
 #include "Segmentation.h"
+#include "Paging.h"
+#include "PhysicalMemoryAllocator.h"
 
-
+void* kTLS = (void*)(-0xE0000000);
 
 GDTEntry GDT[gdtsize];
 
@@ -58,6 +60,18 @@ void GDTDescriptor::lgdt(){
         "lgdt (%0)" :
         : "r"(this):
         );
+}
+void GDTDescriptor::initkernelTLS(size_t nbPage){
+    for(size_t i = 0 ; i < nbPage ; ++i){
+        paging.createMapping(physmemalloc.alloc(),kTLS);
+    }
+    setKernelTLS();
+}
+void GDTDescriptor::setTLS(void* TLS){
+    wrmsr(0xC0000100,(u64)TLS);
+}
+void GDTDescriptor::setKernelTLS(){
+    setTLS(kTLS);
 }
 
 GDTDescriptor gdt;
