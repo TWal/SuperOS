@@ -1,7 +1,9 @@
-#include"Process.h"
-#include"../Memory/Paging.h"
-#include"../Memory/PhysicalMemoryAllocator.h"
-#include"../User/Elf64.h"
+#include <errno.h>
+#include "Process.h"
+#include "../Memory/Paging.h"
+#include "../Memory/PhysicalMemoryAllocator.h"
+#include "../User/Elf64.h"
+#include "../User/Syscall.h"
 #include "Scheduler.h"
 
 ProcessGroup::ProcessGroup(u16 gid) : _gid(gid){
@@ -13,7 +15,7 @@ void* const loadedProcess = (void*)-0x100000000ll; // -4G
 const uptr stackStart =  0x8000000000ull; // 512 G
 
 
-Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
+Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor> fds) :
     _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
     _returnCode(0), _fds(fds){
     schedul.addP(_pid,this);
@@ -21,7 +23,8 @@ Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor*> fds) :
 }
 
 
-Process::Process(const Process& other,Thread* toth, u16 pid): Process(pid,schedul.getG(other.getGid()),other._fds){
+Process::Process(const Process& other,Thread* toth, u16 pid):
+    Process(pid,schedul.getG(other.getGid()),other._fds){
 
     _usermem = other._usermem;
     _heap = other._heap;
@@ -78,12 +81,12 @@ Thread* Process::loadFromBytes(Bytes* file){
         //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
 
         if(ph.type == Elf64::PT_LOAD){
-            printf("loading at %p\n",ph.vaddr);
+            printf("Loading Program Header at %p\n",ph.vaddr);
             // if this program header is to be loaded
             assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
 
             size_t offset = ph.offset;
-            printf("offset is %llu",offset);
+            printf("Offset in file is %llu\n",offset);
             if(offset % 0x1000 == 0){
                 // the mapping is 4K aligned : better case
                 size_t po = offset / 0x1000;
@@ -192,7 +195,7 @@ void Process::prepare(){
 
 
 Thread::Thread(u16 tid, u64 rip,Process* process)
-    : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process), wr(nullptr){
+    : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process){
     schedul.addT(_tid,this);
     process->addThread(this);
     context.rip = rip;
@@ -214,4 +217,65 @@ Thread::~Thread(){
 void Thread::terminate(u64 returnCode){
     if(isMain())_process->mainTerm(this,returnCode);
     else _process->remThread(this);
+}
+
+//---------------------------Processes syscalls-----------------------
+
+/// Handler of SYSBRK
+static u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    fprintf(stderr,"sysbrk by %d with 0x%p\n",t->getTid(),addr);
+    assert((i64)addr >= 0);
+    auto tmp = t->getProcess()->_heap.brk((void*)addr);
+    fprintf(stderr,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
+    return tmp;
+}
+/**
+   @brief Handles a call to SYSREAD.
+
+   @todo Handle waiting.
+ */
+static u64 sread(Thread*t,uint fd,void* buf,u64 count){
+    auto pro = t->getProcess();
+    if(pro->_fds.size() <= fd) return -EBADF;
+    if(pro->_fds[fd].empty()) return -EBADF;
+    if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
+    return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
+}
+/// @brief Handler of SYSREAD
+static u64 sysread(u64 fd,u64 buf,u64 count,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    fprintf(stderr,"sysread by %d on %lld to %p with size %lld\n",
+            t->getTid(),fd,buf,count);
+    auto tmp = sread(t,fd,(void*)buf,count);
+    fprintf(stderr,"sysread by %d on %lld to %p with size %lld returning %lld\n",
+            t->getTid(),fd,buf,count,tmp);
+    return tmp;
+}
+
+/// @brief Do the write on syscall SYSWRITE
+static u64 swrite(Thread*t,uint fd,const void* buf,u64 count){
+    auto pro = t->getProcess();
+    if(pro->_fds.size() <= fd) return -EBADF;
+    if(pro->_fds[fd].empty()) return -EBADF;
+    if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
+    return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
+}
+
+/// @brief Handler of SYSWRITE
+static u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+            t->getTid(),fd,buf,count);
+    auto tmp = swrite(t,fd,(const void*)buf,count);
+    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
+            t->getTid(),fd,buf,count,tmp);
+    return tmp;
+}
+
+
+void ProcessInit(){
+    handlers[SYSBRK] = sysbrk;
+    handlers[SYSREAD] = sysread;
+    handlers[SYSWRITE] = syswrite;
 }

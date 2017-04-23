@@ -24,6 +24,7 @@
 #include "User/Context.h"
 #include "Memory/PageHeap.h"
 #include "HDD/VFS.h"
+#include "IO/OSFileDesc.h"
 
 #include<vector>
 #include<string>
@@ -122,27 +123,6 @@ void hello(const InterruptParams&){
 void unittest();
 #endif
 
-struct A{
-    int i;
-    virtual ~A(){}
-};
-
-struct B : public virtual A{
-    int j;
-    ~B(){}
-};
-
-struct C : public virtual A{
-    int k;
-    ~C(){}
-};
-
-struct D : public virtual B,C{
-    int l;
-};
-
-
-
 
 /**
     @brief This is the entry point of the kernel
@@ -156,6 +136,10 @@ struct D : public virtual B,C{
 
 // WARNING : kinit local variables should not exceed 2K for stack switching
 extern "C" [[noreturn]] void kinit(KArgs* kargs) {
+#ifdef UNITTEST
+    unitTest = true;
+#endif
+    fprintf(stderr,"Kernel Starting\n"); // TODO load of logging.
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
     gdt.init();
@@ -192,28 +176,13 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     stop;
 #endif
 
-#define BLA TMP_TEST
+    printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
+
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
-    D d;
-    d.i = 42;
-    printf("val : %d\n",d.i);
-    B* b = &d;
-    b->i = 15;
-    printf("val : %d\n",d.i);
-    A* a = b;
-    a->i = 89;
-    printf("val : %d\n",d.i);
-
-    D* d2 = dynamic_cast<D*>(a);
-    printf("pt : %p\n",d2);
-    d2->i = 152;
-    printf("val : %d\n",d.i);
-
-
 #elif BLA == USER_TEST
-    fb.printf("64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
     breakpoint;
     HDD first(1,true);
     first.init();
@@ -238,11 +207,18 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     Ext2::FS fs (&pa1);
 
+    ProcessInit();
+
     File* init = (*(fs.getRoot()))["init"];
     assert(init);
     ProcessGroup pg(1);
     Process initp(1,&pg);
     Thread* initt = initp.loadFromBytes(init);
+    FBStream* s= new FBStream();
+    FileDescriptor fd(s);
+    printf("Init process %p\n",&initp);
+    initp._fds.push_back(FileDescriptor());
+    initp._fds.push_back(fd);
     schedul.init(initt);
     schedul.run();
 

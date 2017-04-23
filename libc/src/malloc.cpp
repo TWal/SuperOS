@@ -26,10 +26,6 @@ int brk(void* addr){
 #endif
 
 void* sbrk(intptr_t offset){
-#ifndef SUP_OS_KERNEL
-    debug(242);
-    debug((long long int)Brk);
-#endif
     if(!Brk){
 #ifdef SUP_OS_KERNEL
         Brk = getBrk();
@@ -46,10 +42,6 @@ void* sbrk(intptr_t offset){
         
 #endif
     }
-#ifndef SUP_OS_KERNEL
-    debug(342);
-    debug((long long int)Brk);
-#endif
     char * before = (char*)Brk;
     assert(before);
     int err = brk(before + offset);
@@ -64,9 +56,6 @@ void* sbrk(intptr_t offset){
 static MallocHeader* firstHeader;
 
 void __initmalloc() {
-#ifndef SUP_OS_KERNEL
-    debug(142);
-#endif
     firstHeader = (MallocHeader*)sbrk(sizeof(MallocHeader));
     firstHeader->size = 0;
     firstHeader->prevFree = false;

@@ -101,21 +101,21 @@ extern "C" void load(multibootInfo * mb){
     char* kernelEnd = (char*)mb->mods_addr[0].endAddr;
     u32 kernelSize = kernelEnd - kernelAddr;
     char * kernelStack = (char*)(((u64(kernelEnd) + 0x1000)/0x1000)*0x1000);
-    printf("Stack start %p",kernelStack);
+    kprintf("Stack start %p",kernelStack);
     char * kernelrsp = kernelStack + 0X1000;
     char * freeMem = kernelrsp;
     assert(freeMem + 0x1000 < (char*)0x600000 && "Initial identity paging too small");
     int occupAreaSize = 1;
-    printf("Stack start %p",kernelStack);
+    kprintf("Stack start %p",kernelStack);
     push(kernelrsp,OccupArea{(u32)kernelStack,1});
-    printf("loader from 1MB to %p\n",&loader_code_end);
+    kprintf("loader from 1MB to %p\n",&loader_code_end);
 
-    printf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
+    kprintf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
 
 
     Elf64::Elf64 kernelFile(kernelAddr,kernelSize);
 
-    printf("%d sections and %d prog section\n",kernelFile.shnum, kernelFile.phnum);
+    kprintf("%d sections and %d prog section\n",kernelFile.shnum, kernelFile.phnum);
     /*for(int i = 0; i < kernelFile.shnum ; ++ i){
         auto sh = kernelFile.getSectionHeader(i);
         const char* type = sh.type == Elf64::SHT_PROGBITS ? "ProgBit" :

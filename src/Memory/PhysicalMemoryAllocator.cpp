@@ -8,25 +8,24 @@ extern "C" void* kernel_code_end;
 PhysicalMemoryAllocator::PhysicalMemoryAllocator() : _bitset(nullptr,0){
 }
 
-u64 PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupArea,u64 occupSize){
+void PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupArea,u64 occupSize){
     assert(((u64)phyBitset & (0x1000 -1)) == 0);
     _bitset.init(phyBitset,RAMSize/0x1000);
     _bitset.fill();
+    fprintf(stderr,"\nInitializing physical memory with %llx\n",RAMSize);
 
-    u64 bitsetSize = (RAMSize/0x1000 + 63) / 64;
-
-    u64 bitsetPageSize = (bitsetSize * 8 + 0x1000 -1) / 0x1000;
-    for(u64 i = 0 ; i < bitsetPageSize ; ++i){ // allocate itself
+    fprintf(stderr,"Bitset pageSize %lld\n",getPageSize());
+    for(u64 i = 0 ; i < getPageSize() ; ++i){ // allocate itself
         unset(((uptr)_bitset.getAddr()) + 0x1000 * i);
     }
 
     for(u64 i = 0 ; i < occupSize ; ++i){
-        //printf("allocation 0x%p with %d\n",occupArea[i].addr,occupArea[i].nbPages);
+        fprintf(stderr,"Physical allocation of 0x%p with %d\n",
+                occupArea[i].addr,occupArea[i].nbPages);
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){
             unset(occupArea[i].addr + j * 0x1000);
         }
     }
-    return bitsetPageSize;
 }
 bool PhysicalMemoryAllocator::get(uptr addr){
     assert(((u64)addr & (0x1000 -1)) == 0);

@@ -41,7 +41,17 @@ namespace std{
             return reinterpret_cast<iterator>(std::lower_bound(begin(),end(),
                                                                k,_comp));
         }
+        const_iterator lower_bound (const key_type& k)const{
+            return reinterpret_cast<const_iterator>(std::lower_bound(begin(),end(),
+                                                               k,_comp));
+        }
         iterator find (const key_type& k){
+            auto it = lower_bound(k);
+            if (it == end()) return end();
+            if (!_comp(*it,k) && !_comp(k,*it)) return it;
+            else return end();
+        }
+        const_iterator find (const key_type& k)const {
             auto it = lower_bound(k);
             if (it == end()) return end();
             if (!_comp(*it,k) && !_comp(k,*it)) return it;

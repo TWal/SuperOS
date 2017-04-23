@@ -304,10 +304,9 @@ void FrameBuffer::hexdump(void* mem, uint len) {
 
 FrameBuffer fb;
 
-void printf(const char* s, ...) {
+void kprintf(const char* s, ...) {
     va_list ap;
     va_start(ap, s);
     fb.vprintf(s, ap);
     va_end(ap);
 }
-

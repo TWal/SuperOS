@@ -23,7 +23,6 @@ public :
     u16 fork(); ///< fork current process;
     /// Creates a Thread stating at rip with stack rsp.
     u16 clone(u64 rip, u64 stack);
-    u64 brk(void* addr);
     void timerHandler(const InterruptParams&);
     Thread* getT(u16 tid){return _threads.at(tid);}
     Process* getP(u16 pid){return _processes.at(pid);}

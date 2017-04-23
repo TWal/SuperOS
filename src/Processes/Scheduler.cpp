@@ -23,11 +23,6 @@ static u64 sysfork(u64,u64,u64,u64,u64,u64){
 static u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
     return schedul.clone(rip,rsp);
 }
-static u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
-    printf("sysbrk with %p\n",addr);
-    assert((i64)addr >= 0);
-    return schedul.brk((void*)addr);
-}
 
 void Scheduler::init(Thread* initThread){
     assert(initThread->getTid() == 1);
@@ -47,7 +42,6 @@ void Scheduler::init(Thread* initThread){
     handlers[SYSEXIT] = sysexit;
     handlers[SYSFORK] = sysfork;
     handlers[SYSCLONE] = sysclone;
-    handlers[SYSBRK] = sysbrk;
 
 }
 
@@ -69,8 +63,8 @@ void Scheduler::init(Thread* initThread){
          _current = nullptr;
         run(); // stack will disappear no return cost.
     }
-    // If this thread is waiting something (demo for now, not implemented)
-    if(_current->wr){
+    // If this thread is waiting something
+    if(!_current->OK()){
         _threadFIFO.push_back((Thread*)_current);
         _current = nullptr;
         run();
@@ -143,15 +137,6 @@ u16 Scheduler::clone(u64 rip, u64 stack){
     printf("End of clone, created %d\n",newTid);
     return newTid;
 }
-
-u64 Scheduler::brk(void* addr){
-    Thread* t = enterSys();
-    auto tmp = t->getProcess()->_heap.brk(addr);
-    printf("brk on %d called with %p return %p\n",t->getTid(),addr,tmp);
-    t->getProcess()->_usermem.DumpTree();
-    return tmp;
-}
-
 
 void Scheduler::timerHandler(const InterruptParams& params){
     // If no thread is running : we are executing kernel

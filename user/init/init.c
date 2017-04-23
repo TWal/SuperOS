@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 
 int factorial(int i){
@@ -26,7 +27,7 @@ void systesti(int i){
 
 int main(){
     //systest();
-    char* buffer = malloc(40);
+    /*char* buffer = malloc(40);
     buffer[0] = 42;
     buffer[1] = -12;
     for(volatile int i = 0 ; i < 2 ; ++i){
@@ -52,6 +53,8 @@ int main(){
     for(volatile int i = 0 ; i < 2 ; ++i){
         systesti(i+500);
         for(volatile int j = 0 ; j < 10000000; ++j);
-    }
+        }*/
+    printf("%s","Hello world !\n");
+
     return factorial(5);
 }

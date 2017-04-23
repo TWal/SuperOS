@@ -23,13 +23,15 @@ SECTIONS {
     .bss ALIGN (0x1000) : AT(ADDR(.bss)+0x80000000)
     {
         *(COMMON)
+        __bss_start = .;
         *(.bss)
+        _end = .;
     }
     .init_array ALIGN (0x1000) : AT(ADDR(.init_array)+0x80000000)
     {
-    __init_array_start = .;
-    *(.init_array)
-    __init_array_end = .;
+        __init_array_start = .;
+        *(.init_array)
+        __init_array_end = .;
     }
 
     kernel_code_end = .; /* virtual address (beginning of heap)*/

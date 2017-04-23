@@ -1,6 +1,7 @@
 #include "Paging.h"
 #include "PhysicalMemoryAllocator.h"
 #include <new>
+#include <stdio.h>
 
 PageEntry* const Paging::virtTables =  (PageEntry*)-0xC0000000ll;
 u64* const Paging::bitset =  (u64*)-0xA0000000ll; // physmemalloc
@@ -54,7 +55,9 @@ Paging::Paging(){
 
 
 void Paging::init(PageEntry* pPML4){ // physical PML4
+    fprintf(stderr,"\nPaging Initializing\n");
     assert(pPML4[511].getAddr());
+    fprintf(stderr,"PML4 physical address : %p\n",pPML4);
     PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
     PageEntry* PPD = new ((void*)physmemalloc.alloc()) PageEntry[512]; // paging page directory
@@ -99,6 +102,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
     }
     physmemalloc.switchVirt(bitset);
 
+    // USER space :
     assert(PML4[0].getAddr()); // user PDP is already active
     firstPPT[6].activeAddr(PML4[0].getAddr()); // set user PDP
     invlpg(userPDP);
@@ -135,6 +139,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
 
 
 void Paging::allocStack(uptr stackPos,size_t nbPages){
+    fprintf(stderr,"Allocating %lld pages of stack\n",nbPages);
     assert(nbPages < 512); // TODO support more than 2M of stack
     stackPD[511].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     actTmpPT(stackPD[511].getAddr());

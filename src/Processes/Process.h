@@ -11,6 +11,7 @@
 #include "../Memory/UserMemory.h"
 #include "../Interrupts/Interrupt.h"
 #include "../User/Context.h"
+#include "Waiting.h"
 
 #define FIXED_SIZE_STACK 1
 
@@ -44,9 +45,9 @@ private:
 public :
     Heap _heap;
     UserMemory _usermem;
-    std::vector<FileDescriptor*> _fds;
+    std::vector<FileDescriptor> _fds;
     Process(u32 pid,ProcessGroup* pg,
-            std::vector<FileDescriptor*> fds = std::vector<FileDescriptor*>());
+            std::vector<FileDescriptor> fds = std::vector<FileDescriptor>());
     Process(const Process& other,Thread* toth, u16 pid); ///< fork;
     ~Process();
     // load the elf64 file Bytes and create the main thread starting on its entry point.
@@ -63,9 +64,7 @@ public :
     //void orphan(); // call to orphan a process (becom init child).
 };
 
-class WaitingReason; // TODO implement that
-
-class Thread{
+class Thread : public Waiting {
     u16 _tid;
     u16 _pid; // must be equal to _process->getPid();
     u16 _gid;
@@ -77,7 +76,6 @@ public :
     Context context;
     Thread(u16 tid,u64 rip,Process* process);
     ~Thread();
-    WaitingReason* wr; // if wr == nullptr, the thread is runnable.
     [[noreturn]] void run(); // launch the thread until the next timer interruption
     u16 getTid()const{return _tid;}
     u16 getPid()const{return _pid;}
@@ -87,5 +85,12 @@ public :
     void terminate(u64 returnCode);
     Process* getProcess(){return _process;}
 };
+
+/**
+   @brief Initialize process system
+
+   Currently just setup system call like read, write, brk , ...
+*/
+void ProcessInit();
 
 #endif

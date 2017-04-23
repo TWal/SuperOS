@@ -67,7 +67,7 @@ namespace std{
             _capacity = strategy(n);
             _data = _alloc.allocate(_capacity);
             for(size_t i = 0 ; i < n ; ++i){
-                _data[i].T();
+                new(_data +i) T();
             }
         }
         vector (const vector& oth): _alloc(oth._alloc),_data(nullptr),

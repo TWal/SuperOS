@@ -23,7 +23,6 @@ class FrameBuffer {
         void printf(const char* s, ...);
         void hexdump(void* mem, uint len);
 
-
         enum Color {
             BLACK = 0,
             BLUE,
@@ -53,7 +52,7 @@ class FrameBuffer {
 };
 static_assert(sizeof(FrameBuffer) == 20);
 
-extern "C" void printf(const char* s, ...);
+extern "C" void kprintf(const char* s, ...);
 
 extern FrameBuffer fb;
 

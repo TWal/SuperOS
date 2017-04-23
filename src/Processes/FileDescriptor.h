@@ -5,14 +5,25 @@
 #include "../Streams/Stream.h"
 
 class FileDescriptor{
-    u64 _owners;
+    u64* _owners;
     Stream* _str;
+    void free();
+    void drop();
 public :
-    inline void grab(){++_owners;}
-    inline void drop(){--_owners;if(!_owners) delete this;}
+    FileDescriptor();
+    /**
+       @brief Create a file descriptor on a stream.
 
-    FileDescriptor(Stream* s);
-    Stream* str(){return _str;}
+       Take ownership of the pointer str.
+     */
+    FileDescriptor(Stream* str);
+    ~FileDescriptor();
+    FileDescriptor(const FileDescriptor& other);
+
+    FileDescriptor& operator=(const FileDescriptor& fd);
+
+    Stream* operator->(){assert(_str); return _str;}
+    bool empty(){return !_str;}
 };
 
 
