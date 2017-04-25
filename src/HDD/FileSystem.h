@@ -92,6 +92,9 @@ enum class FileType {
     RegularFile, Directory, BlockDevice, CharacterDevice
 };
 
+/**
+    @brief Represents a file / directory / ... in the filesystem
+*/
 class File {
     public:
         /// Returns the type of the file
@@ -103,6 +106,9 @@ class File {
         virtual u32 getInode() const;
 };
 
+/**
+    @brief Represents a regular in the filesystem
+*/
 class RegularFile : public virtual File, public HDDBytes {
     public:
         virtual FileType getType() const;
@@ -110,17 +116,20 @@ class RegularFile : public virtual File, public HDDBytes {
         virtual void resize(size_t size) = 0;
 };
 
+/**
+    @brief Represents a directory in the filesystem
+*/
 class Directory : public virtual File {
     public:
         virtual FileType getType() const;
         ///Get a file in the directory. Returns nullptr when it does not exists
         virtual File* operator[](const std::string& name) = 0;
 
-        virtual void* open() = 0; /// Like opendir
-        virtual dirent* read(void* d) = 0; /// Like readdir
-        virtual long int tell(void* d) = 0; /// Like telldir
-        virtual void seek(void* d, long int loc) = 0; /// Like seekdir
-        virtual void close(void* d) = 0; /// Like closedir
+        virtual void* open() = 0; ///< Like opendir
+        virtual dirent* read(void* d) = 0; ///< Like readdir
+        virtual long int tell(void* d) = 0; ///< Like telldir
+        virtual void seek(void* d, long int loc) = 0; ///< Like seekdir
+        virtual void close(void* d) = 0; ///< Like closedir
 
         ///Add an entry in the directory, creating the file/directory
         virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) = 0;
@@ -137,11 +146,17 @@ class Directory : public virtual File {
         virtual bool isEmpty();
 };
 
+/**
+    @brief Represents a block device in the filesystem
+*/
 class BlockDevice : public virtual File, public HDDBytes {
     public:
         virtual FileType getType() const;
 };
 
+/**
+    @brief Represents a character device in the filesystem
+*/
 class CharacterDevice : public virtual File, public Stream {
     public:
         virtual FileType getType() const;
