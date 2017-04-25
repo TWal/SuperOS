@@ -89,7 +89,7 @@ void UserMemory::copyPages(uptr PTdest,uptr PTsrc){
             uptr oldp = src[i].getAddr();
             void* psrc = pageHeap.alloc<void>(oldp);
             void* pdest = pageHeap.alloc<void>(newp);
-            __builtin_memmove(pdest,psrc,0x1000);
+            memcpy(pdest,psrc,0x1000);
             pageHeap.free(psrc);
             pageHeap.free(pdest);
             dest[i].setAddr(newp);
