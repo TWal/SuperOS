@@ -101,12 +101,6 @@ class File {
         virtual void getStats(stat* buf) const = 0;
         /// get inode number using getStats
         virtual u32 getInode() const;
-
-        //TODO: remove
-        /// Internal method to increment the link count of the file
-        virtual void link() = 0;
-        /// Internal method to decrement the link count of the file, remove the file if it becomes 0
-        virtual void unlink() = 0;
 };
 
 class RegularFile : public virtual File, public HDDBytes {
@@ -141,10 +135,6 @@ class Directory : public virtual File {
 
         ///Check if the directory is empty
         virtual bool isEmpty();
-
-        //TODO: remove
-        ///Internal method to delete the directory content
-        virtual void deleteDir() = 0;
 };
 
 class BlockDevice : public virtual File, public HDDBytes {

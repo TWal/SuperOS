@@ -67,14 +67,6 @@ void File::getStats(stat* buf) const {
     _impl->getStats(buf);
 }
 
-void File::link() {
-    _impl->link();
-}
-
-void File::unlink() {
-    _impl->unlink();
-}
-
 
 
 /*   ____                  _            _____ _ _
@@ -205,10 +197,6 @@ void Directory::removeDirectory(const std::string& name) {
 
 void Directory::removeEntry(const std::string& name) {
     _impl->removeEntry(name);
-}
-
-void Directory::deleteDir() {
-    _impl->deleteDir();
 }
 
 

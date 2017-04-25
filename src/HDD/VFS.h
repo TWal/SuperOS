@@ -97,8 +97,6 @@ class File : public virtual ::HDD::File {
         File(::HDD::File* impl, u32 dev, FS* fs);
         virtual FileType getType() const;
         virtual void getStats(stat* buf) const;
-        virtual void link();
-        virtual void unlink();
     protected:
         ::HDD::File* _impl;
         u32 _dev;
@@ -135,8 +133,6 @@ class Directory : public ::HDD::Directory, public File {
         virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
-
-        virtual void deleteDir();
     protected:
         friend class FS;
         ::HDD::Directory* _impl;

@@ -196,8 +196,8 @@ class RegularFile : public virtual ::HDD::RegularFile {
         virtual void resize(size_t size);
         virtual void getStats(stat* buf) const;
         virtual size_t getSize() const;
-        virtual void link();
-        virtual void unlink();
+        void link();
+        void unlink();
 
     protected:
         struct ReadRecArgs {
@@ -235,6 +235,7 @@ class Directory : public virtual RegularFile, public virtual ::HDD::Directory {
         Directory(u32 inode, InodeData data, FS* fs);
         virtual FileType getType() const;
         virtual ::HDD::File* operator[](const std::string& name);
+        RegularFile* get(const std::string& name);
         virtual void* open();
         virtual dirent* read(void* d);
         virtual long int tell(void* d);
@@ -248,7 +249,7 @@ class Directory : public virtual RegularFile, public virtual ::HDD::Directory {
         virtual void removeEntry(const std::string& name);
 
         void init();
-        virtual void deleteDir();
+        void deleteDir();
 
     protected:
 

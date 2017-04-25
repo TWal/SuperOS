@@ -532,8 +532,11 @@ Directory::Directory(u32 inode, InodeData data, FS* fs) : RegularFile(inode, dat
 FileType Directory::getType() const {
     return FileType::Directory;
 }
-
 ::HDD::File* Directory::operator[](const std::string& name) {
+    return get(name);
+}
+
+RegularFile* Directory::get(const std::string& name) {
     u32 inode = 0;
     void* d = open();
     dirent* dir;
@@ -603,7 +606,7 @@ static DirectoryFileType inodeToDirType(u16 mode) {
 }
 
 void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
-    ::HDD::File* f = nullptr;
+    RegularFile* f = nullptr;
     if(S_ISREG(mode)) {
         f = _fs->getNewFile(uid, gid, mode);
     } else if(S_ISDIR(mode)) {
@@ -674,7 +677,7 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
 
 
 void Directory::removeFile(const std::string& name) {
-    ::HDD::File* f = (*this)[name];
+    RegularFile* f = get(name);
     assert(f != nullptr);
     f->unlink();
     removeEntry(name);
