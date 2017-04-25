@@ -16,6 +16,7 @@ extern "C" {
     char * strcat ( char * destination, const char * source );
     const char * strchr ( const char * str, int character );
     int strcmp ( const char * str1, const char * str2 );
+    int strncmp(const char* s1, const char* s2, size_t n);
     char * strcpy ( char * destination, const char * source );
     char * strncpy ( char * destination, const char * source, size_t num);
     size_t strcspn ( const char * str1, const char * str2 );
