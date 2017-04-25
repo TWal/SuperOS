@@ -178,7 +178,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
 
-#define BLA USER_TEST
+#define BLA EXT2_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
@@ -209,8 +209,10 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     ProcessInit();
 
-    HDD::File* init = (*(fs.getRoot()))["init"];
-    assert(init);
+    HDD::File* initf = (*(fs.getRoot()))["init"];
+    assert(initf);
+    assert(initf->getType() == HDD::FileType::RegularFile);
+    HDD::RegularFile* init = dynamic_cast<HDD::RegularFile*>(initf);
     ProcessGroup pg(1);
     Process initp(1,&pg);
     Thread* initt = initp.loadFromBytes(init);
@@ -240,9 +242,8 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     HDD::VFS::File* f = fs.vgetRoot()->get("mnt");
     assert(f != nullptr);
-    assert(f->vgetType() == HDD::FileType::Directory);
-    HDD::VFS::Directory* d = f->vdir();
-
+    assert(f->getType() == HDD::FileType::Directory);
+    HDD::VFS::Directory* d = dynamic_cast<HDD::VFS::Directory*>(f);
     fs.mount(d, &fs2);
 
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler

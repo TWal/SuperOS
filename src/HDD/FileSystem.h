@@ -4,6 +4,7 @@
 #include "Partition.h"
 #include <vector>
 #include <string>
+#include "../Streams/Stream.h"
 
 //TODO: move this in libc?
 struct timespec {
@@ -87,47 +88,39 @@ enum FileMode {
 
 namespace HDD {
 
-class Directory;
-
 enum class FileType {
-    File, Directory
+    RegularFile, Directory, BlockDevice, CharacterDevice
 };
 
-/**
-    @brief Represents a file
-*/
-class File : public HDDBytes {
+class File {
     public:
-        /// Returns whether this file is a directory
-        virtual FileType getType();
-        /// Custom "dynamic cast" to Directory without rtti
-        virtual Directory* dir() {return nullptr;};
-
-        //undefined behavior if the file is a directory
-        //no guarantees when it augments the size on what is after the old size
-        /// Resize the file
-        virtual void resize(size_t size) = 0;
+        /// Returns the type of the file
+        virtual FileType getType() const = 0;
 
         /// get status of the file
         virtual void getStats(stat* buf) const = 0;
         /// get inode number using getStats
         virtual u32 getInode() const;
 
+        //TODO: remove
         /// Internal method to increment the link count of the file
         virtual void link() = 0;
         /// Internal method to decrement the link count of the file, remove the file if it becomes 0
         virtual void unlink() = 0;
 };
 
-/**
-    @brief Represents a directory
-*/
+class RegularFile : public virtual File, public HDDBytes {
+    public:
+        virtual FileType getType() const;
+        /// Resize the file
+        virtual void resize(size_t size) = 0;
+};
+
 class Directory : public virtual File {
-    public :
-        FileType getType();
+    public:
+        virtual FileType getType() const;
         ///Get a file in the directory. Returns nullptr when it does not exists
         virtual File* operator[](const std::string& name) = 0;
-        virtual Directory* dir() {return this;};
 
         virtual void* open() = 0; /// Like opendir
         virtual dirent* read(void* d) = 0; /// Like readdir
@@ -149,8 +142,19 @@ class Directory : public virtual File {
         ///Check if the directory is empty
         virtual bool isEmpty();
 
+        //TODO: remove
         ///Internal method to delete the directory content
         virtual void deleteDir() = 0;
+};
+
+class BlockDevice : public virtual File, public HDDBytes {
+    public:
+        virtual FileType getType() const;
+};
+
+class CharacterDevice : public virtual File, public Stream {
+    public:
+        virtual FileType getType() const;
 };
 
 /**

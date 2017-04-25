@@ -2,20 +2,27 @@
 
 namespace HDD {
 
-FileType File::getType(){
-    return FileType::File;
-}
-
 u32 File::getInode() const {
     stat st;
     getStats(&st);
     return st.st_ino;
 }
 
-FileType Directory::getType(){
+FileType RegularFile::getType() const {
+    return FileType::RegularFile;
+}
+
+FileType Directory::getType() const {
     return FileType::Directory;
 }
 
+FileType BlockDevice::getType() const {
+    return FileType::BlockDevice;
+}
+
+FileType CharacterDevice::getType() const {
+    return FileType::CharacterDevice;
+}
 
 FileSystem::FileSystem(Partition* part) : _part(part){
 }

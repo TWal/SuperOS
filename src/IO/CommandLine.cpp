@@ -47,7 +47,7 @@ CommandLine::CommandLine(table_type table):_table(table){
             printf("%s doesn't exist in current directory\n",args[0].c_str());
             return;
         }
-        HDD::Directory* d = f->dir();
+        HDD::Directory* d = dynamic_cast<HDD::Directory*>(f);
         if(d == nullptr) {
             printf("%s is not a directory\n",args[0].c_str());
             return;
@@ -67,15 +67,16 @@ CommandLine::CommandLine(table_type table):_table(table){
                 printf("cat: %s: No such file or directory\n", file.c_str());
                 continue;
             }
-            if(f->getType() == HDD::FileType::Directory) {
-                printf("cat: %s: Is a directory\n", file.c_str());
+            if(f->getType() != HDD::FileType::RegularFile) {
+                printf("cat: %s: Is not a regular file\n", file.c_str());
                 continue;
             }
+            HDD::RegularFile* rf = dynamic_cast<HDD::RegularFile*>(f);
             char buffer[1025];
-            size_t size = f->getSize();
+            size_t size = rf->getSize();
             for(size_t i = 0; i < size; i += 1024) {
                 size_t count = min((size_t)1024, size-i);
-                f->readaddr(i, buffer, count);
+                rf->readaddr(i, buffer, count);
                 buffer[count] = 0;
                 printf("%s", buffer);
             }
@@ -120,7 +121,7 @@ CommandLine::CommandLine(table_type table):_table(table){
                 printf("rmdir: %s: Is not a directory\n", file.c_str());
                 continue;
             }
-            HDD::Directory* d = f->dir();
+            HDD::Directory* d = dynamic_cast<HDD::Directory*>(f);
             if(!d->isEmpty()) {
                 printf("rmdir: %s: Is not empty\n", file.c_str());
                 continue;

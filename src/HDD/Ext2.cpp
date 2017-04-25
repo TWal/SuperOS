@@ -5,6 +5,13 @@ namespace HDD {
 
 namespace Ext2 {
 
+/*  ___                 _      ____        _
+   |_ _|_ __   ___   __| | ___|  _ \  __ _| |_ __ _ 
+    | || '_ \ / _ \ / _` |/ _ \ | | |/ _` | __/ _` |
+    | || | | | (_) | (_| |  __/ |_| | (_| | || (_| |
+   |___|_| |_|\___/ \__,_|\___|____/ \__,_|\__\__,_|
+*/
+
 u32 InodeData::getBlockCount(const SuperBlock& sb) const {
     return blocks/(2<<sb.log_block_size);
 }
@@ -23,6 +30,12 @@ void InodeData::setSize(size_t sz) {
     dir_acl = (sz >> 32) & (((size_t)1<<32) - 1);
 }
 
+/*  _____ ____  
+   |  ___/ ___|
+   | |_  \___ \
+   |  _|  ___) |
+   |_|   |____/
+*/
 
 FS::FS(Partition* part) : FileSystem(part) {
     _bgd = nullptr;
@@ -38,7 +51,7 @@ FS::FS(Partition* part) : FileSystem(part) {
     return new Directory(2, dat, this);
 }
 
-::HDD::File* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
+RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
     assert(S_ISREG(mode)); //TODO handle this better
     u32 inode = getNewInode(false);
     InodeData dat;
@@ -47,10 +60,10 @@ FS::FS(Partition* part) : FileSystem(part) {
     dat.gid = gid;
     dat.mode = mode;
     writeInodeData(inode, &dat);
-    return new File(inode, dat, this);
+    return new RegularFile(inode, dat, this);
 }
 
-::HDD::Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
+Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
     assert(S_ISDIR(mode)); //TODO handle this better
     u32 inode = getNewInode(true);
     //update bgd
@@ -221,10 +234,19 @@ void FS::_writeBlockGroupDescriptor() {
     _part->writeaddr(addr, _bgd, _nbBgd*sizeof(BlockGroupDescriptor));
 }
 
-File::File(u32 inode, InodeData data, FS* fs) :
+
+/*  ____                  _            _____ _ _
+   |  _ \ ___  __ _ _   _| | __ _ _ __|  ___(_) | ___
+   | |_) / _ \/ _` | | | | |/ _` | '__| |_  | | |/ _ \
+   |  _ <  __/ (_| | |_| | | (_| | |  |  _| | | |  __/
+   |_| \_\___|\__, |\__,_|_|\__,_|_|  |_|   |_|_|\___|
+              |___/
+*/
+
+RegularFile::RegularFile(u32 inode, InodeData data, FS* fs) :
     _inode(inode), _data(data), _fs(fs) {}
 
-void File::readaddr(u64 addr, void* data, size_t size) const {
+void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
     ReadRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -250,7 +272,7 @@ void File::readaddr(u64 addr, void* data, size_t size) const {
     }
 }
 
-void File::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
+void RegularFile::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
     if(args.size == 0) return;
     if(args.addr >= args.indirectSize[level]) {
         args.addr -= args.indirectSize[level];
@@ -276,7 +298,7 @@ void File::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
     }
 }
 
-void File::writeaddr(u64 addr, const void* data, size_t size) {
+void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
     WriteRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -315,7 +337,7 @@ void File::writeaddr(u64 addr, const void* data, size_t size) {
     }
 }
 
-bool File::_writerec(WriteRecArgs& args, int level, u32* blockId) {
+bool RegularFile::_writerec(WriteRecArgs& args, int level, u32* blockId) {
     if(args.size == 0) return false;
 
     bool canSkip = args.blockNum + args.indirectBlock[level] - 1 < _data.getBlockCount(_fs->_sb);
@@ -383,7 +405,7 @@ bool File::_writerec(WriteRecArgs& args, int level, u32* blockId) {
     }
 }
 
-void File::resize(size_t size) {
+void RegularFile::resize(size_t size) {
     if(size < _data.getSize()) {
         ResizeRecArgs args;
         args.sizeAfter = size;
@@ -415,7 +437,7 @@ void File::resize(size_t size) {
     }
 }
 
-bool File::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
+bool RegularFile::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     if(args.sizeBefore == 0) return false;
     if(args.sizeAfter >= args.indirectSize[level]) {
         args.sizeAfter  -= args.indirectSize[level];
@@ -461,12 +483,12 @@ bool File::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     }
 }
 
-void File::link() {
+void RegularFile::link() {
     _data.links_count += 1;
     _fs->writeInodeData(_inode, &_data);
 }
 
-void File::unlink() {
+void RegularFile::unlink() {
     if(_data.links_count == 1) {
         resize(0);
         _fs->freeInode(_inode, S_ISDIR(_data.mode));
@@ -477,7 +499,7 @@ void File::unlink() {
     _fs->writeInodeData(_inode, &_data);
 }
 
-void File::getStats(stat* buf) const {
+void RegularFile::getStats(stat* buf) const {
     buf->st_ino = _inode;
     buf->st_mode = _data.mode;
     buf->st_nlink = _data.links_count;
@@ -493,13 +515,25 @@ void File::getStats(stat* buf) const {
     buf->st_ctim.tv_sec = _data.ctime;
 }
 
-size_t File::getSize() const {
+size_t RegularFile::getSize() const {
     return _data.getSize();
 }
 
-Directory::Directory(u32 inode, InodeData data, FS* fs) : File(inode, data, fs) { }
+/*  ____  _               _
+   |  _ \(_)_ __ ___  ___| |_ ___  _ __ _   _ 
+   | | | | | '__/ _ \/ __| __/ _ \| '__| | | |
+   | |_| | | | |  __/ (__| || (_) | |  | |_| |
+   |____/|_|_|  \___|\___|\__\___/|_|   \__, |
+                                        |___/
+*/
 
-File* Directory::operator[](const std::string& name) {
+Directory::Directory(u32 inode, InodeData data, FS* fs) : RegularFile(inode, data, fs) { }
+
+FileType Directory::getType() const {
+    return FileType::Directory;
+}
+
+::HDD::File* Directory::operator[](const std::string& name) {
     u32 inode = 0;
     void* d = open();
     dirent* dir;
@@ -518,7 +552,7 @@ File* Directory::operator[](const std::string& name) {
     if(S_ISDIR(inodedat.mode)) {
         return new Directory(inode, inodedat, _fs);
     } else if(S_ISREG(inodedat.mode)) {
-        return new File(inode, inodedat, _fs);
+        return new RegularFile(inode, inodedat, _fs);
     } else {
         return nullptr;
     }
@@ -583,7 +617,7 @@ void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     if(file->getType() ==  FileType::Directory && std::string("..") != name) {
-        file->dir()->addEntry("..", this);
+        dynamic_cast<::HDD::Directory*>(file)->addEntry("..", this);
         link();
     }
     u32 neededSize = sizeof(DirectoryEntry) + name.size();
@@ -640,18 +674,18 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
 
 
 void Directory::removeFile(const std::string& name) {
-    File* f = (*this)[name];
+    ::HDD::File* f = (*this)[name];
     assert(f != nullptr);
     f->unlink();
     removeEntry(name);
 }
 
 void Directory::removeDirectory(const std::string& name) {
-    File* f = (*this)[name];
+    ::HDD::File* f = (*this)[name];
     assert(f != nullptr);
     assert(f->getType() == FileType::Directory);
     removeEntry(name);
-    f->dir()->deleteDir();
+    dynamic_cast<Directory*>(f)->deleteDir();
 }
 
 
@@ -712,7 +746,7 @@ void Directory::deleteDir() {
         } else {
             InodeData dat;
             _fs->getInodeData(dir->d_ino, &dat);
-            File f(dir->d_ino, dat, _fs);
+            RegularFile f(dir->d_ino, dat, _fs);
             f.unlink();
         }
     }

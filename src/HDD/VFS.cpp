@@ -1,5 +1,6 @@
 #include "VFS.h"
 #include <string.h>
+#include "../IO/FrameBuffer.h"
 
 namespace HDD {
 
@@ -47,23 +48,23 @@ Directory* FS::fromMounted(u32 inode, u32 dev) {
     }
 }
 
-File::File(::HDD::File* impl, u32 dev) : _dev(dev), _impl(impl) {}
 
-void File::writeaddr(u64 addr, const void* data, size_t size) {
-    _impl->writeaddr(addr, data, size);
+/*   _____ _ _
+    |  ___(_) | ___
+    | |_  | | |/ _ \
+    |  _| | | |  __/
+    |_|   |_|_|\___|
+*/
+
+File::File(::HDD::File* impl, u32 dev, FS* fs) :
+    _impl(impl), _dev(dev), _fs(fs) {}
+
+FileType File::getType() const {
+    return _impl->getType();
 }
 
-void File::readaddr(u64 addr, void* data, size_t size) const {
-    _impl->readaddr(addr, data, size);
-}
-
-size_t File::getSize() const {
-    return _impl->getSize();
-}
-
-
-void File::resize(size_t size) {
-    _impl->resize(size);
+void File::getStats(stat* buf) const {
+    _impl->getStats(buf);
 }
 
 void File::link() {
@@ -74,14 +75,55 @@ void File::unlink() {
     _impl->unlink();
 }
 
-void File::getStats(stat* buf) const {
-    _impl->getStats(buf);
-    buf->st_dev = _dev;
+
+
+/*   ____                  _            _____ _ _
+    |  _ \ ___  __ _ _   _| | __ _ _ __|  ___(_) | ___
+    | |_) / _ \/ _` | | | | |/ _` | '__| |_  | | |/ _ \
+    |  _ <  __/ (_| | |_| | | (_| | |  |  _| | | |  __/
+    |_| \_\___|\__, |\__,_|_|\__,_|_|  |_|   |_|_|\___|
+               |___/
+*/
+
+RegularFile::RegularFile(::HDD::RegularFile* impl, u32 dev, FS* fs) :
+    File(impl, dev, fs), _impl(impl) {}
+
+void RegularFile::resize(size_t size) {
+    _impl->resize(size);
 }
 
-Directory::Directory(::HDD::Directory* impl, u32 dev, FS* fs) : File(impl, dev), _impl(impl), _fs(fs) {
+FileType RegularFile::getType() const {
+    return FileType::RegularFile;
 }
 
+void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
+    _impl->writeaddr(addr, data, size);
+}
+
+void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
+    _impl->readaddr(addr, data, size);
+}
+
+size_t RegularFile::getSize() const {
+    return _impl->getSize();
+}
+
+
+
+/*   ____  _               _
+    |  _ \(_)_ __ ___  ___| |_ ___  _ __ _   _
+    | | | | | '__/ _ \/ __| __/ _ \| '__| | | |
+    | |_| | | | |  __/ (__| || (_) | |  | |_| |
+    |____/|_|_|  \___|\___|\__\___/|_|   \__, |
+                                         |___/
+*/
+
+Directory::Directory(::HDD::Directory* impl, u32 dev, FS* fs) : File(impl, dev, fs), _impl(impl) {
+}
+
+FileType Directory::getType() const {
+    return FileType::Directory;
+}
 
 ::HDD::File* Directory::operator[](const std::string& name) {
     return get(name);
@@ -100,10 +142,11 @@ File* Directory::get(const std::string& name) {
     if((d = _fs->toMounted(res->getInode(), _dev)) != nullptr) {
         return d;
     }
-    if(res->getType() == FileType::File) {
-        return new File(res, _dev);
+    if(res->getType() == FileType::RegularFile) {
+        return new RegularFile(dynamic_cast<::HDD::RegularFile*>(res), _dev, _fs);
     } else if(res->getType() == FileType::Directory) {
-        return new Directory(res->dir(), _dev, _fs);
+        ::HDD::Directory* d = dynamic_cast<::HDD::Directory*>(res);
+        return new Directory(d, _dev, _fs);
     } else {
         bsod("VFS::Directory::get: oh noes! me dunno how 2 handle dat file type");
     }
@@ -167,6 +210,8 @@ void Directory::removeEntry(const std::string& name) {
 void Directory::deleteDir() {
     _impl->deleteDir();
 }
+
+
 
 
 } //end of namespace VFS

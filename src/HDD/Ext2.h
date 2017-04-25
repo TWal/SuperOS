@@ -144,13 +144,16 @@ enum DirectoryFileType {
 
 static_assert(sizeof(DirectoryEntry) == 8, "DirectoryEntry has the wrong size");
 
+class RegularFile;
+class Directory;
+
 /// @brief Ext2 filesystem
 class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
         virtual ::HDD::Directory* getRoot();
         /// Create a fresh new file
-        File* getNewFile(u16 uid, u16 gid, u16 mode);
+        RegularFile* getNewFile(u16 uid, u16 gid, u16 mode);
         /// Create a fresh new directory
         Directory* getNewDirectory(u16 uid, u16 gid, u16 mode);
 
@@ -168,7 +171,7 @@ class FS : public FileSystem {
         void freeInode(u32 inode, bool isDirectory);
 
     private:
-        friend class File;
+        friend class RegularFile;
         friend class Directory;
         /// Load the superblock
         void _loadSuperBlock();
@@ -184,10 +187,10 @@ class FS : public FileSystem {
         uint _nbBgd;
 };
 
-/// @brief Ext2 file
-class File : public virtual ::HDD::File {
+/// @brief Ext2 regular file
+class RegularFile : public virtual ::HDD::RegularFile {
     public:
-        File(u32 inode, InodeData data, FS* fs);
+        RegularFile(u32 inode, InodeData data, FS* fs);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void resize(size_t size);
@@ -227,10 +230,11 @@ class File : public virtual ::HDD::File {
 };
 
 /// @brief Ext2 directory
-class Directory : public virtual File, public virtual ::HDD::Directory {
+class Directory : public virtual RegularFile, public virtual ::HDD::Directory {
     public :
         Directory(u32 inode, InodeData data, FS* fs);
-        virtual Ext2::File* operator[](const std::string& name);
+        virtual FileType getType() const;
+        virtual ::HDD::File* operator[](const std::string& name);
         virtual void* open();
         virtual dirent* read(void* d);
         virtual long int tell(void* d);
