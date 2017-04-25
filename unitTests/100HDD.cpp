@@ -4,7 +4,7 @@
 void unittest(){
     const size_t emptyOff = 0x80120;
 
-    HDD first(1,true);
+    HDD::HDD first(1,true);
     first.init();
 
     int data[1000];
