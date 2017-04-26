@@ -13,7 +13,7 @@
 
 class Stream : public Waitable{
 public:
-    Stream() :Waitable(1){};
+    Stream() :Waitable(){};
     enum{ // Functionality
         READABLE = 1,WRITABLE = 2,SEEKABLE = 4,APPENDABLE = 8
     };
@@ -60,7 +60,6 @@ public:
     enum class mod{BEG,CUR,END};
     /// Set the curent position if fd is @ref SEEKABLE.
     virtual size_t seek(i64 count, mod mode){(void)mode; (void)count;return -1;};
-    enum {WAITREAD};
 };
 
 #endif

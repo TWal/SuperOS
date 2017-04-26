@@ -24,7 +24,9 @@
 #define SYSCLONE 56 ///< Clone is only for thread: clone(new rip, new rsp).
 #define SYSFORK 57 ///< Fork t create a new process.
 #define SYSEXIT 58 // vfork is useless and 231 for exit_group is too far away
+#define SYSEXEC 59 ///< launch another program.
 #define SYSTEXIT 60
+#define SYSWAIT 61
 
 void syscallInit();
 

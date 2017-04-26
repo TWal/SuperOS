@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 
 int factorial(int i){
@@ -25,36 +26,46 @@ void systesti(int i){
 }
 
 
+void thread(){
+    printf("[th 2] Hey !\n");
+    for(int i = 0 ; i < 20000000 ; ++i);
+    printf("[th 2] will die now !\n");
+    _texit(13);
+}
+
+
 int main(){
-    //systest();
-    /*char* buffer = malloc(40);
-    buffer[0] = 42;
-    buffer[1] = -12;
-    for(volatile int i = 0 ; i < 2 ; ++i){
-        systesti(i);
-        for(volatile int j = 0 ; j < 10000000; ++j);
+    printf("[Init] Init start\n");
+    void* test = malloc(1024);
+
+    pid_t t = clone(thread,(char*)test +1024);
+    printf("[init] Created thread %d\n",t);
+
+    for(int i = 0 ; i < 10000000 ; ++i);
+
+    pid_t pid = fork();
+    if(pid == 0){
+        printf("First Process");
+        for(int i = 0 ; i < 10000000 ; ++i);
+        return 56;
     }
-    int pid = fork();
-    if(pid){
-        buffer[0] = 56;
-        systesti(buffer[0]);
-        systesti(buffer[1]);
+    pid = fork();
+    if(pid == 0){
+        printf("Second Process");
+        for(int i = 0 ; i < 10000000 ; ++i);
+        return 57;
     }
-    else{
-        for(volatile int i = 0 ; i < 2 ; ++i){
-            systesti(i+100);
-            for(volatile int j = 0 ; j < 10000000; ++j);
-        }
-        free(buffer);
-        buffer = malloc(5);
-        buffer[0] = 89;
-        return 13;
-    }
-    for(volatile int i = 0 ; i < 2 ; ++i){
-        systesti(i+500);
-        for(volatile int j = 0 ; j < 10000000; ++j);
-        }*/
-    printf("%s","Hello world !\n");
+
+    int status;
+    errno = 0;
+    printf("[init] before wait\n",errno);
+    wait(&status);
+    printf("[init] errno : %lld and status %d\n",errno,status);
+    printf("[init] before wait 2\n",errno);
+    wait(&status);
+    printf("[init] errno : %lld and status %d\n",errno,status);
+
+    _texit(42);
 
     return factorial(5);
 }

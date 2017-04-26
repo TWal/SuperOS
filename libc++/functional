@@ -2,6 +2,7 @@
 #define __SUPOS_CPP_FUNCTIONAL
 
 #include<assert.h>
+#include<utility>
 
 namespace std {
     template <class T> struct less {
@@ -31,7 +32,7 @@ namespace std {
         struct Concret : public Interface{
             T _t;
             explicit Concret (const T& t): _t(t){}
-            explicit Concret (T&& t): _t(t){}
+            explicit Concret (T&& t): _t(std::move(t)){}
             ReturnValue call(Args... args){
                 return _t(args...);
             }
@@ -47,20 +48,18 @@ namespace std {
         function(pointer p) : _data(p),_inter(nullptr){}
 
         template<typename T>
-        function(const T& t) : _data(nullptr),_inter(new Concret<T>(t)){}
-
-        template<typename T>
-        function( T&& t) : _data(nullptr),_inter(new Concret<T>(move(t))){}
+        function(T t) : _data(nullptr),_inter(new Concret<T>(std::move(t))){}
 
         function(const function& oth): _data(oth._data){
             if (oth._inter){
-                _inter = oth._inter.getCopy();
+                _inter = oth._inter->getCopy();
             }
         }
         function(function&& oth): _data(oth._data),_inter(oth._inter){
             oth._data = nullptr;
             oth._inter = nullptr;
         }
+        function(nullptr_t) : _data(nullptr),_inter(nullptr){}
         ~function(){
             if(_inter) delete _inter;
         }
@@ -72,18 +71,10 @@ namespace std {
         }
 
         template<typename T>
-        function& operator= (const T& t){
+        function& operator= (T t){
             if(_inter) delete _inter;
             _data = nullptr;
-            _inter = new Concret<T>(t);
-            return *this;
-        }
-
-        template<typename T>
-        function& operator= (T&& t){
-            if(_inter) delete _inter;
-            _data = nullptr;
-            _inter = new Concret<T>(move(t));
+            _inter = new Concret<T>(std::move(t));
             return *this;
         }
 
@@ -93,7 +84,7 @@ namespace std {
             if(_inter) delete _inter;
             _data = oth._data;
             if (oth._inter){
-                _inter = oth._inter.getCopy();
+                _inter = oth._inter->getCopy();
             }
             return *this;
         }
@@ -104,6 +95,12 @@ namespace std {
             _inter = oth._inter;
             oth._data = nullptr;
             oth._inter = nullptr;
+            return *this;
+        }
+        function& operator=(nullptr_t){
+            if(_inter) delete _inter;
+            _inter = nullptr;
+            _data = nullptr;
             return *this;
         }
 

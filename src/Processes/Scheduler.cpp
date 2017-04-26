@@ -9,13 +9,16 @@
 void* const tidBitset = (void*)(-0x80000000ll - 0x2000ll);
 
 
-Scheduler::Scheduler() : _current(nullptr),RemainingTime(0){
+Scheduler::Scheduler() : _current(nullptr),_remainingTime(0),
+                         _halted(false),_runTryNum(0){
     Pit::set(0,10000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
-
 }
 static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
     schedul.exit(rc);
+}
+static u64 systexit(u64 rc,u64,u64,u64,u64,u64){
+    schedul.texit(rc);
 }
 static u64 sysfork(u64,u64,u64,u64,u64,u64){
     return schedul.fork();
@@ -23,6 +26,9 @@ static u64 sysfork(u64,u64,u64,u64,u64,u64){
 static u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
     return schedul.clone(rip,rsp);
 }
+
+
+
 
 void Scheduler::init(Thread* initThread){
     assert(initThread->getTid() == 1);
@@ -40,6 +46,7 @@ void Scheduler::init(Thread* initThread){
 
     //declare scheduler syscalls :
     handlers[SYSEXIT] = sysexit;
+    handlers[SYSTEXIT] = systexit;
     handlers[SYSFORK] = sysfork;
     handlers[SYSCLONE] = sysclone;
 
@@ -49,10 +56,20 @@ void Scheduler::init(Thread* initThread){
     assert(!_current);
     assert(_threadFIFO.size() > 0 && "Empty Scheduler");
 
-    printf("current queue is : ");
+    fprintf(stderr,"current queue is : ");
     for(auto t : _threadFIFO){
-        printf("%d ",t->getTid());
+        fprintf(stderr,"%d ",t->getTid());
     }//printf("\n");
+    if(_runTryNum >= _threadFIFO.size()){
+        // If all processes are waiting
+        printf("Idle\n");
+        _runTryNum = 0;
+        _halted = true;
+        // passive sleep : processor stopped until next interruption.
+        // TODO interrupts may return from this
+        while(true) asm volatile("xor %rsp,%rsp; hlt");
+        printf("Should never happen");
+    }
 
     // pop the next candidate
     _current = _threadFIFO[0];
@@ -60,38 +77,57 @@ void Scheduler::init(Thread* initThread){
 
     // If this thread has been deleted
     if(!_threads.count(_current->getTid())){
-         _current = nullptr;
+        _current = nullptr;
         run(); // stack will disappear no return cost.
     }
     // If this thread is waiting something
     if(!_current->OK()){
         _threadFIFO.push_back((Thread*)_current);
         _current = nullptr;
+        ++_runTryNum;
         run();
     }
 
     // All is right, this thread can run
-    RemainingTime = 5; // by default program runs for 5 ticks
+    _remainingTime = 5; // by default program runs for 5 ticks
+    _runTryNum = 0; // OK we have found it
     _current->run();
 
 }
+
+
+
+
+
+
 [[noreturn]] void Scheduler::exit(u64 returnCode){
     assert(_current);
     Process* pro = _current->getProcess();
     u16 tid = _current->getTid();
     _current = nullptr;
-    pro->terminate(returnCode);
+    printf("Process %d died with %lld\n",tid,returnCode);
+    pro->terminate(returnCode); // call kend if it is init.
 
-    if(pro->getPid() == 1){ // if init died
-        printf("init died with code %lld",returnCode);
-        kend(); // shutdown.
-    }
-    else{ // other cases
-        delete pro;
-        printf("%d died with %lld\n",tid,returnCode);
-        run();
-    }
+    run();
 }
+
+[[noreturn]] void Scheduler::texit(u64 returnCode){
+    assert(_current);
+    Thread* th = _current;
+    u16 tid = _current->getTid();
+    _current = nullptr;
+    printf("Thread %d died with %lld\n",tid,returnCode);
+    th->terminate(returnCode);
+
+    delete th;
+    run();
+}
+
+
+
+
+
+
 Thread* Scheduler::enterSys(){
     // we must be in a thread
     assert(_current);
@@ -100,10 +136,17 @@ Thread* Scheduler::enterSys(){
     Context::lastContext = nullptr;
     return _current;
 }
+
 void Scheduler::stopCurent(){
     if(Context::lastContext) enterSys();
+    _threadFIFO.push_back((Thread*)_current);
     _current = nullptr;
 }
+
+
+
+
+
 u16 Scheduler::fork(){
     Thread* old = enterSys();
 
@@ -122,6 +165,8 @@ u16 Scheduler::fork(){
     // return to parent process the new pid
     return newTid;
 }
+
+
 u16 Scheduler::clone(u64 rip, u64 stack){
     assert(stack && (i64)rip > 0);
     Thread* old = enterSys();
@@ -138,17 +183,39 @@ u16 Scheduler::clone(u64 rip, u64 stack){
     return newTid;
 }
 
+
+u16 wait(i64 pid, int* status){
+    
+}
+
+
+
+
+
+
 void Scheduler::timerHandler(const InterruptParams& params){
+    if(_halted){
+        _halted = false;
+        pic.endOfInterrupt(0);
+        run();
+    }
+
+    if((iptr)params.rip <0){
+        //printf("Timer Interrupt during kernel execution %p \n",params.rip);
+        // TODO store it somewhere
+        pic.endOfInterrupt(0);
+        return;
+    }
     // If no thread is running : we are executing kernel
     if(!_current){
-        if(RemainingTime) -- RemainingTime;
+        if(_remainingTime) -- _remainingTime;
         pic.endOfInterrupt(0);
         return; // TODO find a way to tell that in tick has occured
     }
 
     // If current thread still has time
-    if(RemainingTime > 0){
-        --RemainingTime;
+    if(_remainingTime > 0){
+        --_remainingTime;
         pic.endOfInterrupt(0);
         return; // return to current execution
     }
@@ -171,12 +238,7 @@ void Scheduler::timerHandler(const InterruptParams& params){
 
 
 void timerHandler(const InterruptParams& params){
-    if((iptr)params.rip <0){
-        //printf("Timer Interrupt during kernel execution %p \n",params.rip);
-        // TODO store it somewhere
-        pic.endOfInterrupt(0);
-        return;
-    }
+    
     /*int i = 0;
     ++i;
     if((i % 10) != 0){
@@ -186,5 +248,7 @@ void timerHandler(const InterruptParams& params){
     //printf("Timer Interrupt at %p\n",params.rip);
     schedul.timerHandler(params);
 }
+
+
 
 Scheduler schedul;

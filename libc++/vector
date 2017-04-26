@@ -109,7 +109,7 @@ namespace std{
         }
         vector& operator= (vector&& x){
             this->~vector();
-            this->vector(move(x));
+            new(this) vector(move(x));
             return *this;
         }
         reference operator [](size_type i){

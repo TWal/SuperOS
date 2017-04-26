@@ -16,6 +16,21 @@ pid_t fork(){
     }
     return res;
 }
+pid_t clone(void(*func)(void),void* stackEnd){
+    int res;
+    asm volatile(
+        "mov $56, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(func), "S"(stackEnd)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
 size_t read(int fd, void* buf, size_t count){
     int res;
     asm volatile(
@@ -45,5 +60,24 @@ size_t write(int fd, const void* buf, size_t count){
         return -1;
     }
     return res;
+}
+
+pid_t waitpid(pid_t p, int* status){
+    int res;
+    asm volatile(
+        "mov $61, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(p), "S"(status)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+pid_t wait(int* status){
+    return waitpid(0,status);
 }
 #endif

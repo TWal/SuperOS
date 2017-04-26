@@ -26,11 +26,14 @@ private:
     std::set<Process*> _processes;
 public :
     explicit ProcessGroup(u16 gid);
+    ~ProcessGroup();
     void addProcess(Process* pro){_processes.insert(pro);}
+    void remProcess(Process* pro);
     u32 getGid(){return _gid;}
 };
 
-class Process{
+class Process : public Waitable{
+    friend Thread;
     u16 _pid;
     u16 _gid;
 public :
@@ -46,9 +49,10 @@ public :
     Heap _heap;
     UserMemory _usermem;
     std::vector<FileDescriptor> _fds;
+    /// Only init will be built by this constructor.
     Process(u32 pid,ProcessGroup* pg,
             std::vector<FileDescriptor> fds = std::vector<FileDescriptor>());
-    Process(const Process& other,Thread* toth, u16 pid); ///< fork;
+    Process(Process& other,Thread* toth, u16 pid); ///< fork;
     ~Process();
     // load the elf64 file Bytes and create the main thread starting on its entry point.
     Thread* loadFromBytes(Bytes* file);
@@ -61,10 +65,12 @@ public :
     void remThread(Thread* thread);
     void prepare();
     bool isLeader()const{return _pid == _gid;}
-    //void orphan(); // call to orphan a process (becom init child).
+    void addChild(Process* pro);
+    void orphan(); // call to orphan a process (become init child).
 };
 
 class Thread : public Waiting {
+    friend Process;
     u16 _tid;
     u16 _pid; // must be equal to _process->getPid();
     u16 _gid;
@@ -84,6 +90,8 @@ public :
     // close the thread, returnCode is ignored if this thread is not the main thread
     void terminate(u64 returnCode);
     Process* getProcess(){return _process;}
+    u64 waitp(u64* status);
+    u64 waitp(Process* pro, u64* status);
 };
 
 /**

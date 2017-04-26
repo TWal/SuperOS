@@ -3,6 +3,7 @@
 #include "Serial.h"
 #elif defined(SUP_OS_LOADER)
 #include "../src/IO/FrameBuffer.h"
+#include "../src/IO/Serial.h"
 #endif
 
 static char* const FB = (char*) (0xB8000);
@@ -87,9 +88,9 @@ void FrameBuffer::scroll(uint n, bool updateCurs) {
 }
 
 void FrameBuffer::putc(char c, bool updateCurs) {
-#ifdef SUP_OS_KERNEL
+//#ifdef SUP_OS_KERNEL
     ser.write(c); // all OS printf are also redirected to serial TODO clean way.
-#endif
+//#endif
     switch(c) {
         case '\n':
             _cursCol = _margLeft;

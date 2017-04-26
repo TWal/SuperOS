@@ -10,6 +10,7 @@ extern int errno;
 
 // #define errors numbers
 #define EBADF 1
+#define ECHILD 2
 
 
 

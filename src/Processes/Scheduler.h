@@ -10,6 +10,9 @@
 /**
    @brief This class Handles the scheduling of the different user programs.
 
+   This class store the mapping from id for user object to their representation
+   in kernel(cf. Thread, Process, ProcessGroup).
+
 
  */
 class Scheduler{
@@ -18,11 +21,13 @@ public :
     void init(Thread* pro);// load init process
     [[noreturn]] void run(); // run the next program, the previous context should have been saved
     [[noreturn]] void exit(u64 returnCode);
+    [[noreturn]] void texit(u64 returnCode);
     Thread* enterSys();
     void stopCurent();
     u16 fork(); ///< fork current process;
     /// Creates a Thread stating at rip with stack rsp.
     u16 clone(u64 rip, u64 stack);
+    u16 wait(i64 pid, int* status);
     void timerHandler(const InterruptParams&);
     Thread* getT(u16 tid){return _threads.at(tid);}
     Process* getP(u16 pid){return _processes.at(pid);}
@@ -31,13 +36,18 @@ public :
     void addP(u16 pid,Process* pro){_processes[pid]=pro;}
     void addG(u16 gid,ProcessGroup* pg){_groups[gid]=pg;}
     void freeT(u16 tid){
+        assert(_threads.count(tid));
         _threads.erase(tid);
-        if(!_groups.count(tid)){
+        if(!_groups.count(tid)&&!_processes.count(tid)){
             _tids.set(tid);
         }
     }
     void freeP(u16 pid){
+        assert(_processes.count(pid));
         _processes.erase(pid);
+        if(!_groups.count(pid)){
+            _tids.set(pid);
+        }
     }
     void freeG(u16 gid){
         assert(_groups.count(gid));
@@ -50,7 +60,9 @@ private :
     std::map<u16,ProcessGroup*> _groups;
     std::deque<Thread*> _threadFIFO; // no priority queue for now.
     Thread* volatile _current; // nullptr when no thread is active (in kernel mode)
-    u8 RemainingTime; // number of tick remaining for _current
+    u8 _remainingTime; // number of tick remaining for _current
+    bool _halted;
+    u64 _runTryNum;
     Bitset _tids; // used tid : 1 is free, 0 is occupied
     inline u16 getFreshTid(){
         u16 res = _tids.bsf();

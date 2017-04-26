@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <vector>
 #include <set>
+#include <functional>
 
 class Thread;
 class Waiting;
@@ -13,64 +14,92 @@ class Waiting;
 
    This class is friend with Waiting and they work together.
 
-   The invariant is that all object in the entry number i of _waitings have
-   their _val to i and their _wait pointing to this class.
+   Invariant : When w is in _waitings, then w->_waiting = this.
+
  */
 class Waitable{
     friend Waiting;
-    std::vector<std::set<Waiting*>> _waitings;
+    std::set<Waiting*> _waitings;
 protected:
     /**
        @brief The deriving class must call this when the reason number i is no longer needed
     */
-    void free(size_t i);
+    void free();
 public:
     /// Create new Waitable object with nb reason to wait.
-    explicit Waitable(size_t nb) : _waitings(nb){};
+    explicit Waitable() : _waitings(){};
     ~Waitable(){
-        for(auto s : _waitings){
-            assert(s.empty());
-        }
+        assert(_waitings.empty());
     }
 };
+
+
 /**
    @brief An interface for an object that will have to wait for something (a Thread).
 
    This class is friend with Waitable and they work together.
 
-   The invariant is that this is in _wait->_waitings[_val] or _wait = nultptr.
+   There is three state :
+       - Nothing : _waited = nullptr, _waiting = {} and _checker = nullptr
+       - Waiting : _waited = nullptr, _waiting = {waited waitable objects},
+         _checker = function to check if we have finished
+       - Waiting finished : _waited = the class that has signaled its
+       should not be waited for, _waiting = the same thing, _checker = the same thing
+
  */
 class Waiting{
     friend Waitable;
-    Waitable* _wait;
-    size_t _val;
+    std::set<Waitable*> _waiting;
+    Waitable* _waited;
+    using checker = std::function<void(Waiting*, Waitable*)>;
+    //using checker = void(*)(Waiting*, Waitable*);
+    checker _checker; // checker must call accept or refuse.
 public:
-    Waiting() : _wait(nullptr),_val(0){};
-    explicit Waiting(Waitable* wait, size_t val) : _wait(wait),_val(val){
-        assert(wait->_waitings.size() > val);
-        wait->_waitings[val].insert(this);
+    Waiting() : _waited(nullptr),_checker(nullptr){};
+    explicit Waiting(std::set<Waitable*> waiting,checker checker)
+        : _waited(nullptr),_checker(checker){
+        wait(waiting,checker);
     }
-    ~Waiting(){assert(!_wait);};
+    ~Waiting(){
+        assert(!_waited && _waiting.empty());
+    };
     /// When you finally decide not to wait.
-    inline void stopWait(){
-        assert(_wait->_waitings[_val].count(this));
-        _wait->_waitings[_val].erase(this);
-        _wait = nullptr;
-    }
-    inline void wait(Waitable * wait,size_t val){
-        assert(wait->_waitings.size() > val);
-        wait->_waitings[val].insert(this);
+    inline void wait(std::set<Waitable*> waiting,checker checker){
+        assert(!_waited && _waiting.empty());
+        _checker = checker;
+        _waiting = std::move(waiting);
+        for(auto w : _waiting){
+            printf("Registering Waiting %p to Waitable %p",this,w);
+            w->_waitings.insert(this);
+        }
     }
     /// Check if we are still waiting.
-    inline bool OK(){return !_wait;}
+    inline bool OK(){
+        if(!_waited) return _waiting.empty();
+        printf("Non trivial OK on %p\n",this);
+        auto tmp = _waited;
+        _waited = nullptr;
+        _checker(this,tmp);
+        return OK();
+    }
+    inline void accept(){
+        _waiting.clear();
+    }
+    inline void refuse(){
+        for(auto w : _waiting){
+            w->_waitings.insert(this);
+        }
+    }
 };
 
 
-inline void Waitable::free(size_t i){
-    for(auto w : _waitings[i]){
-        assert(w->_wait == this);
-        w->_wait = nullptr;
+inline void Waitable::free(){
+    printf("waitable::Free : %p with %llu waiters\n",this,_waitings.size());
+    for(auto w : _waitings){
+        w->_waited = this;
     }
+    _waitings.clear();
 }
+
 
 #endif

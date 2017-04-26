@@ -31,12 +31,18 @@ namespace std{
 
         set(){}
         explicit set(const allocator_type& alloc):vector<T>(alloc),_comp(){}
+        set(initializer_list<T> il){
+            for(auto t : il){
+                insert(t);
+            }
+        }
         using vector<T>::operator=;
         using vector<T>::erase;
         using vector<T>::empty;
         using vector<T>::clear;
         using vector<T>::begin;
         using vector<T>::end;
+        using vector<T>::size;
         iterator lower_bound (const key_type& k){
             return reinterpret_cast<iterator>(std::lower_bound(begin(),end(),
                                                                k,_comp));

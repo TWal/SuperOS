@@ -117,7 +117,7 @@ void hello(const InterruptParams&){
 
 #define NO_TEST 42
 
-//-----------------------------------kmain---------------------------
+//-----------------------------------kinit---------------------------
 
 #ifdef UNITTEST
 void unittest();
@@ -178,7 +178,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
 
-#define BLA EXT2_TEST
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
@@ -387,6 +387,12 @@ void kloop(){
     while(true) stop;
 }
 
+
+/**
+   @mainpage Super OS Documentation
+
+   Welcome to the Super OS documentation, WIP, good luck !
+ */
 
 
 

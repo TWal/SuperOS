@@ -6,38 +6,32 @@
 #include "../User/Syscall.h"
 #include "Scheduler.h"
 
+using namespace std;
+
 ProcessGroup::ProcessGroup(u16 gid) : _gid(gid){
     schedul.addG(_gid,this);
+}
+
+ProcessGroup::~ProcessGroup(){
+    schedul.freeG(_gid);
+}
+
+void ProcessGroup::remProcess(Process* pro){
+    assert(_processes.count(pro));
+    _processes.erase(pro);
+    if(_processes.empty()) delete this;
 }
 
 
 void* const loadedProcess = (void*)-0x100000000ll; // -4G
 const uptr stackStart =  0x8000000000ull; // 512 G
 
-
-Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor> fds) :
-    _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
-    _returnCode(0), _fds(fds){
-    schedul.addP(_pid,this);
-    pg->addProcess(this);
-}
-
-
-Process::Process(const Process& other,Thread* toth, u16 pid):
-    Process(pid,schedul.getG(other.getGid()),other._fds){
-
-    _usermem = other._usermem;
-    _heap = other._heap;
-    // Creating the new thread and coping the context of the calling thread
-    // the new process has only one thread : the copy of the thread that called fork
-    Thread* tcopy = new Thread(pid,0,this);
-    tcopy->context = toth->context;
-
-    // child process has 0 as a return.
-    tcopy->context.rax = 0;
-}
-
-
+// ____                                _                    _ _
+//|  _ \ _ __ ___   ___ ___  ___ ___  | |    ___   __ _  __| (_)_ __   __ _
+//| |_) | '__/ _ \ / __/ _ \/ __/ __| | |   / _ \ / _` |/ _` | | '_ \ / _` |
+//|  __/| | | (_) | (_|  __/\__ \__ \ | |__| (_) | (_| | (_| | | | | | (_| |
+//|_|   |_|  \___/ \___\___||___/___/ |_____\___/ \__,_|\__,_|_|_| |_|\__, |
+//                                                                    |___/
 
 Thread* Process::loadFromBytes(Bytes* file){
     std::vector<uptr> allocPages;
@@ -142,26 +136,68 @@ Thread* Process::loadFromBytes(Bytes* file){
 
 
 
+/* ____
+  |  _ \ _ __ ___   ___ ___  ___ ___
+  | |_) | '__/ _ \ / __/ _ \/ __/ __|
+  |  __/| | | (_) | (_|  __/\__ \__ \
+  |_|   |_|  \___/ \___\___||___/___/
+*/
+Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor> fds) :
+    _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
+    _returnCode(0), _fds(fds){
+    schedul.addP(_pid,this);
+    pg->addProcess(this);
+    printf("Creating Process %p with pid %d\n",this,pid);
+}
+
+
+Process::Process(Process& other, Thread* toth, u16 pid):
+    Process(pid,schedul.getG(other.getGid()),other._fds){
+
+    _usermem = other._usermem;
+    _heap = other._heap;
+    // Creating the new thread and coping the context of the calling thread
+    // the new process has only one thread : the copy of the thread that called fork
+    Thread* tcopy = new Thread(pid,0,this);
+    tcopy->context = toth->context;
+
+    // we are a new child of other.
+    _parent = &other;
+    other.addChild(this);
+
+    // child process has 0 as a return.
+    tcopy->context.rax = 0;
+}
 
 
 void Process::addThread(Thread* thread){
     _threads.insert(thread);
 }
 
+// Only called when its parent process has wait him.
 Process::~Process(){
+    printf("Deleting Process %p\n",this);
     assert(_terminated); // check the process is effectively a zombie
     schedul.freeP(_pid);
-    // TODO orphan children ...
+    for(auto p : _sons){
+        p->orphan();
+    }
+    schedul.getG(_gid)->remProcess(this);
+    _parent->_sons.erase(this);
 }
 
 void Process::terminate(u64 returnCode){
     _returnCode = returnCode;
     _terminated = true;
     _usermem.clear();
-    //printf("middle termination\n");
     for(auto th : _threads){
         delete th;
     }
+    if(_pid == 1){
+        printf("init died with code %lld",returnCode);
+        kend(); // shutdown.
+    }
+    free(); // free the waiting ressources.
     /*for(auto fd : _fds){
         fd->drop();
         }*/
@@ -169,7 +205,7 @@ void Process::terminate(u64 returnCode){
 }
 
 
-void Process::mainTerm(Thread* main,u64 returnCode){
+void Process::mainTerm(Thread* main, u64 returnCode){
     assert(main->getTid() == _pid);
     _mainTerminated = true;
     _returnCode = returnCode;
@@ -179,23 +215,32 @@ void Process::remThread(Thread* thread){
     _threads.erase(thread);
     if(_threads.empty()){
         assert(_mainTerminated);
-        _terminated = true;
-        // send something like SIGCHILD
+        terminate(_returnCode);
     }
 }
 
-
 void Process::prepare(){
-    //paging.switchUser(_userPDP);
     _usermem.activate();
 }
+void Process::addChild(Process* pro){
+    _sons.insert(pro);
+}
 
+void Process::orphan(){
+    Process *init = schedul.getP(1);
+    _parent = init;
+    init->addChild(this);
+}
 
-//------------------------------Thread-----------------------------
-
-
+/* _____ _                        _
+  |_   _| |__  _ __ ___  __ _  __| |
+    | | | '_ \| '__/ _ \/ _` |/ _` |
+    | | | | | | | |  __/ (_| | (_| |
+    |_| |_| |_|_|  \___|\__,_|\__,_|
+*/
 Thread::Thread(u16 tid, u64 rip,Process* process)
     : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process){
+    printf("Thread %d at %p\n",tid,this);
     schedul.addT(_tid,this);
     process->addThread(this);
     context.rip = rip;
@@ -209,9 +254,9 @@ Thread::~Thread(){
 }
 
 [[noreturn]] void Thread::run(){
-    printf("Starting thread %d in %d at %p\n",_tid,_pid,context.rip);
+    fprintf(stderr,"Starting thread %d in %d at %p\n",_tid,_pid,context.rip);
     _process->prepare();
-    printf("started\n");
+    fprintf(stderr,"started\n");
     context.launch();
 }
 void Thread::terminate(u64 returnCode){
@@ -219,7 +264,69 @@ void Thread::terminate(u64 returnCode){
     else _process->remThread(this);
 }
 
-//---------------------------Processes syscalls-----------------------
+u64 Thread::waitp(u64* status){
+    printf("Thread %p is waiting\n",this);
+    if(_process->_sons.empty()){
+        return -ECHILD;
+    }
+    for(auto pro : _process->_sons){
+        if(pro->_terminated){
+            u64 res = pro->getPid();
+            // TODO check valid address
+            if(status)*status = pro->_returnCode;
+            delete pro;
+            return res;
+        }
+    }
+    set<Waitable*> s;
+    for(auto pro : _process->_sons){
+        s.insert(pro);
+    }
+    u16 tid = _tid;
+    wait(s,[status,tid](Waiting* th,Waitable*){
+            printf("Checker for waitp in %d",tid);
+            th->accept();
+            static_cast<Thread*>(th)->getProcess()->prepare();
+            static_cast<Thread*>(th)->waitp(status);
+            });
+
+    // we are no longer runnable
+    schedul.stopCurent();
+    // restart the scheduler
+    schedul.run();
+}
+
+u64 Thread::waitp(Process* pro,u64* status){
+    if(!_process->_sons.count(pro)) return -ECHILD;
+    if(pro->_terminated){
+        u64 res = pro->getPid();
+        if(status)*status = pro->_returnCode;
+        delete pro;
+        return res;
+    }
+    else{
+        // we switch to waiting mode
+        wait({pro},[status](Waiting* th,Waitable* pro){
+                th->accept();
+                static_cast<Thread*>(th)->getProcess()->prepare();
+                static_cast<Thread*>(th)->waitp(
+                    static_cast<Process*>(pro),status);
+                    });
+
+        // we are no longer runnable
+        schedul.stopCurent();
+        // restart the scheduler
+        schedul.run();
+    }
+}
+
+/* ____                                ____                      _ _
+  |  _ \ _ __ ___   ___ ___  ___ ___  / ___| _   _ ___  ___ __ _| | |___
+  | |_) | '__/ _ \ / __/ _ \/ __/ __| \___ \| | | / __|/ __/ _` | | / __|
+  |  __/| | | (_) | (_|  __/\__ \__ \  ___) | |_| \__ \ (_| (_| | | \__ \
+  |_|   |_|  \___/ \___\___||___/___/ |____/ \__, |___/\___\__,_|_|_|___/
+                                             |___/
+*/
 
 /// Handler of SYSBRK
 static u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
@@ -230,6 +337,7 @@ static u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     fprintf(stderr,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
     return tmp;
 }
+
 /**
    @brief Handles a call to SYSREAD.
 
@@ -242,6 +350,7 @@ static u64 sread(Thread*t,uint fd,void* buf,u64 count){
     if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
     return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
 }
+
 /// @brief Handler of SYSREAD
 static u64 sysread(u64 fd,u64 buf,u64 count,u64,u64,u64){
     Thread* t = schedul.enterSys();
@@ -265,12 +374,27 @@ static u64 swrite(Thread*t,uint fd,const void* buf,u64 count){
 /// @brief Handler of SYSWRITE
 static u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
     Thread* t = schedul.enterSys();
-    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
-            t->getTid(),fd,buf,count);
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+    //        t->getTid(),fd,buf,count);
     auto tmp = swrite(t,fd,(const void*)buf,count);
-    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
-            t->getTid(),fd,buf,count,tmp);
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
+    //        t->getTid(),fd,buf,count,tmp);
     return tmp;
+}
+
+static u64 syswait(u64 pid,u64 status,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+    //        t->getTid(),fd,buf,count);
+    if(pid == 0){
+        return t->waitp((u64*)status);
+    }
+    else{
+        return t->waitp(schedul.getP(pid),(u64*)status);
+    }
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
+    //        t->getTid(),fd,buf,count,tmp);
+    //return tmp;
 }
 
 
@@ -278,4 +402,5 @@ void ProcessInit(){
     handlers[SYSBRK] = sysbrk;
     handlers[SYSREAD] = sysread;
     handlers[SYSWRITE] = syswrite;
+    handlers[SYSWAIT] = syswait;
 }

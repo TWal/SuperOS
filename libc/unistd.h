@@ -13,6 +13,12 @@ extern "C" {
     size_t write(int fd, const void* buf, size_t count);
 
     pid_t fork();
+    pid_t clone(void(*func)(void),void* stackEnd);
+    pid_t waitpid(pid_t p, int* status);
+    pid_t wait(int* status);
+
+    void _exit(int status);
+    void _texit(int status);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,10 @@
+#ifdef SUP_OS_KERNEL
 #include "Serial.h"
 #include "../utility.h"
+#elif defined(SUP_OS_LOADER)
+#include "../src/IO/Serial.h"
+#include "../src/utility.h"
+#endif
 
 const u16 dataPort = 0x3F8;
 const u16 fifoPort = dataPort +2;
