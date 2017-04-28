@@ -270,10 +270,16 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 
-void Paging::createMapping(uptr phy,void* virt){
-    assert(!(phy & ((1<< 12 )-1)) && !((uptr)virt & ((1<< 12 )-1))
-           && !(phy >> 52));
-    //printf("activating %p\n",phy);
+void Paging::createMapping(uptr phy,void* virt,bool wt){
+    if(phy & ((1<< 12 )-1)) {
+        bsod("Create mapping : physical addres is not page-aligned : %p",phy);
+    }
+    if((uptr)virt & ((1<< 12 )-1)){
+        bsod("Create mapping : virtual addres is not page-aligned : %p",phy);
+    }
+    if(phy >> 52) {
+        bsod("Create mapping : physical addres is too large (more than 52 bits)",phy);
+    }
     uptr PT = getPTphy(virt);
     //printf("PT address get %p\n",PT);
     actTmpPT(PT);
@@ -281,6 +287,7 @@ void Paging::createMapping(uptr phy,void* virt){
         bsod("The virtual page %p was already mapped to %p",virt,tmpPT[getPTindex(virt)].getAddr());
     }
     tmpPT[getPTindex(virt)].activeAddr(phy);
+    tmpPT[getPTindex(virt)].writeThrough = wt;
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;
     }
@@ -289,9 +296,9 @@ void Paging::createMapping(uptr phy,void* virt){
 }
 
 
-void Paging::createMapping(uptr phy,void* virt,int numPg){
+void Paging::createMapping(uptr phy,void* virt,int numPg,bool wt){
     for(int i = 0 ; i < numPg ; ++i){
-        createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000);
+        createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000,wt);
     }
 }
 

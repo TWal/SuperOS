@@ -25,6 +25,8 @@
 #include "Memory/PageHeap.h"
 #include "HDD/VFS.h"
 #include "IO/OSFileDesc.h"
+#include "../src32/Graphics.h"
+#include "Graphics/Screen.h"
 
 #include<vector>
 #include<string>
@@ -32,6 +34,7 @@
 #include<deque>
 
 using namespace std;
+using namespace video;
 
 //multibootInfo multiboot;
 
@@ -113,6 +116,7 @@ void hello(const InterruptParams&){
 #define CL_TEST 3
 #define EXT2_TEST 4
 #define USER_TEST 5
+#define GRAPH_TEST 6
 
 
 #define NO_TEST 42
@@ -139,9 +143,11 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #ifdef UNITTEST
     unitTest = true;
 #endif
-    fprintf(stderr,"Kernel Starting\n"); // TODO load of logging.
+    fprintf(stderr,"Kernel Starting\n"); // TODO lots of logging.
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
+
+
     gdt.init();
     idt.init(); // interruption initialization
     idt.addInt(0, div0); // adding various interruption handlers
@@ -155,12 +161,20 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
                       (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
     paging.init((PageEntry*)kargs->PML4); // initializing paging
     paging.allocStack(kargs->stackAddr,10); // allocation of kernel stack (fixed size )
+    u64 fontPtr = kargs->font;
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
     /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
+
+    //Graphical Initializing
+    GraphicalParam* gp = (GraphicalParam*)kargs->GraphicalParam;
+    fprintf(stderr,"Kernel Graphics : %d * %d\n",gp->Xsize,gp->Ysize);
+    video::screen.init(gp);
+
+
     paging.removeIdent(); // remove the identity paging necessary for boot process
     gdt.initkernelTLS(1); // Initialize kernel TLS with 1 page.
     kheap.init(&kernel_code_end);// creating kernel heap
@@ -178,9 +192,30 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
 
-#define BLA USER_TEST
+#define BLA GRAPH_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
+
+#elif BLA == GRAPH_TEST
+    printf("fontPtr %p\n",fontPtr);
+    Font* font = pageHeap.alloc<Font>(fontPtr,2);
+    font->init();
+    screen.putChar('H',0,0,*font,Color::white,Color::black);
+    screen.putChar('e',8,0,*font,Color::white,Color::black);
+    screen.putChar('l',16,0,*font,Color::white,Color::black);
+    screen.putChar('l',24,0,*font,Color::white,Color::black);
+    screen.putChar('o',32,0,*font,Color::white,Color::black);
+    screen.putChar('W',48,0,*font,Color::white,Color::black);
+    screen.putChar('o',56,0,*font,Color::white,Color::black);
+    screen.putChar('r',64,0,*font,Color::white,Color::black);
+    screen.putChar('l',72,0,*font,Color::white,Color::black);
+    screen.putChar('d',80,0,*font,Color::white,Color::black);
+    screen.putChar('!',88,0,*font,Color::white,Color::black);
+    for(int i = 0 ; i < 1024 ; ++i){
+        //video::screen.clear();
+        screen.set(i,18,Color::white);
+        screen.send();
+    }
 
 #elif BLA == USER_TEST
     breakpoint;

@@ -83,6 +83,29 @@ public:
         }
         return (-1);
     }
+    size_t largeBsf(int nb)const { // TODO
+        assert(nb < 64-8);
+        size_t i;
+        u64 pos = 0;
+        for(i = 0; i < (_size+63)/64; ++i) {
+            u64 data = -1;
+            for(int j = 0 ; j < nb ; ++j){
+                printf("test %d %llx\n",j,data);
+                data &= _data[i] << j;
+            }
+            printf("test %llx\n",data);
+            if(data) {
+                asm("bsf %1,%0" : "=r"(pos) : "r"(data));
+                size_t res = pos +1 - nb + i *64;
+                if(res > _size - nb){
+                    return -1;
+                }
+                return res;
+            }
+        }
+        return (-1);
+    }
+
 
     // count ?
     size_t size() const {

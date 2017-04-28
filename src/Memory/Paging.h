@@ -283,6 +283,7 @@ public:
        @brief Map the virtual address virt to phy.
        @param virt The virtual address to be mapped.
        @param phy The destination physical address.
+       @param wt If the mapping if writeThrough.
 
        Currently there is no way to manipulate non active page tables.
        To edit user space mapping you should activate it first.
@@ -297,7 +298,7 @@ public:
 
 
      */
-    void createMapping(uptr phy, void* virt);
+    void createMapping(uptr phy, void* virt,bool wt = false);
     /**
        @brief Map nbPages starting from virt to a physical chunk of same size
        starting from phy.
@@ -310,7 +311,7 @@ public:
        @ref createMapping(uptr,void*) "createMapping".
 
      */
-    void createMapping(uptr phy, void* virt,int nbPages);
+    void createMapping(uptr phy, void* virt,int nbPages,bool wt = false);
     /**
        @brief Remove the the mapping of the chunk starting at virt with nbPages Pages.
        @param virt The starting virtual address
@@ -422,6 +423,8 @@ extern Paging paging;
        - From -3G to -3.1G : @ref pageHeap space
        - At -3.5G : kernel TLS, cf. GDTDescriptor.
        - At -4G temporary space for loading user mode programs
+       - At -4.5G : RAM video buffer
+       - At -5G : VRAM video buffer
 
 
    @section map_user User space mappings
