@@ -144,6 +144,7 @@ enum DirectoryFileType {
 
 static_assert(sizeof(DirectoryEntry) == 8, "DirectoryEntry has the wrong size");
 
+class Inode;
 class RegularFile;
 class Directory;
 
@@ -171,6 +172,7 @@ class FS : public FileSystem {
         void freeInode(u32 inode, bool isDirectory);
 
     private:
+        friend class Inode;
         friend class RegularFile;
         friend class Directory;
         /// Load the superblock
@@ -181,25 +183,30 @@ class FS : public FileSystem {
         void _loadBlockGroupDescriptor();
         /// Write the block group descriptor array
         void _writeBlockGroupDescriptor();
+        Partition* _part;
         SuperBlock _sb;
         BlockGroupDescriptor* _bgd;
         uint _blockSize;
         uint _nbBgd;
 };
 
-/// @brief Ext2 regular file
-class RegularFile : public virtual ::HDD::RegularFile {
+class Inode {
     public:
-        RegularFile(u32 inode, InodeData data, FS* fs);
-        virtual void readaddr(u64 addr, void* data, size_t size) const;
-        virtual void writeaddr(u64 addr, const void* data, size_t size);
-        virtual void resize(size_t size);
-        virtual void getStats(stat* buf) const;
-        virtual size_t getSize() const;
+        Inode(FS* fs, u32 inode, InodeData data);
+        void i_readaddr(u64 addr, void* data, size_t size) const;
+        void i_writeaddr(u64 addr, const void* data, size_t size);
+        void i_resize(size_t size);
+        void i_getStats(stat* buf) const;
+        size_t i_getSize() const;
         void link();
         void unlink();
 
     protected:
+        FS* _fs;
+        u32 _inode;
+        InodeData _data;
+
+    private:
         struct ReadRecArgs {
             u64 addr;
             u8* data;
@@ -207,13 +214,13 @@ class RegularFile : public virtual ::HDD::RegularFile {
             u64 indirectSize[4];
             u32* blocks[3];
         };
-        void _readrec(ReadRecArgs& args, int level, u32 blockId) const;
+        void readrec(ReadRecArgs& args, int level, u32 blockId) const;
 
         struct WriteRecArgs : public ReadRecArgs {
             u64 indirectBlock[4];
             u32 blockNum;
         };
-        bool _writerec(WriteRecArgs& args, int level, u32* blockId);
+        bool writerec(WriteRecArgs& args, int level, u32* blockId);
 
         struct ResizeRecArgs {
             size_t sizeAfter;
@@ -221,21 +228,26 @@ class RegularFile : public virtual ::HDD::RegularFile {
             u64 indirectSize[4];
             u32* blocks[3];
         };
-        bool _resizerec(ResizeRecArgs& args, int level, u32 blockId);
+        bool resizerec(ResizeRecArgs& args, int level, u32 blockId);
+};
 
-
-        u32 _inode;
-        InodeData _data;
-        FS* _fs;
+/// @brief Ext2 regular file
+class RegularFile : public ::HDD::RegularFile, public Inode {
+    public:
+        RegularFile(FS* fs, u32 inode, InodeData data);
+        virtual void readaddr(u64 addr, void* data, size_t size) const;
+        virtual void writeaddr(u64 addr, const void* data, size_t size);
+        virtual void resize(size_t size);
+        virtual void getStats(stat* buf) const;
+        virtual size_t getSize() const;
 };
 
 /// @brief Ext2 directory
-class Directory : public virtual RegularFile, public virtual ::HDD::Directory {
+class Directory : public ::HDD::Directory, public Inode {
     public :
-        Directory(u32 inode, InodeData data, FS* fs);
-        virtual FileType getType() const;
+        Directory(FS* fs, u32 inode, InodeData data);
+        virtual void getStats(stat* buf) const;
         virtual ::HDD::File* operator[](const std::string& name);
-        RegularFile* get(const std::string& name);
         virtual void* open();
         virtual dirent* read(void* d);
         virtual long int tell(void* d);

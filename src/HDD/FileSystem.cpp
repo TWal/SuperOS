@@ -24,9 +24,6 @@ FileType CharacterDevice::getType() const {
     return FileType::CharacterDevice;
 }
 
-FileSystem::FileSystem(Partition* part) : _part(part){
-}
-
 bool Directory::isEmpty() {
     void* d = open();
     dirent* dir;

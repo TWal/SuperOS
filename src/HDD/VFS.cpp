@@ -7,22 +7,18 @@ namespace HDD {
 namespace VFS {
 
 FS::FS(FileSystem* fsroot) :
-    FileSystem(nullptr), _nextDev(1), _root(fsroot) {}
+    _nextDev(1), _root(fsroot) {}
 
 
 ::HDD::Directory* FS::getRoot() {
-    return vgetRoot();
-}
-
-Directory* FS::vgetRoot() {
-    return new Directory(_root->getRoot(), 0, this);
+    return new Directory(this, _root->getRoot(), 0);
 }
 
 void FS::mount(Directory* dir, FileSystem* fs) {
     stat st;
     dir->getStats(&st);
     ::HDD::Directory* root = fs->getRoot();
-    _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(root, _nextDev, this)));
+    _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(this, root, _nextDev)));
     _reverseMountedDirs.insert(std::make_pair(std::make_pair(_nextDev, root->getInode()), dir));
 }
 
@@ -56,15 +52,15 @@ Directory* FS::fromMounted(u32 inode, u32 dev) {
     |_|   |_|_|\___|
 */
 
-File::File(::HDD::File* impl, u32 dev, FS* fs) :
-    _impl(impl), _dev(dev), _fs(fs) {}
+File::File(FS* fs, ::HDD::File* impl, u32 dev) :
+    _fs(fs), _impl(impl), _dev(dev) {}
 
-FileType File::getType() const {
-    return _impl->getType();
+void File::i_getStats(stat* buf) const {
+    _impl->getStats(buf);
 }
 
-void File::getStats(stat* buf) const {
-    _impl->getStats(buf);
+FileType File::i_getType() const {
+    return _impl->getType();
 }
 
 
@@ -77,15 +73,15 @@ void File::getStats(stat* buf) const {
                |___/
 */
 
-RegularFile::RegularFile(::HDD::RegularFile* impl, u32 dev, FS* fs) :
-    File(impl, dev, fs), _impl(impl) {}
+RegularFile::RegularFile(FS* fs, ::HDD::RegularFile* impl, u32 dev) :
+    VFS::File(fs, impl, dev), _impl(impl) {}
+
+void RegularFile::getStats(stat* buf) const {
+    _impl->getStats(buf);
+}
 
 void RegularFile::resize(size_t size) {
     _impl->resize(size);
-}
-
-FileType RegularFile::getType() const {
-    return FileType::RegularFile;
 }
 
 void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
@@ -101,7 +97,6 @@ size_t RegularFile::getSize() const {
 }
 
 
-
 /*   ____  _               _
     |  _ \(_)_ __ ___  ___| |_ ___  _ __ _   _
     | | | | | '__/ _ \/ __| __/ _ \| '__| | | |
@@ -110,21 +105,17 @@ size_t RegularFile::getSize() const {
                                          |___/
 */
 
-Directory::Directory(::HDD::Directory* impl, u32 dev, FS* fs) : File(impl, dev, fs), _impl(impl) {
-}
+Directory::Directory(FS* fs, ::HDD::Directory* impl, u32 dev) :
+    VFS::File(fs, impl, dev), _impl(impl) {}
 
-FileType Directory::getType() const {
-    return FileType::Directory;
+void Directory::getStats(stat* buf) const {
+    i_getStats(buf);
 }
 
 ::HDD::File* Directory::operator[](const std::string& name) {
-    return get(name);
-}
-
-File* Directory::get(const std::string& name) {
     Directory* d;
     if(std::string("..") == name && (d = _fs->fromMounted(getInode(), _dev)) != nullptr) {
-        return d->get("..");
+        return (*d)[".."];
     }
 
     ::HDD::File* res = (*_impl)[name];
@@ -135,15 +126,14 @@ File* Directory::get(const std::string& name) {
         return d;
     }
     if(res->getType() == FileType::RegularFile) {
-        return new RegularFile(dynamic_cast<::HDD::RegularFile*>(res), _dev, _fs);
+        return new RegularFile(_fs, static_cast<::HDD::RegularFile*>(res), _dev);
     } else if(res->getType() == FileType::Directory) {
-        ::HDD::Directory* d = dynamic_cast<::HDD::Directory*>(res);
-        return new Directory(d, _dev, _fs);
+        ::HDD::Directory* d = static_cast<::HDD::Directory*>(res);
+        return new Directory(_fs, d, _dev);
     } else {
         bsod("VFS::Directory::get: oh noes! me dunno how 2 handle dat file type");
     }
 }
-
 
 void* Directory::open() {
     return _impl->open();
@@ -198,9 +188,6 @@ void Directory::removeDirectory(const std::string& name) {
 void Directory::removeEntry(const std::string& name) {
     _impl->removeEntry(name);
 }
-
-
-
 
 } //end of namespace VFS
 

@@ -109,7 +109,7 @@ class File {
 /**
     @brief Represents a regular in the filesystem
 */
-class RegularFile : public virtual File, public HDDBytes {
+class RegularFile : public File, public HDDBytes {
     public:
         virtual FileType getType() const;
         /// Resize the file
@@ -119,7 +119,7 @@ class RegularFile : public virtual File, public HDDBytes {
 /**
     @brief Represents a directory in the filesystem
 */
-class Directory : public virtual File {
+class Directory : public File {
     public:
         virtual FileType getType() const;
         ///Get a file in the directory. Returns nullptr when it does not exists
@@ -169,12 +169,8 @@ class CharacterDevice : public virtual File, public Stream {
     or the implementation of a VFS
 */
 class FileSystem {
-protected :
-    Partition* _part;
-public:
-    explicit FileSystem (Partition * part);
-    ///Get the root directory
-    virtual Directory* getRoot() = 0;
+    public:
+        virtual Directory* getRoot() = 0;
 };
 
 } //end of namespace HDD

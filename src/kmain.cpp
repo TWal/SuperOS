@@ -240,7 +240,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     HDD::Ext2::FS fs2(&pa2);
     HDD::VFS::FS fs(&fs1);
 
-    HDD::VFS::File* f = fs.vgetRoot()->get("mnt");
+    HDD::VFS::Directory* f = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["mnt"]);
     assert(f != nullptr);
     assert(f->getType() == HDD::FileType::Directory);
     HDD::VFS::Directory* d = dynamic_cast<HDD::VFS::Directory*>(f);

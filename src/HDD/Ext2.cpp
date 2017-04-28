@@ -37,7 +37,7 @@ void InodeData::setSize(size_t sz) {
    |_|   |____/
 */
 
-FS::FS(Partition* part) : FileSystem(part) {
+FS::FS(Partition* part) : _part(part) {
     _bgd = nullptr;
     _loadSuperBlock();
     assert(_sb.magic == 0xef53);
@@ -48,7 +48,7 @@ FS::FS(Partition* part) : FileSystem(part) {
 ::HDD::Directory* FS::getRoot() {
     InodeData dat;
     getInodeData(2, &dat);
-    return new Directory(2, dat, this);
+    return new Directory(this, 2, dat);
 }
 
 RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
@@ -60,7 +60,7 @@ RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
     dat.gid = gid;
     dat.mode = mode;
     writeInodeData(inode, &dat);
-    return new RegularFile(inode, dat, this);
+    return new RegularFile(this, inode, dat);
 }
 
 Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
@@ -75,7 +75,7 @@ Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
     dat.gid = gid;
     dat.mode = mode;
     writeInodeData(inode, &dat);
-    Directory* d = new Directory(inode, dat, this);
+    Directory* d = new Directory(this, inode, dat);
     d->init();
     return d;
 }
@@ -235,18 +235,17 @@ void FS::_writeBlockGroupDescriptor() {
 }
 
 
-/*  ____                  _            _____ _ _
-   |  _ \ ___  __ _ _   _| | __ _ _ __|  ___(_) | ___
-   | |_) / _ \/ _` | | | | |/ _` | '__| |_  | | |/ _ \
-   |  _ <  __/ (_| | |_| | | (_| | |  |  _| | | |  __/
-   |_| \_\___|\__, |\__,_|_|\__,_|_|  |_|   |_|_|\___|
-              |___/
+/*  ___                 _
+   |_ _|_ __   ___   __| | ___
+    | || '_ \ / _ \ / _` |/ _ \
+    | || | | | (_) | (_| |  __/
+   |___|_| |_|\___/ \__,_|\___|
 */
 
-RegularFile::RegularFile(u32 inode, InodeData data, FS* fs) :
-    _inode(inode), _data(data), _fs(fs) {}
+Inode::Inode(FS* fs, u32 inode, InodeData data) :
+    _fs(fs), _inode(inode), _data(data) {}
 
-void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
+void Inode::i_readaddr(u64 addr, void* data, size_t size) const {
     ReadRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -258,11 +257,11 @@ void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
     }
 
     for(int j = 0; j < 12; ++j) {
-        _readrec(args, 0, _data.block[j]);
+        readrec(args, 0, _data.block[j]);
     }
     for(int i = 0; i < 3; ++i) {
         args.blocks[i] = (u32*)malloc(_fs->_blockSize);
-        _readrec(args, i+1, _data.block[12+i]);
+        readrec(args, i+1, _data.block[12+i]);
     }
 
     for(int i = 0; i < 3; ++i) {
@@ -272,7 +271,7 @@ void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
     }
 }
 
-void RegularFile::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
+void Inode::readrec(ReadRecArgs& args, int level, u32 blockId) const {
     if(args.size == 0) return;
     if(args.addr >= args.indirectSize[level]) {
         args.addr -= args.indirectSize[level];
@@ -293,12 +292,12 @@ void RegularFile::_readrec(ReadRecArgs& args, int level, u32 blockId) const {
 
         for(uint i = starti; i < _fs->_blockSize/4; ++i) {
             if(args.size == 0) return;
-            _readrec(args, level-1, args.blocks[level-1][i]);
+            readrec(args, level-1, args.blocks[level-1][i]);
         }
     }
 }
 
-void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
+void Inode::i_writeaddr(u64 addr, const void* data, size_t size) {
     WriteRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -314,11 +313,11 @@ void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
 
     bool write = false;
     for(int j = 0; j < 12; ++j) {
-        write |= _writerec(args, 0, &_data.block[j]);
+        write |= writerec(args, 0, &_data.block[j]);
     }
     for(int i = 0; i < 3; ++i) {
         args.blocks[i] = (u32*)malloc(_fs->_blockSize);
-        write |= _writerec(args, i+1, &_data.block[12+i]);
+        write |= writerec(args, i+1, &_data.block[12+i]);
     }
 
     for(int i = 0; i < 3; ++i) {
@@ -337,7 +336,7 @@ void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
     }
 }
 
-bool RegularFile::_writerec(WriteRecArgs& args, int level, u32* blockId) {
+bool Inode::writerec(WriteRecArgs& args, int level, u32* blockId) {
     if(args.size == 0) return false;
 
     bool canSkip = args.blockNum + args.indirectBlock[level] - 1 < _data.getBlockCount(_fs->_sb);
@@ -395,7 +394,7 @@ bool RegularFile::_writerec(WriteRecArgs& args, int level, u32* blockId) {
             if(args.size == 0) {
                 break;
             }
-            write |= _writerec(args, level-1, &args.blocks[level-1][i]);
+            write |= writerec(args, level-1, &args.blocks[level-1][i]);
         }
         assert(!retVal || write); //retVal => write
         if(write) {
@@ -405,7 +404,7 @@ bool RegularFile::_writerec(WriteRecArgs& args, int level, u32* blockId) {
     }
 }
 
-void RegularFile::resize(size_t size) {
+void Inode::i_resize(size_t size) {
     if(size < _data.getSize()) {
         ResizeRecArgs args;
         args.sizeAfter = size;
@@ -417,11 +416,11 @@ void RegularFile::resize(size_t size) {
         }
 
         for(int j = 0; j < 12; ++j) {
-            _resizerec(args, 0, _data.block[j]);
+            resizerec(args, 0, _data.block[j]);
         }
         for(int i = 0; i < 3; ++i) {
             args.blocks[i] = (u32*)malloc(_fs->_blockSize);
-            _resizerec(args, i+1, _data.block[12+i]);
+            resizerec(args, i+1, _data.block[12+i]);
         }
 
         for(int i = 0; i < 3; ++i) {
@@ -433,11 +432,11 @@ void RegularFile::resize(size_t size) {
         _data.setSize(size);
         _fs->writeInodeData(_inode, &_data);
     } else {
-        writeaddr(size, nullptr, 0);
+        i_writeaddr(size, nullptr, 0);
     }
 }
 
-bool RegularFile::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
+bool Inode::resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     if(args.sizeBefore == 0) return false;
     if(args.sizeAfter >= args.indirectSize[level]) {
         args.sizeAfter  -= args.indirectSize[level];
@@ -465,7 +464,7 @@ bool RegularFile::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
         bool deleteMyself = (starti == 0);
         for(uint i = starti; i < _fs->_blockSize/4; ++i) {
             if(args.sizeBefore == 0) break;
-            if(_resizerec(args, level-1, args.blocks[level-1][i])) {
+            if(resizerec(args, level-1, args.blocks[level-1][i])) {
                 args.blocks[level-1][i] = 0;
             } else {
                 deleteMyself = false;
@@ -483,14 +482,14 @@ bool RegularFile::_resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     }
 }
 
-void RegularFile::link() {
+void Inode::link() {
     _data.links_count += 1;
     _fs->writeInodeData(_inode, &_data);
 }
 
-void RegularFile::unlink() {
+void Inode::unlink() {
     if(_data.links_count == 1) {
-        resize(0);
+        i_resize(0);
         _fs->freeInode(_inode, S_ISDIR(_data.mode));
         memset(&_data, 0, sizeof(InodeData));
     } else {
@@ -499,7 +498,7 @@ void RegularFile::unlink() {
     _fs->writeInodeData(_inode, &_data);
 }
 
-void RegularFile::getStats(stat* buf) const {
+void Inode::i_getStats(stat* buf) const {
     buf->st_ino = _inode;
     buf->st_mode = _data.mode;
     buf->st_nlink = _data.links_count;
@@ -515,8 +514,41 @@ void RegularFile::getStats(stat* buf) const {
     buf->st_ctim.tv_sec = _data.ctime;
 }
 
-size_t RegularFile::getSize() const {
+size_t Inode::i_getSize() const {
     return _data.getSize();
+}
+
+
+
+/*  ____                  _            _____ _ _
+   |  _ \ ___  __ _ _   _| | __ _ _ __|  ___(_) | ___
+   | |_) / _ \/ _` | | | | |/ _` | '__| |_  | | |/ _ \
+   |  _ <  __/ (_| | |_| | | (_| | |  |  _| | | |  __/
+   |_| \_\___|\__, |\__,_|_|\__,_|_|  |_|   |_|_|\___|
+              |___/
+*/
+
+RegularFile::RegularFile(FS* fs, u32 inode, InodeData data) :
+    Inode(fs, inode, data) {}
+
+void RegularFile::readaddr(u64 addr, void* data, size_t size) const {
+    i_readaddr(addr, data, size);
+}
+
+void RegularFile::writeaddr(u64 addr, const void* data, size_t size) {
+    i_writeaddr(addr, data, size);
+}
+
+void RegularFile::resize(size_t size) {
+    i_resize(size);
+}
+
+void RegularFile::getStats(stat* buf) const {
+    i_getStats(buf);
+}
+
+size_t RegularFile::getSize() const {
+    return i_getSize();
 }
 
 /*  ____  _               _
@@ -527,16 +559,14 @@ size_t RegularFile::getSize() const {
                                         |___/
 */
 
-Directory::Directory(u32 inode, InodeData data, FS* fs) : RegularFile(inode, data, fs) { }
+Directory::Directory(FS* fs, u32 inode, InodeData data) :
+    Inode(fs, inode, data) {}
 
-FileType Directory::getType() const {
-    return FileType::Directory;
+void Directory::getStats(stat* buf) const {
+    i_getStats(buf);
 }
+
 ::HDD::File* Directory::operator[](const std::string& name) {
-    return get(name);
-}
-
-RegularFile* Directory::get(const std::string& name) {
     u32 inode = 0;
     void* d = open();
     dirent* dir;
@@ -553,9 +583,9 @@ RegularFile* Directory::get(const std::string& name) {
     InodeData inodedat;
     _fs->getInodeData(inode, &inodedat);
     if(S_ISDIR(inodedat.mode)) {
-        return new Directory(inode, inodedat, _fs);
+        return new Directory(_fs, inode, inodedat);
     } else if(S_ISREG(inodedat.mode)) {
-        return new RegularFile(inode, inodedat, _fs);
+        return new RegularFile(_fs, inode, inodedat);
     } else {
         return nullptr;
     }
@@ -572,8 +602,8 @@ dirent* Directory::read(void* d) {
 
     do {
         if(dirit->pos >= _data.blocks*512) return nullptr;
-        readaddr(dirit->pos, &dirit->entry, sizeof(DirectoryEntry));
-        readaddr(dirit->pos+sizeof(DirectoryEntry), &dirit->res.d_name, dirit->entry.name_len);
+        i_readaddr(dirit->pos, &dirit->entry, sizeof(DirectoryEntry));
+        i_readaddr(dirit->pos+sizeof(DirectoryEntry), &dirit->res.d_name, dirit->entry.name_len);
         dirit->pos += dirit->entry.rec_len;
     } while(dirit->entry.inode == 0);
 
@@ -606,21 +636,22 @@ static DirectoryFileType inodeToDirType(u16 mode) {
 }
 
 void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
-    RegularFile* f = nullptr;
     if(S_ISREG(mode)) {
-        f = _fs->getNewFile(uid, gid, mode);
+        RegularFile* f = _fs->getNewFile(uid, gid, mode);
+        addEntry(name, f);
+        f->link();
     } else if(S_ISDIR(mode)) {
-        f = _fs->getNewDirectory(uid, gid, mode);
+        Directory* f = _fs->getNewDirectory(uid, gid, mode);
+        addEntry(name, f);
+        f->link();
     } else {
-        bsod("Ext2::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
+        bsod("HDD::Ext2::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
     }
-    addEntry(name, f);
-    f->link();
 }
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     if(file->getType() ==  FileType::Directory && std::string("..") != name) {
-        dynamic_cast<::HDD::Directory*>(file)->addEntry("..", this);
+        static_cast<::HDD::Directory*>(file)->addEntry("..", this);
         link();
     }
     u32 neededSize = sizeof(DirectoryEntry) + name.size();
@@ -634,9 +665,9 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     while(true) {
         curPos = nextPos;
         if(curPos >= _data.blocks*512) {
-            bsod("Ext2::Directory::addFile: It should be impossible to get here\n");
+            bsod("HDD::Ext2::Directory::addFile: It should be impossible to get here\n");
         }
-        readaddr(curPos, &entry, sizeof(DirectoryEntry));
+        i_readaddr(curPos, &entry, sizeof(DirectoryEntry));
         nextPos = curPos + entry.rec_len;
 
         u32 curSize = alignup((u32)(sizeof(DirectoryEntry) + entry.name_len), (u32)4);
@@ -666,10 +697,10 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
             InodeData dat;
             _fs->getInodeData(inode, &dat);
             newEntry.type = inodeToDirType(dat.mode);
-            writeaddr(targetPos, &newEntry, sizeof(DirectoryEntry));
-            writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size());
+            i_writeaddr(targetPos, &newEntry, sizeof(DirectoryEntry));
+            i_writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size());
             entry.rec_len = targetPos - curPos;
-            writeaddr(curPos, &entry, sizeof(DirectoryEntry));
+            i_writeaddr(curPos, &entry, sizeof(DirectoryEntry));
             break;
         }
     }
@@ -677,9 +708,15 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
 
 
 void Directory::removeFile(const std::string& name) {
-    RegularFile* f = get(name);
+    ::HDD::File* f = (*this)[name];
     assert(f != nullptr);
-    f->unlink();
+    if(f->getType() == FileType::RegularFile) {
+        static_cast<RegularFile*>(f)->unlink();
+    } else if(f->getType() == FileType::Directory) {
+        static_cast<Directory*>(f)->unlink();
+    } else {
+        bsod("HDD::Ext2::Directory::removeFile: me dunno wat to do wiz type %d!!!\n", f->getType());
+    }
     removeEntry(name);
 }
 
@@ -688,7 +725,7 @@ void Directory::removeDirectory(const std::string& name) {
     assert(f != nullptr);
     assert(f->getType() == FileType::Directory);
     removeEntry(name);
-    dynamic_cast<Directory*>(f)->deleteDir();
+    static_cast<Directory*>(f)->deleteDir();
 }
 
 
@@ -714,13 +751,13 @@ void Directory::removeEntry(const std::string& name) {
     }
     close(d);
     if(dir == nullptr) {
-        bsod("Ext2::Directory::removeEntry called with a file that doesn't exists!\n");
+        bsod("HDD::Ext2::Directory::removeEntry called with a file that doesn't exists!\n");
     }
 
     if(type == FT_DIR && std::string("..") != name) {
         InodeData dat;
         _fs->getInodeData(inode, &dat);
-        Directory directory(inode, dat, _fs);
+        Directory directory(_fs, inode, dat);
         directory.removeEntry("..");
         unlink();
     }
@@ -730,14 +767,14 @@ void Directory::removeEntry(const std::string& name) {
         entry.inode = 0;
         entry.name_len = 0;
         entry.type = FT_UNKNOWN;
-        writeaddr(0, &entry, sizeof(DirectoryEntry));
+        i_writeaddr(0, &entry, sizeof(DirectoryEntry));
         return;
     }
 
     DirectoryEntry lastEntry;
-    readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+    i_readaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
     lastEntry.rec_len += rec_len;
-    writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
+    i_writeaddr(lastPos, &lastEntry, sizeof(DirectoryEntry));
 }
 
 void Directory::deleteDir() {
@@ -749,7 +786,7 @@ void Directory::deleteDir() {
         } else {
             InodeData dat;
             _fs->getInodeData(dir->d_ino, &dat);
-            RegularFile f(dir->d_ino, dat, _fs);
+            RegularFile f(_fs, dir->d_ino, dat);
             f.unlink();
         }
     }
@@ -764,9 +801,9 @@ void Directory::init() {
     entry.name_len = 1;
     entry.type = FT_DIR;
     char name = '.';
-    resize(_fs->_blockSize);
-    writeaddr(0, &entry, sizeof(DirectoryEntry));
-    writeaddr(sizeof(DirectoryEntry), &name, 1);
+    i_resize(_fs->_blockSize);
+    i_writeaddr(0, &entry, sizeof(DirectoryEntry));
+    i_writeaddr(sizeof(DirectoryEntry), &name, 1);
     link(); //reference for '.'
 }
 

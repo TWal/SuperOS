@@ -15,7 +15,6 @@ class FS : public FileSystem {
     public:
         FS(FileSystem* fsroot);
         virtual ::HDD::Directory* getRoot();
-        Directory* vgetRoot();
         ///Mount `fs` at directory `dir`
         void mount(Directory* dir, FileSystem* fs);
         ///Unmount directory `dir`
@@ -31,82 +30,22 @@ class FS : public FileSystem {
         std::map<std::pair<u32, u32>, Directory*> _reverseMountedDirs;
 };
 
-#if 0
-/// @brief VFS regular file
-class RegularFile : public virtual ::HDD::RegularFile {
+class File {
     public:
-        RegularFile(::HDD::RegularFile* impl, u32 dev);
-        virtual void writeaddr(u64 addr, const void* data, size_t size);
-        virtual void readaddr(u64 addr, void* data, size_t size) const;
-        virtual size_t getSize() const;
+        File(FS* fs, ::HDD::File* impl, u32 dev);
+        void i_getStats(stat* buf) const;
+        FileType i_getType() const;
 
-        virtual void resize(size_t size);
-        virtual void link();
-        virtual void unlink();
-        virtual void getStats(stat* buf) const;
-
-        virtual FileType vgetType() const {
-            return FileType::RegularFile;
-        }
-        virtual Directory* vdir() {
-            return nullptr;
-        }
     protected:
-        u32 _dev;
-    private:
-        ::HDD::RegularFile* _impl;
-};
-
-/// @brief VFS directory
-class Directory : public File, public ::HDD::Directory {
-    public :
-        Directory(::HDD::Directory* impl, u32 dev, FS* fs);
-        virtual ::HDD::File* operator[](const std::string& name);
-        virtual File* get(const std::string& name);
-
-        virtual void* open();
-        virtual dirent* read(void* d);
-        virtual long int tell(void* d);
-        virtual void seek(void* d, long int loc);
-        virtual void close(void* d);
-
-        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
-        virtual void addEntry(const std::string& name, ::HDD::File* file);
-        virtual void removeFile(const std::string& name);
-        virtual void removeDirectory(const std::string& name);
-        virtual void removeEntry(const std::string& name);
-
-        virtual void deleteDir();
-
-
-        virtual FileType vgetType() const {
-            return FileType::Directory;
-        }
-        virtual Directory* vdir() {
-            return this;
-        }
-    private:
-        friend class FS;
-        ::HDD::Directory* _impl;
         FS* _fs;
-};
-#endif
-
-class File : public virtual ::HDD::File {
-    public:
-        File(::HDD::File* impl, u32 dev, FS* fs);
-        virtual FileType getType() const;
-        virtual void getStats(stat* buf) const;
-    protected:
         ::HDD::File* _impl;
         u32 _dev;
-        FS* _fs;
 };
 
 class RegularFile : public ::HDD::RegularFile, public File {
     public:
-        RegularFile(::HDD::RegularFile* impl, u32 dev, FS* fs);
-        virtual FileType getType() const;
+        RegularFile(FS* fs, ::HDD::RegularFile* impl, u32 dev);
+        virtual void getStats(stat* buf) const;
         virtual void resize(size_t size);
         virtual void writeaddr(u64 addr, const void* data, size_t size);
         virtual void readaddr(u64 addr, void* data, size_t size) const;
@@ -117,10 +56,9 @@ class RegularFile : public ::HDD::RegularFile, public File {
 
 class Directory : public ::HDD::Directory, public File {
     public:
-        Directory(::HDD::Directory* impl, u32 dev, FS* fs);
-        virtual FileType getType() const;
+        Directory(FS* fs, ::HDD::Directory* impl, u32 dev);
+        virtual void getStats(stat* buf) const;
         virtual ::HDD::File* operator[](const std::string& name);
-        File* get(const std::string& name);
 
         virtual void* open();
         virtual dirent* read(void* d);
