@@ -5,3 +5,6 @@ String equality : OK
 hello = hello neq 1236789hello world!hello world!
 s = 1236789hello world!hello world!
 String comparaison : OK
+I like to code in C
+I like to code in C++
+I like to code

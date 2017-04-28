@@ -21,4 +21,12 @@ void unittest(){
     printf("s = %s\n",s.c_str());
     pbool(s < s2,"String comparaison");
 
+    std::string str("I like to code in C");
+    printf("%s\n", str.c_str());
+    size_t sz = str.size();
+    str.resize (sz+2,'+');
+    printf("%s\n", str.c_str());
+    str.resize (14);
+    printf("%s\n", str.c_str());
+
 }
