@@ -25,6 +25,7 @@
 #include "Memory/PageHeap.h"
 #include "HDD/VFS.h"
 #include "IO/OSFileDesc.h"
+#include "HDD/RamFS.h"
 
 #include<vector>
 #include<string>
@@ -240,11 +241,30 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     HDD::Ext2::FS fs2(&pa2);
     HDD::VFS::FS fs(&fs1);
 
-    HDD::VFS::Directory* f = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["mnt"]);
-    assert(f != nullptr);
-    assert(f->getType() == HDD::FileType::Directory);
-    HDD::VFS::Directory* d = dynamic_cast<HDD::VFS::Directory*>(f);
-    fs.mount(d, &fs2);
+    {
+        HDD::VFS::Directory* d = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["mnt"]);
+        assert(d != nullptr);
+        assert(d->getType() == HDD::FileType::Directory);
+        fs.mount(d, &fs2);
+    }
+
+    HDD::RamFS::FS fs3;
+    {
+        u16 mode = S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+        fs3.getRoot()->addEntry("hello", 0, 0, mode);
+
+        HDD::File* fhello = (*fs3.getRoot())["hello"];
+        HDD::RegularFile* frhello = static_cast<HDD::RegularFile*>(fhello);
+        const char* helloString = "Hello ";
+        const char* worldString = "World!";
+        frhello->writeaddr(6, worldString, 6);
+        frhello->writeaddr(0, helloString, 6);
+
+        HDD::VFS::Directory* d = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["tmp"]);
+        assert(d != nullptr);
+        assert(d->getType() == HDD::FileType::Directory);
+        fs.mount(d, &fs3);
+    }
 
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interrruption

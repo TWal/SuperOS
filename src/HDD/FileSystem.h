@@ -149,7 +149,7 @@ class Directory : public File {
 /**
     @brief Represents a block device in the filesystem
 */
-class BlockDevice : public virtual File, public HDDBytes {
+class BlockDevice : public File, public HDDBytes {
     public:
         virtual FileType getType() const;
 };
@@ -157,7 +157,7 @@ class BlockDevice : public virtual File, public HDDBytes {
 /**
     @brief Represents a character device in the filesystem
 */
-class CharacterDevice : public virtual File, public Stream {
+class CharacterDevice : public File, public Stream {
     public:
         virtual FileType getType() const;
 };
