@@ -43,7 +43,13 @@ void unittest(){
     for(auto s : v2){
         printf("%s ",s.c_str());
     }printf("\n");
-
-
-
+    v.resize(5);
+    v[4] = "hey";
+    v2.resize(5);
+    for(auto s : v){
+        printf("%s ",s.c_str());
+    }printf("\n");
+    for(auto s : v2){
+        printf("%s ",s.c_str());
+    }printf("\n");
 }

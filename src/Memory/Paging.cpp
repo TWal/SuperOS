@@ -296,7 +296,7 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
 }
 
 
-void Paging::createMapping(uptr phy,void* virt,int numPg,bool wt){
+void Paging::createMapping(uptr phy,void* virt,uint numPg,bool wt){
     for(int i = 0 ; i < numPg ; ++i){
         createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000,wt);
     }

@@ -57,15 +57,18 @@ namespace std{
                 input[i].~value_type();
             }
         }
+
         inline void incr(size_t& n){
             ++n;
             if(n == _capacity) n = 0;
 
         }
+
         inline void decr(size_t& n){
             n = n == 0 ? _capacity -1 : n -1;
 
         }
+
         class deque_pos{
         protected:
             friend deque;
@@ -95,6 +98,7 @@ namespace std{
                 _index %= _mod;
                 return *this;
             }
+
             bool operator==(const deque_pos& oth) const{
                 return _index == oth._index;
             }
@@ -124,6 +128,7 @@ namespace std{
                 new (_data +i) T();
             }
         }
+
         deque(const deque& oth) : _alloc(oth.alloc),_data(nullptr),
                                   _capacity(0),_begIndex(0),_endIndex(0){
             reserve(oth.size());
@@ -154,6 +159,7 @@ namespace std{
                 _dp-=n;
                 return *this;
             }
+
             bool operator==(const iterator& oth) const{
                 return _data == oth._data && _dp == oth._dp;
             }
@@ -170,6 +176,7 @@ namespace std{
                 return *(_data + _dp.off(n));
             }
         };
+
         class const_iterator{
             const T* _data;
             deque_pos _dp;
@@ -192,6 +199,7 @@ namespace std{
                 _dp-=n;
                 return *this;
             }
+
             bool operator==(const const_iterator& oth) const{
                 return _data == oth._data && _dp == oth._dp;
             }
@@ -208,6 +216,7 @@ namespace std{
                 return *(_data + _dp.off(n));
             }
         };
+
         iterator begin(){
             return iterator(_data,_begIndex,_capacity,_begIndex);
         }
@@ -220,10 +229,12 @@ namespace std{
         const_iterator end()const{
             return const_iterator(_data,_endIndex,_capacity,_begIndex);
         }
+
         size_type size()const{ // the number of owned and constructed objects
             return _endIndex >= _begIndex ? _endIndex - _begIndex :
                 _endIndex + _capacity - _begIndex; // no underflow : _capacity > _begIndex
         }
+
         void reserve(size_type size){
             if (_data && size < _capacity) return;
             size_type capacity = strategy(size);
@@ -242,6 +253,7 @@ namespace std{
             _begIndex = 0;
             _endIndex = old_size;
         }
+
         void push_back (const value_type& val){
             reserve(size() +1);
             new(_data + _endIndex) T(val);
@@ -272,20 +284,42 @@ namespace std{
             _data[_begIndex].~value_type();
             incr(_begIndex);
         }
+
         bool empty() const{
             return _endIndex == _begIndex;
         }
+
         reference operator [](size_type i){
             return *(begin() += i);
         }
         const_reference operator [](size_type i)const{
             return *(begin() += i);
         }
+        reference at(size_type i){
+            assert(i < size());
+            return *(begin() += i);
+        }
+        const_reference at(size_type i)const{
+            assert(i < size());
+            return *(begin() += i);
+        }
+
         reference front(){
             return _data[_begIndex];
         }
         const_reference front() const{
             return _data[_begIndex];
+        }
+
+        reference back(){
+            size_t tmp  =_endIndex;
+            decr(tmp);
+            return _data[tmp];
+        }
+        const_reference back() const{
+            size_t tmp  =_endIndex;
+            decr(tmp);
+            return _data[tmp];
         }
 
 

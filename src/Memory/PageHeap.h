@@ -10,7 +10,7 @@
 class PageHeap{
     Bitset _bitset;
     void* ialloc(u64 phy);
-    void* ialloc(u64 phy,int nb);
+    void* ialloc(u64 phy,uint nb);
 public :
     PageHeap();
     void init();
@@ -19,7 +19,7 @@ public :
         return reinterpret_cast<T*>(ialloc(phy));
     }
     template<typename T>
-    T* alloc(u64 phy,int nb){
+    T* alloc(u64 phy,uint nb){
         return reinterpret_cast<T*>(ialloc(phy,nb));
     }
 

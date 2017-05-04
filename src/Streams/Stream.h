@@ -41,7 +41,7 @@ public:
     /// Check if there is nothing more to read.
     virtual bool eof() const {return true;};
     /**
-       @biref Try to write count byte from buf in the stream.
+       @brief Try to write count byte from buf in the stream.
 
        If the stream is full or any other reason, write can write less than that
        (even 0) and return the number of bytes really written.

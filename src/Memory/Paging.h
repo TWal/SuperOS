@@ -271,7 +271,7 @@ public:
 
        @sa @ref stack
     */
-    void allocStack(uptr stackPos,size_t nbPages);
+    void allocStack(uptr stackPos, size_t nbPages);
     /**
        @brief Removes all identity mappings.
 
@@ -298,7 +298,7 @@ public:
 
 
      */
-    void createMapping(uptr phy, void* virt,bool wt = false);
+    void createMapping(uptr phy, void* virt, bool wt = false);
     /**
        @brief Map nbPages starting from virt to a physical chunk of same size
        starting from phy.
@@ -311,7 +311,7 @@ public:
        @ref createMapping(uptr,void*) "createMapping".
 
      */
-    void createMapping(uptr phy, void* virt,int nbPages,bool wt = false);
+    void createMapping(uptr phy, void* virt, uint nbPages, bool wt = false);
     /**
        @brief Remove the the mapping of the chunk starting at virt with nbPages Pages.
        @param virt The starting virtual address
@@ -319,7 +319,7 @@ public:
 
        If the mapping does not exists then, there is a @ref bsod "Blue Screen".
      */
-    void freeMapping(void* virt,int nbPages = 1);
+    void freeMapping(void* virt, int nbPages = 1);
     /**
        @brief Remove the the mapping of a chunk and free pointed physical memory
        @param virt The starting virtual address
@@ -330,7 +330,7 @@ public:
        The physical pages pointed by the freed virtual memory are freed by
        PhysicalMemoryAllocator::free.
     */
-    void freeMappingAndPhy(void* virt,int nbPages = 1);
+    void freeMappingAndPhy(void* virt, int nbPages = 1);
     /**
        @brief Setup a valid user memory PDP.
 
@@ -416,6 +416,7 @@ extern Paging paging;
        - From -2G to -1G kernel code and heap (owned by @ref kheap)
          (Paging::kernelPD)
        - From -2G-8K to -2G-4K : tid bitset for Scheduler
+       - At -2.25G : Log buffer
        - At -2.5G : physical memory bitset for @ref physmemalloc
        - At -2.5G - 8K : @ref pageHeap bitset
        - At -3G fixed place page address of Paging's private variables

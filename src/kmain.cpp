@@ -27,6 +27,8 @@
 #include "IO/OSFileDesc.h"
 #include "../src32/Graphics.h"
 #include "Graphics/Screen.h"
+#include "Graphics/Workspace.h"
+#include "Graphics/TextWindow.h"
 
 #include<vector>
 #include<string>
@@ -171,8 +173,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     //Graphical Initializing
     GraphicalParam* gp = (GraphicalParam*)kargs->GraphicalParam;
-    fprintf(stderr,"Kernel Graphics : %d * %d\n",gp->Xsize,gp->Ysize);
+    fprintf(stderr,"Kernel Graphics 2 : %d * %d\n",gp->Xsize,gp->Ysize);
     video::screen.init(gp);
+    fprintf(stderr,"Kernel Graphics OK\n");
 
 
     paging.removeIdent(); // remove the identity paging necessary for boot process
@@ -192,16 +195,53 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
 
-#define BLA GRAPH_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
+    printf("fontPtr %p\n",fontPtr);
+    Font* font = pageHeap.alloc<Font>(fontPtr,2);
+    font->init();
+
+    TextWindow* tw = new TextWindow(Vec2u{0,0},Vec2u{400,666},font);
+    TextWindow* tw2 = new TextWindow(Vec2u{400,0},Vec2u{400,666},font);
+    Workspace::get(0).addWin(tw2);
+    Workspace::get(0).addWin(tw);
+    tw->show();
+    tw2->show();
+    tw->write("hello !",7);
+    //tw->drawEdge();
+    fprintf(stderr, "Sended\n");
+    //tw->send();
+    fprintf(stderr, "Sended2\n");
+
+
+    OSStreams.resize(3);
+    OSStreams[1] = tw;
+    fprintf(stderr, "Sended3 %lld\n",OSStreams.size());
+    IOPostGraphicinit();
+    fprintf(stderr, "Sended4\n");
+    ser.write("after\n\n");
+    for(int i = 0 ; i < 500 ; ++i){
+        printf("%d \n",i);
+        tw2->write("test \n",6);
+        WAIT(1000000);
+        screen.clear();
+        /*tw->drawEdge();
+        tw->send();
+        tw2->drawEdge();
+        tw2->send();*/
+        Workspace::draw();
+        screen.send();
+    }
+
+    screen.send();
 
 #elif BLA == GRAPH_TEST
     printf("fontPtr %p\n",fontPtr);
     Font* font = pageHeap.alloc<Font>(fontPtr,2);
     font->init();
-    screen.putChar('H',0,0,*font,Color::white,Color::black);
-    screen.putChar('e',8,0,*font,Color::white,Color::black);
+    screen.putChar('H', 0,0,*font,Color::white,Color::black);
+    screen.putChar('e', 8,0,*font,Color::white,Color::black);
     screen.putChar('l',16,0,*font,Color::white,Color::black);
     screen.putChar('l',24,0,*font,Color::white,Color::black);
     screen.putChar('o',32,0,*font,Color::white,Color::black);
@@ -427,6 +467,9 @@ void kloop(){
    @mainpage Super OS Documentation
 
    Welcome to the Super OS documentation, WIP, good luck !
+
+   @authors Thibaut Pérami, Théophille Wallez, Luc Chabassier
+
  */
 
 

@@ -4,11 +4,26 @@
 #include <string.h>
 
 namespace video {
-    Color Color::white{255,255,255,0};
-    Color Color::black{0,0,0,0};
+    Color24 Color24::white{255,255,255};
+    Color24 Color24::black{0,0,0};
+    Color24 Color24::red{0,0,255};
+    Color24 Color24::blue{255,0,0};
+    Color24 Color24::green{0,255,0};
+    Color24 Color24::yellow{0,255,255};
+    Color24 Color24::magenta{255,0,255};
+    Color24 Color24::cyan{255,255,0};
+    Color24 Color24::lred{0,0,187};
+    Color24 Color24::lblue{187,0,0};
+    Color24 Color24::lgreen{0,187,0};
+    Color24 Color24::lyellow{0,187,187};
+    Color24 Color24::lmagenta{187,0,187};
+    Color24 Color24::lcyan{187,187,0};
+    Color24 Color24::lwhite{187,187,187};
+
     char* const Screen::VGAbuffer = (char*)-0x140000000ll;
     Color* const Screen::buffer= (Color*)-0x120000000ll;
     void Screen::init(GraphicalParam* gp){
+        fprintf(stderr,"Screen init with: %p\n",gp);
         Xsize = gp->Xsize;
         Ysize = gp->Ysize;
         pitch = gp->pitch;
@@ -33,7 +48,9 @@ namespace video {
         send();*/
 
     }
-    void Screen::set(int x, int y,Color c){
+    void Screen::set(uint x, uint y, Color c){
+        assert(x < Xsize);
+        assert(y < Ysize);
         //printf("Set %d,%d\n",x,y);
         buffer[x + y * Xsize] = c;
     }
@@ -45,11 +62,23 @@ namespace video {
         }
         //printf("Screen Updated");
     }
+    void Screen::writeLine(uint nb, uint offset, uint size, Color* buffer){
+        assert(offset + size <= Xsize);
+        assert(nb <= Ysize);
+        memcpy(VGAbuffer +nb * pitch + 4* offset,buffer,size*4);
+    }
     void Screen::clear(){
         u32 RAMsize = Ysize*Xsize*4;
         memset(buffer,0,RAMsize);
     }
-    void Screen::putChar(char c,int x, int y,const Font& font,Color fg,Color bg){
+    void Screen::clear(Vec2u offset,Vec2u size){
+        for(uint y = offset.y ; y < offset.y + size.y; ++y){
+            memset(buffer + offset.x,0,size.x);
+        }
+    }
+    void Screen::putChar(char c, uint x, uint y, const Font& font, Color fg, Color bg){
+        assert(x + 8 < Xsize);
+        assert(y + 16 < Ysize);
         for(int i= 0 ; i < 16 ;++i){
             font.writeLine(c,i,(uint*)&buffer[x + (y + i)*Xsize],fg,bg);
         }

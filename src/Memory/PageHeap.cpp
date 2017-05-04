@@ -16,7 +16,7 @@ void* PageHeap::ialloc(u64 phy){
     paging.createMapping(phy,addr);
     return addr;
 }
-void* PageHeap::ialloc(u64 phy,int nb){
+void* PageHeap::ialloc(u64 phy,uint nb){
     int i = _bitset.largeBsf(nb);
     assert(i != -1);
     for(int i = 0; i < nb ; ++i)

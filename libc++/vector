@@ -112,19 +112,23 @@ namespace std{
             new(this) vector(move(x));
             return *this;
         }
+
         reference operator [](size_type i){
             return _data[i];
         }
         const_reference operator [](size_type i)const{
             return _data[i];
         }
+
         reference at(size_type i){
             assert(i < _size && "At assert failed");
             return _data[i];
         }
-        size_type size(){
+
+        size_type size() const {
             return _size;
         }
+
         /* Switch any valid state to a valid state with same objects owned,
            same _size and _capacity > size.
            The output state is never the empty state */
@@ -172,6 +176,7 @@ namespace std{
         const_iterator cend()const{
             return _data + _size;
         }
+
         iterator erase (iterator first, iterator last){
             size_type diff = last - first;
             if(!diff)return first;
@@ -185,14 +190,31 @@ namespace std{
         iterator erase (iterator position){
             erase(position,position+1);
         }
+
         void pop_back(){
             assert(_size > 0 && "pop_back on empty vector");
             --_size;
             _data[_size].~value_type();
         }
+
         bool empty() const{
             return _size == 0;
         }
+
+        reference front(){
+            return *_data;
+        }
+        const_reference front() const{
+            return *_data;
+        }
+
+        reference back(){
+            return _data[_size-1];
+        }
+        const_reference back() const{
+            return _data[_size-1];
+        }
+
         iterator insert (const_iterator position, const value_type& val){
             if(position == end()){
                 push_back(val);
@@ -225,11 +247,29 @@ namespace std{
                 return newpos;
             }
         }
+
         void clear(){// switch any valid state to the empty valid state
             this->~vector();
             _data = nullptr;
             _size = 0;
             _capacity = 0;
+        }
+
+        void resize(size_type n){
+            if(n == _size) return;
+            if(n < _size){
+                for(int i = n ; i < _size ; ++i){
+                    _data[i].~value_type();
+                }
+                _size = n;
+                return;
+            }
+            reserve(n);
+            for(int i = _size ; i < n ; ++i){
+                new(_data + i) T();
+            }
+            _size = n;
+            return;
         }
     };
 }
