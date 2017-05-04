@@ -76,17 +76,32 @@ class Directory : public ::HDD::Directory, public File {
         ::HDD::Directory* _impl;
 };
 
-#if 0
-class BlockDevice : public virtual File, public HDDBytes {
+class BlockDevice : public ::HDD::BlockDevice, public File {
     public:
-        virtual FileType getType() const;
+        BlockDevice(FS* fs, ::HDD::BlockDevice* impl, u32 dev);
+        virtual void getStats(stat* buf) const;
+        virtual void writeaddr(u64 addr, const void* data, size_t size);
+        virtual void readaddr(u64 addr, void* data, size_t size) const;
+        virtual size_t getSize() const;
+    protected:
+        friend class FS;
+        ::HDD::BlockDevice* _impl;
 };
 
-class CharacterDevice : public virtual File, public Stream {
+class CharacterDevice : public ::HDD::CharacterDevice, public File {
     public:
-        virtual FileType getType() const;
+        CharacterDevice(FS* fs, ::HDD::CharacterDevice* impl, u32 dev);
+        virtual void getStats(stat* buf) const;
+        virtual u64 getMask() const;
+        virtual size_t read(void* buf, size_t count) const;
+        virtual bool eof() const;
+        virtual size_t write(const void* buf, size_t count);
+        virtual size_t tell() const;
+        virtual size_t seek(i64 count, mod mode);
+    protected:
+        friend class FS;
+        ::HDD::CharacterDevice* _impl;
 };
-#endif
 
 
 } //end of namespace VFS

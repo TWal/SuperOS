@@ -105,7 +105,6 @@ namespace std {
         }
         basic_string(basic_string&&str)
             :_capacity(str._capacity),_data(str._data),_size(str._size),_alloc(move(str._alloc)){
-            //if(str._data) printf("move %s \n",str._data);
 
             str._data = nullptr;
             str._size = 0;
@@ -113,26 +112,19 @@ namespace std {
             }
 
         basic_string& operator=(const charT* s){
-            //printf("copys");
-            //if(s) printf(" %s",s);
             size_t size = traits_type::length(s);
             reserve(size +1);
             _size = size;
             traits_type::copy(_data,s,_size);
-            //printf ("end copy");
             return *this;
         }
         basic_string& operator=(const basic_string&str){
-            //printf("copy");
-            //printf(" %s",str.c_str());
             reserve(str._size +1);
             _size = str._size;
             traits_type::copy(_data,str.c_str(),_size);
-            //printf ("end copy");
             return *this;
         }
         basic_string& operator=(basic_string&& str){
-            //printf("move ");
             this->~basic_string();
             new(this) basic_string(move(str));
             return *this;
@@ -268,7 +260,6 @@ namespace std {
             return traits_type::compare(c_str(),str2.c_str(),_size) != 0;
         }
         int compare (const basic_string& str) const noexcept{
-            //printf("Compare ! ");
             if(_size == 0 && str._size == 0) return 0;
             if (_size == 0) return -1;
             if (str._size == 0) return 1;
@@ -282,8 +273,6 @@ namespace std {
                 if (i) return i;
                 else return 1;
             }
-            //printf("Compare %s %s %d\n",c_str(),str.c_str(),i);
-            //return i;
         }
         bool operator<  (const basic_string& rhs) const noexcept  {
             return compare(rhs) <0;
@@ -300,6 +289,11 @@ namespace std {
     };
 
     typedef basic_string<char> string;
+
+    template<typename T>
+    basic_string<T> operator+(basic_string<T> s1, const basic_string<T>& s2) {
+        return s1 += s2;
+    }
 
 }
 

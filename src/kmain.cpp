@@ -26,6 +26,8 @@
 #include "HDD/VFS.h"
 #include "IO/OSFileDesc.h"
 #include "HDD/RamFS.h"
+#include "HDD/DevFS.h"
+#include "Random.h"
 
 #include<vector>
 #include<string>
@@ -179,7 +181,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
 
-#define BLA USER_TEST
+#define BLA EXT2_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
@@ -238,9 +240,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     HDD::Partition pa1(&first,part1);
     HDD::Partition pa2(&first,part2);
     HDD::Ext2::FS fs1(&pa1);
-    HDD::Ext2::FS fs2(&pa2);
     HDD::VFS::FS fs(&fs1);
 
+    HDD::Ext2::FS fs2(&pa2);
     {
         HDD::VFS::Directory* d = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["mnt"]);
         assert(d != nullptr);
@@ -265,6 +267,16 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         assert(d->getType() == HDD::FileType::Directory);
         fs.mount(d, &fs3);
     }
+
+    HDD::DevFS fs4;
+    {
+        HDD::VFS::Directory* d = static_cast<HDD::VFS::Directory*>((*fs.getRoot())["dev"]);
+        assert(d != nullptr);
+        assert(d->getType() == HDD::FileType::Directory);
+        fs4.addHardDrive("sda", &first);
+        fs.mount(d, &fs4);
+    }
+
 
     idt.addInt(0x21,keyboard); // register keyborad interrrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interrruption

@@ -15,7 +15,7 @@ class Stream : public Waitable{
 public:
     Stream() :Waitable(){};
     enum{ // Functionality
-        READABLE = 1,WRITABLE = 2,SEEKABLE = 4,APPENDABLE = 8
+        READABLE = 1, WRITABLE = 2, SEEKABLE = 4, APPENDABLE = 8
     };
     /// get the functionalities of this Stream.
     virtual u64 getMask() const = 0;
@@ -37,7 +37,7 @@ public:
 
        UB if @ref READABLE is not set.
     */
-    virtual size_t read(void * buf,size_t count) const{(void)buf; (void)count;return -1;};
+    virtual size_t read(void* buf, size_t count) const {(void)buf; (void)count;return -1;};
     /// Check if there is nothing more to read.
     virtual bool eof() const {return true;};
     /**
@@ -53,7 +53,7 @@ public:
 
        @todo Proper error handling.
      */
-    virtual size_t write(const void * buf,size_t count){(void)buf; (void)count;return -1;};
+    virtual size_t write(const void* buf, size_t count) {(void)buf; (void)count;return -1;};
 
     /// Get the curent position if fd is @ref SEEKABLE.
     virtual size_t tell() const {return -1;};

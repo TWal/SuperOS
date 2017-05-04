@@ -20,6 +20,7 @@ void FS::mount(Directory* dir, FileSystem* fs) {
     ::HDD::Directory* root = fs->getRoot();
     _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(this, root, _nextDev)));
     _reverseMountedDirs.insert(std::make_pair(std::make_pair(_nextDev, root->getInode()), dir));
+    _nextDev += 1;
 }
 
 void FS::umount(Directory* dir) {
@@ -128,8 +129,11 @@ void Directory::getStats(stat* buf) const {
     if(res->getType() == FileType::RegularFile) {
         return new RegularFile(_fs, static_cast<::HDD::RegularFile*>(res), _dev);
     } else if(res->getType() == FileType::Directory) {
-        ::HDD::Directory* d = static_cast<::HDD::Directory*>(res);
-        return new Directory(_fs, d, _dev);
+        return new Directory(_fs, static_cast<::HDD::Directory*>(res), _dev);
+    } else if(res->getType() == FileType::BlockDevice) {
+        return new BlockDevice(_fs, static_cast<::HDD::BlockDevice*>(res), _dev);
+    } else if(res->getType() == FileType::CharacterDevice) {
+        return new CharacterDevice(_fs, static_cast<::HDD::CharacterDevice*>(res), _dev);
     } else {
         bsod("VFS::Directory::get: oh noes! me dunno how 2 handle dat file type");
     }
@@ -188,6 +192,72 @@ void Directory::removeDirectory(const std::string& name) {
 void Directory::removeEntry(const std::string& name) {
     _impl->removeEntry(name);
 }
+
+/*  ____  _            _    ____             _
+   | __ )| | ___   ___| | _|  _ \  _____   _(_) ___ ___
+   |  _ \| |/ _ \ / __| |/ / | | |/ _ \ \ / / |/ __/ _ \
+   | |_) | | (_) | (__|   <| |_| |  __/\ V /| | (_|  __/
+   |____/|_|\___/ \___|_|\_\____/ \___| \_/ |_|\___\___|
+*/
+
+BlockDevice::BlockDevice(FS* fs, ::HDD::BlockDevice* impl, u32 dev) :
+    VFS::File(fs, impl, dev), _impl(impl) {}
+
+void BlockDevice::getStats(stat* buf) const {
+    i_getStats(buf);
+}
+
+void BlockDevice::writeaddr(u64 addr, const void* data, size_t size) {
+    _impl->writeaddr(addr, data, size);
+}
+
+void BlockDevice::readaddr(u64 addr, void* data, size_t size) const {
+    _impl->readaddr(addr, data, size);
+}
+
+size_t BlockDevice::getSize() const {
+    return _impl->getSize();
+}
+
+
+/*   ____ _                          _            ____             _
+    / ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __|  _ \  _____   _(_) ___ ___
+   | |   | '_ \ / _` | '__/ _` |/ __| __/ _ \ '__| | | |/ _ \ \ / / |/ __/ _ \
+   | |___| | | | (_| | | | (_| | (__| ||  __/ |  | |_| |  __/\ V /| | (_|  __/
+    \____|_| |_|\__,_|_|  \__,_|\___|\__\___|_|  |____/ \___| \_/ |_|\___\___|
+*/
+
+CharacterDevice::CharacterDevice(FS* fs, ::HDD::CharacterDevice* impl, u32 dev) :
+    VFS::File(fs, impl, dev), _impl(impl) {}
+
+void CharacterDevice::getStats(stat* buf) const {
+    i_getStats(buf);
+}
+
+u64 CharacterDevice::getMask() const {
+    return _impl->getMask();
+}
+
+size_t CharacterDevice::read(void* buf, size_t count) const {
+    return _impl->read(buf, count);
+}
+
+bool CharacterDevice::eof() const {
+    return _impl->eof();
+}
+
+size_t CharacterDevice::write(const void* buf, size_t count) {
+    return _impl->write(buf, count);
+}
+
+size_t CharacterDevice::tell() const {
+    return _impl->tell();
+}
+
+size_t CharacterDevice::seek(i64 count, mod mode) {
+    return _impl->seek(count, mode);
+}
+
 
 } //end of namespace VFS
 

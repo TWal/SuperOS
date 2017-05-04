@@ -9,9 +9,9 @@
 class Bytes {
 public:
     /// Write `data` of size `size` at the address `addr`
-    virtual void writeaddr (u64 addr,const void * data, size_t size) = 0;
+    virtual void writeaddr(u64 addr, const void* data, size_t size) = 0;
     /// Read `data` of size `size` at the address `addr`
-    virtual void readaddr (u64 addr, void * data, size_t size) const = 0;
+    virtual void readaddr(u64 addr, void* data, size_t size) const = 0;
     /// Get the size of this sequence. 0 means "unknown"
     virtual size_t getSize() const = 0; // 0 mean unknown or too big
 };
@@ -28,7 +28,7 @@ public :
     ///Same as writeaddr(LBA*512, data, nbsector*512)
     virtual void writelba(u32 LBA , const void* data, u32 nbsector);
     ///Same as readaddr(LBA*512, data, nbsector*512)
-    virtual void readlba(u32 LBA, void * data, u32 nbsector) const;
+    virtual void readlba(u32 LBA, void* data, u32 nbsector) const;
 
 };
 

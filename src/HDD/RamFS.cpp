@@ -13,6 +13,7 @@ namespace RamFS {
 
 FS::FS() : _root(nullptr), _nextInode(0) {
     _root = getNewDirectory(0, 0, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    _root->addEntry("..", _root);
 }
 
 ::HDD::Directory* FS::FS::getRoot() {
@@ -20,13 +21,19 @@ FS::FS() : _root(nullptr), _nextInode(0) {
 }
 
 RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
-    return new RegularFile(this, _nextInode++, mode, uid, gid);
+    return new RegularFile(_nextInode++, mode, uid, gid);
 }
 
 Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
-    Directory* res = new Directory(this, _nextInode++, mode, uid, gid);
-    res->addEntry(".", res);
-    return res;
+    return new Directory(this, _nextInode++, mode, uid, gid);
+}
+
+BlockDevice* FS::getNewBlockDevice(HDDBytes* impl, u16 uid, u16 gid, u16 mode) {
+    return new BlockDevice(impl, _nextInode++, mode, uid, gid);
+}
+
+CharacterDevice* FS::getNewCharacterDevice(Stream* impl, u16 uid, u16 gid, u16 mode) {
+    return new CharacterDevice(impl, _nextInode++, mode, uid, gid);
 }
 
 /*  _____ _ _
@@ -37,8 +44,8 @@ Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
 */
 
 
-File::File(FS* fs, u32 ino, u16 mode, u16 uid, u16 gid) :
-    _fs(fs), _ino(ino), _mode(mode), _nlink(0), _uid(uid), _gid(gid) {}
+File::File(u32 ino, u16 mode, u16 uid, u16 gid) :
+    _ino(ino), _mode(mode), _nlink(0), _uid(uid), _gid(gid) {}
 
 void File::i_getStats(stat* buf) const {
     buf->st_ino = _ino;
@@ -68,8 +75,8 @@ void File::unlink() {
               |___/
 */
 
-RegularFile::RegularFile(FS* fs, u32 ino, u16 mode, u16 uid, u16 gid) :
-    RamFS::File(fs, ino, mode, uid, gid) {}
+RegularFile::RegularFile(u32 ino, u16 mode, u16 uid, u16 gid) :
+    RamFS::File(ino, mode, uid, gid) {}
 
 void RegularFile::getStats(stat* buf) const {
     RamFS::File::i_getStats(buf);
@@ -107,7 +114,8 @@ size_t RegularFile::size() const {
                                         |___/
 */
 
-Directory::Directory(FS* fs, u32 ino, u16 mode, u16 uid, u16 gid) : RamFS::File(fs, ino, mode, uid, gid) {
+Directory::Directory(FS* fs, u32 ino, u16 mode, u16 uid, u16 gid) : RamFS::File(ino, mode, uid, gid), _fs(fs) {
+    addEntry(".", this);
 }
 
 void Directory::getStats(stat* buf) const {
@@ -130,6 +138,7 @@ size_t Directory::size() const {
 void* Directory::open() {
     DirIterator* res = new DirIterator;
     res->it = _entries.begin();
+    return res;
 }
 
 dirent* Directory::read(void* d) {
@@ -177,8 +186,8 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
         static_cast<Directory*>(file)->link();
     }
     _entries.insert(std::make_pair(name, file));
-    if(file->getType() == FileType::Directory && std::string("..") != name) {
-        dynamic_cast<Directory*>(file)->addEntry("..", this);
+    if(file->getType() == FileType::Directory && std::string(".") != name && std::string("..") != name) {
+        static_cast<Directory*>(file)->addEntry("..", this);
     }
 }
 
@@ -193,6 +202,83 @@ void Directory::removeDirectory(const std::string& name) {
 void Directory::removeEntry(const std::string& name) {
     assert(_entries.erase(name));
 }
+
+
+/*  ____  _            _    ____             _
+   | __ )| | ___   ___| | _|  _ \  _____   _(_) ___ ___
+   |  _ \| |/ _ \ / __| |/ / | | |/ _ \ \ / / |/ __/ _ \
+   | |_) | | (_) | (__|   <| |_| |  __/\ V /| | (_|  __/
+   |____/|_|\___/ \___|_|\_\____/ \___| \_/ |_|\___\___|
+*/
+
+BlockDevice::BlockDevice(HDDBytes* impl, u32 ino, u16 mode, u16 uid, u16 gid) :
+    RamFS::File(ino, mode, uid, gid), _impl(impl) {
+}
+
+void BlockDevice::getStats(stat* buf) const {
+    i_getStats(buf);
+}
+
+size_t BlockDevice::size() const {
+    return _impl->getSize();;
+}
+
+void BlockDevice::writeaddr(u64 addr, const void* data, size_t size) {
+    _impl->writeaddr(addr, data, size);
+}
+
+void BlockDevice::readaddr(u64 addr, void* data, size_t size) const {
+    _impl->readaddr(addr, data, size);
+}
+
+size_t BlockDevice::getSize() const {
+    return _impl->getSize();
+}
+
+
+/*   ____ _                          _            ____             _
+    / ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __|  _ \  _____   _(_) ___ ___
+   | |   | '_ \ / _` | '__/ _` |/ __| __/ _ \ '__| | | |/ _ \ \ / / |/ __/ _ \
+   | |___| | | | (_| | | | (_| | (__| ||  __/ |  | |_| |  __/\ V /| | (_|  __/
+    \____|_| |_|\__,_|_|  \__,_|\___|\__\___|_|  |____/ \___| \_/ |_|\___\___|
+*/
+
+CharacterDevice::CharacterDevice(Stream* impl, u32 ino, u16 mode, u16 uid, u16 gid) :
+    RamFS::File(ino, mode, uid, gid), _impl(impl) {
+}
+
+void CharacterDevice::getStats(stat* buf) const {
+    i_getStats(buf);
+}
+
+size_t CharacterDevice::size() const {
+    return 0;
+}
+
+u64 CharacterDevice::getMask() const {
+    return _impl->getMask();
+}
+
+size_t CharacterDevice::read(void* buf, size_t count) const {
+    return _impl->read(buf, count);
+}
+
+bool CharacterDevice::eof() const {
+    return _impl->eof();
+}
+
+size_t CharacterDevice::write(const void* buf, size_t count) {
+    return _impl->write(buf, count);
+}
+
+size_t CharacterDevice::tell() const {
+    return _impl->tell();
+}
+
+size_t CharacterDevice::seek(i64 count, mod mode) {
+    return _impl->seek(count, mode);
+}
+
 
 } // end of namespace RamFS
 
