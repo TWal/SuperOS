@@ -55,7 +55,7 @@ u16 Pic::getMask() {
 void Pic::setMask(u16 mask) {
     _mask = mask;
     outb(PIC1_DATA, _mask&0x00FF);
-    outb(PIC2_DATA, _mask&0xFF00 >> 8);
+    outb(PIC2_DATA, (_mask&0xFF00) >> 8);
 }
 
 void Pic::activate(u8 irq) {
