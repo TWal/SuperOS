@@ -4,7 +4,7 @@
     .global startKernel
 
     .equ MAGIC_NUMBER, 0x1BADB002
-    .equ FLAGS, 0x3 #information about memory + aligned modules + graph
+    .equ FLAGS, 0x7 #information about memory + aligned modules + graph
     .equ CHECKSUM, -MAGIC_NUMBER - FLAGS
     ## MAGICNUMBER + FLAGS + CHECKSUM = 0
 
@@ -20,7 +20,7 @@ loader_stack:
 .section .text
     .int MAGIC_NUMBER, FLAGS, CHECKSUM
     .int 0,0,0,0,0
-    #.int 0,1366,768,0
+    .int 0,1024,768,32
 
 loader:
     cli

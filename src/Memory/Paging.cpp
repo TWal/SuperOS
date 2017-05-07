@@ -2,6 +2,7 @@
 #include "PhysicalMemoryAllocator.h"
 #include <new>
 #include <stdio.h>
+#include "../log.h"
 
 PageEntry* const Paging::virtTables =  (PageEntry*)-0xC0000000ll;
 u64* const Paging::bitset =  (u64*)-0xA0000000ll; // physmemalloc
@@ -55,9 +56,9 @@ Paging::Paging(){
 
 
 void Paging::init(PageEntry* pPML4){ // physical PML4
-    fprintf(stderr,"\nPaging Initializing\n");
+    info(Pagingl,"Paging Initializing");
     assert(pPML4[511].getAddr());
-    fprintf(stderr,"PML4 physical address : %p\n",pPML4);
+    debug(Pagingl,"PML4 physical address : %p",pPML4);
     PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
     PageEntry* PPD = new ((void*)physmemalloc.alloc()) PageEntry[512]; // paging page directory
@@ -139,7 +140,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
 
 
 void Paging::allocStack(uptr stackPos,size_t nbPages){
-    fprintf(stderr,"Allocating %lld pages of stack\n",nbPages);
+    info(Pagingl,"Allocating %lld pages of stack",nbPages);
     assert(nbPages < 512); // TODO support more than 2M of stack
     stackPD[511].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     actTmpPT(stackPD[511].getAddr());
@@ -270,10 +271,17 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 
-void Paging::createMapping(uptr phy,void* virt){
-    assert(!(phy & ((1<< 12 )-1)) && !((uptr)virt & ((1<< 12 )-1))
-           && !(phy >> 52));
-    //printf("activating %p\n",phy);
+void Paging::createMapping(uptr phy,void* virt,bool wt){
+    //debug(Pagingl,"mapping %p to %p",virt,phy);
+    if(phy & ((1<< 12 )-1)) {
+        bsod("Create mapping : physical address is not page-aligned : %p",phy);
+    }
+    if((uptr)virt & ((1<< 12 )-1)){
+        bsod("Create mapping : virtual address is not page-aligned : %p",phy);
+    }
+    if(phy >> 52) {
+        bsod("Create mapping : physical address is too large (more than 52 bits)",phy);
+    }
     uptr PT = getPTphy(virt);
     //printf("PT address get %p\n",PT);
     actTmpPT(PT);
@@ -281,6 +289,7 @@ void Paging::createMapping(uptr phy,void* virt){
         bsod("The virtual page %p was already mapped to %p",virt,tmpPT[getPTindex(virt)].getAddr());
     }
     tmpPT[getPTindex(virt)].activeAddr(phy);
+    tmpPT[getPTindex(virt)].writeThrough = wt;
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;
     }
@@ -289,9 +298,9 @@ void Paging::createMapping(uptr phy,void* virt){
 }
 
 
-void Paging::createMapping(uptr phy,void* virt,int numPg){
+void Paging::createMapping(uptr phy,void* virt,uint numPg,bool wt){
     for(int i = 0 ; i < numPg ; ++i){
-        createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000);
+        createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000,wt);
     }
 }
 

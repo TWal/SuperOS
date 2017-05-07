@@ -10,6 +10,9 @@
 #define PD_NUM 3 ///< Number of preloaded PageDirectory in loader
 #define PT_NUM 4 ///< Number of preloaded PageTables in loader
 
+
+
+
 /**
    @brief Represent an entry in a PD / a PDP / a PML4
 
@@ -97,6 +100,11 @@ struct PageEntry {
 
 static_assert(sizeof(PageEntry) == 8, "PageEntry has the wrong size");
 
+
+
+
+
+
 /**
    @brief Represent an entry in a PT
 
@@ -162,6 +170,11 @@ struct PageTable {
 } __attribute__((packed));
 
 static_assert(sizeof(PageTable) == 8, "PageTable has the wrong size");
+
+
+
+
+
 
 #ifdef SUP_OS_LOADER
 
@@ -271,7 +284,7 @@ public:
 
        @sa @ref stack
     */
-    void allocStack(uptr stackPos,size_t nbPages);
+    void allocStack(uptr stackPos, size_t nbPages);
     /**
        @brief Removes all identity mappings.
 
@@ -283,6 +296,7 @@ public:
        @brief Map the virtual address virt to phy.
        @param virt The virtual address to be mapped.
        @param phy The destination physical address.
+       @param wt If the mapping if writeThrough.
 
        Currently there is no way to manipulate non active page tables.
        To edit user space mapping you should activate it first.
@@ -297,7 +311,7 @@ public:
 
 
      */
-    void createMapping(uptr phy, void* virt);
+    void createMapping(uptr phy, void* virt, bool wt = false);
     /**
        @brief Map nbPages starting from virt to a physical chunk of same size
        starting from phy.
@@ -310,7 +324,7 @@ public:
        @ref createMapping(uptr,void*) "createMapping".
 
      */
-    void createMapping(uptr phy, void* virt,int nbPages);
+    void createMapping(uptr phy, void* virt, uint nbPages, bool wt = false);
     /**
        @brief Remove the the mapping of the chunk starting at virt with nbPages Pages.
        @param virt The starting virtual address
@@ -318,7 +332,7 @@ public:
 
        If the mapping does not exists then, there is a @ref bsod "Blue Screen".
      */
-    void freeMapping(void* virt,int nbPages = 1);
+    void freeMapping(void* virt, int nbPages = 1);
     /**
        @brief Remove the the mapping of a chunk and free pointed physical memory
        @param virt The starting virtual address
@@ -329,7 +343,7 @@ public:
        The physical pages pointed by the freed virtual memory are freed by
        PhysicalMemoryAllocator::free.
     */
-    void freeMappingAndPhy(void* virt,int nbPages = 1);
+    void freeMappingAndPhy(void* virt, int nbPages = 1);
     /**
        @brief Setup a valid user memory PDP.
 
@@ -415,6 +429,7 @@ extern Paging paging;
        - From -2G to -1G kernel code and heap (owned by @ref kheap)
          (Paging::kernelPD)
        - From -2G-8K to -2G-4K : tid bitset for Scheduler
+       - At -2.25G : Log buffer
        - At -2.5G : physical memory bitset for @ref physmemalloc
        - At -2.5G - 8K : @ref pageHeap bitset
        - At -3G fixed place page address of Paging's private variables
@@ -422,11 +437,13 @@ extern Paging paging;
        - From -3G to -3.1G : @ref pageHeap space
        - At -3.5G : kernel TLS, cf. GDTDescriptor.
        - At -4G temporary space for loading user mode programs
+       - At -4.5G : RAM video buffer
+       - At -5G : VRAM video buffer
 
 
    @section map_user User space mappings
 
-   The user space is all positives addresses. The is one user PDP per process 
+   The user space is all positives addresses. The is one user PDP per process
    plus one default user PDP that map only the first MB.
 
    A user PDP is said to be *valid* if it identity map addresses from 4K to 1M.
@@ -473,7 +490,8 @@ extern Paging paging;
        - Page %Directory Pointer (PDP)
        - Page Map Level 4 (PML4)
 
-   All those table have 512 entry of size 8 bytes and thus take 4K i.e exactly one page.
+   All those table have 512 entry of size 8 bytes and thus take 4K i.e exactly
+   one page.
 
    The PML4 is the starting point there is only one PML4 active at the same time,
    its physical address is in the cr3 register.
@@ -492,7 +510,8 @@ extern Paging paging;
        - from 0 to 11 : Final offset : we take the base address of
          the page where we are and add this offset to get to the physical address.
 
-   Trough this commplicated process, the MMU convert virtual pointer to physical addresses.
+   Trough this commplicated process, the MMU convert virtual pointer to physical
+   addresses.
 
    There is a other way of doing that by page of 2MB, see @ref PageEntry::isSizeMega
 
@@ -541,9 +560,9 @@ extern Paging paging;
    The virtual space is divided in two space : kernel space, negative addresses
    and user space : positive addresses. The detailled mapping of virtual memory
    is shown on the documentation page @subpage mappings.
-   In general all page table allocation are done dynamically, page tables allocated
-   for kernel mapping are never freed (the data physical page are freed but not
-   the PT,PD,PDP structure).
+   In general all page table allocation are done dynamically, page tables
+   allocated for kernel mapping are never freed (the data physical page are
+   freed but not the PT,PD,PDP structure).
    The user space page structure is freed only when the process dies and not
    dynamically during its execution (as before, data page are still freed
    dynamically).
@@ -553,10 +572,11 @@ extern Paging paging;
    any other pages.
 
    The virtual allocation of page table can be done in three different ways.
-       - for page used often and *central*, they are statically allocated (cf private
-         static vars of Paging)
-       - for simple and early dynamic allocation, their statically allocated temporary
-         virtual empalcement, @ref Paging::tmpPDP, @ref Paging::tmpPD, @ref Paging::tmpPT.
+       - for page used often and *central*, they are statically allocated
+         (cf private static vars of Paging)
+       - for simple and early dynamic allocation, their statically allocated
+         temporary virtual empalcement, @ref Paging::tmpPDP, @ref Paging::tmpPD,
+         @ref Paging::tmpPT.
        - for more complex dynamic allocation, the pageHeap object permit to
          allocate page in virtual memory dynamically.
  */
@@ -571,6 +591,10 @@ extern Paging paging;
    the bit 47.
 
    If this bit is 0 we have positive address else, it is a negative address.
+
+   Any dereferencing of a non-connnical pointer is followed by a General
+   Protection Fault.
+
 
  */
 

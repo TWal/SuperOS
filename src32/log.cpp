@@ -1,89 +1,42 @@
-#include <stdarg.h>
-#include "../stdio.h"
-#include "../unistd.h"
-#include "../string.h"
+#include "log.h"
+#include "Graphics.h"
+#include "../src/IO/Serial.h"
 
-int errno;
+char logBuffer[LOADERBUFFER * 0x1000] __attribute__((section(".data.pages")));
 
-struct FILE{
-    int fd;
-};
+size_t posInLogBuffer = 0;
 
-static FILE _stdin = {0};
-FILE* stdin = &_stdin;
-static FILE _stdout = {1};
-FILE* stdout = &_stdout;
-static FILE _stderr = {2};
-FILE* stderr = &_stderr;
-static FILE _stdlog = {3};
-FILE* stdlog = &_stdlog;
+#define EOF (-1)
 
-
-
-int fgetc(FILE* file){ // TODO MT-safe
-    char ret;
-    int res = read(file->fd,&ret,1);
-    if (res == 0 || res == -1) return EOF;
-    else return ret;
-}
-
-int fputc(int character,FILE* file){
-    int res = write(file->fd,&character,1);
-    if (res == 0 || res == -1) return EOF;
-    else return character;
-}
-
-char* fgets (char* str, int num, FILE* file){// TODO bufferize
-    char* str2 = str;
-    while(num > 1){
-        char c = fgetc(file);
-        if(c == EOF) break;
-        if(c == '\n'){
-            *str2 = c;
-            ++str2;
-            --num;
-            break;
-        }
-        *str2 = c;
-        ++str2;
-        --num;
+int putc(int character,bool log){
+    ser.write(character);
+    if(!log) return 1;
+    if(posInLogBuffer >= LOADERBUFFER * 0x1000){
+        ser.write("\n\n Out of logging buffer\n");
+        rfail(OutOfLoggingBuffer);
     }
-    if(str2 == str) return NULL;
-    *str2 = 0;
-    return str;
+    logBuffer[posInLogBuffer] = character;
+    ++posInLogBuffer;
+    return 1;
 }
 
-int fputs(const char* str, FILE* file){
-    int num = strlen(str);
-    while (num >0){
-        int res = write(file->fd,str,num);
-        if(res == 0 || res == -1) return EOF;
-        num -= res;
-        str += res;
+
+int puts(const char* str,bool log){
+    while(*str){
+        putc(*str,log);
+        ++str;
     }
-    return num;
-}
-
-int getchar(){
-    return fgetc(stdin);
-}
-int putchar(int character){
-    return fputc(character,stdout);
-}
-
-int puts(const char* str){
-    if(fputs(str,stdout) == EOF) return EOF;
-    return putchar('\n');
+    return 1;
 }
 
 // vfprintf ....
 
 // return the printed character on success, EOF on failure.
-int printDigit(int d, FILE* file){
+int printDigit(int d,bool log){
     if(d <= 9) {
-        return putc('0' + d,file);
+        return putc('0' + d,log);
     } else {
-        return putc('a' + (d-10),file);
+        return putc('a' + (d-10),log);
     }
 }
 
@@ -91,7 +44,7 @@ int printDigit(int d, FILE* file){
 typedef unsigned long long int ulint;
 typedef long long int lint;
 typedef unsigned int uint;
-int printUInt(ulint n, uint base, uint padding, FILE* file){
+int printUInt(ulint n, uint base, uint padding,bool log){
     ulint i = 1;
     uint nb = 0;
     while(n/i >= base) {
@@ -102,31 +55,31 @@ int printUInt(ulint n, uint base, uint padding, FILE* file){
     }
 
     for(uint j = 1; j < padding; ++j) {
-        if(putc('0', file) == EOF) return EOF;
+        if(putc('0',log) == EOF) return EOF;
         ++nb;
     }
 
     while(n > 0) {
-        if(printDigit(n/i,file) == EOF) return EOF;
+        if(printDigit(n/i,log) == EOF) return EOF;
         n %= i;
         i /= base;
         ++nb;
     }
     while(i >= 1) {
-        if(putc('0', file) == EOF) return EOF;
+        if(putc('0',log) == EOF) return EOF;
         i /= base;
         ++nb;
     }
     return nb;
 }
-int printInt(lint n, uint base, uint padding, FILE* file) {
+int printInt(lint n, uint base, uint padding,bool log) {
     int l = 0;
     if(n < 0) {
-        putc('-', file);
+        putc('-',log);
         n = -n;
         l = 1;
     }
-    int res = printUInt(n,base,padding,file);
+    int res = printUInt(n,base,padding,log);
     if( res == EOF) return EOF;
     return res + l;
 }
@@ -144,11 +97,11 @@ int printInt(lint n, uint base, uint padding, FILE* file) {
             break;                                  \
     }
 
-int vfprintf (FILE* file, const char * s, va_list ap){
+int vprintf (bool log,const char * s, va_list ap){
     int nb = 0;
     while(*s) {
         if(*s != '%') {
-            if(putc(*s, file) == EOF) return EOF;
+            if(putc(*s,log) == EOF) return EOF;
             ++nb;
             ++s;
             continue;
@@ -168,34 +121,34 @@ int vfprintf (FILE* file, const char * s, va_list ap){
             ++length;
             ++s;
         }if(*s == '%') {
-            if(putc('%', file) == EOF) return EOF;
+            if(putc('%',log) == EOF) return EOF;
             ++s;
             ++nb;
         } else if(*s == 'u') {
             SWITCHSIZE(uint,unsigned long int, ulint);
-            int res = printUInt(val,10,padding,file);
+            int res = printUInt(val,10,padding,log);
             if(res == EOF) return EOF;
             nb += res;
             ++s;
         } else if(*s == 'd') {
             SWITCHSIZE(int,long int, lint);
-            int res = printInt(val,10,padding,file);
+            int res = printInt(val,10,padding,log);
             if(res == EOF) return EOF;
             nb += res;
             ++s;
         } else if(*s == 'x') {
             SWITCHSIZE(uint,unsigned long int, ulint);
-            int res = printUInt(val,16,padding,file);
+            int res = printUInt(val,16,padding,log);
             if(res == EOF) return EOF;
             nb += res;
             ++s;
         } else if(*s == 'p') {
-            int res = printUInt(va_arg(ap, uintptr_t), 16, padding, file);
+            int res = printUInt(va_arg(ap, uintptr_t), 16, padding,log);
             if(res == EOF) return EOF;
             nb += res;
             ++s;
         } else if(*s == 's') {
-            int res = fputs(va_arg(ap, char*), file );
+            int res = puts(va_arg(ap, char*),log);
             if(res == EOF) return EOF;
             nb += res;
             ++s;
@@ -203,7 +156,7 @@ int vfprintf (FILE* file, const char * s, va_list ap){
             //integer types smaller than int are promoted to int
             //when used in a ...
             char c = va_arg(ap, int);
-            if(fputc(c, file)== EOF) return EOF;
+            if(putc(c,log)== EOF) return EOF;
             ++nb;
             ++s;
         } else {
@@ -213,17 +166,49 @@ int vfprintf (FILE* file, const char * s, va_list ap){
     return nb;
 }
 
-// vsprintf
-void fprintf(FILE* file, const char* format, ...){
+void printf(bool log, const char*format,...){
     va_list ap;
     va_start(ap, format);
-    vfprintf(file,format, ap);
+    vprintf(log,format, ap);
     va_end(ap);
 }
 
-void printf(const char*format,...){
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stdout,format, ap);
-    va_end(ap);
+const char* txtLvls[4] = {
+    "\x1b[31mError:  ",
+    "\x1b[33mWarning:",
+    "\x1b[34mInfo:   ",
+    "\x1b[32mDebug:  ",
+};
+
+const char* txtMods[LAST_LOGMOD] = {
+    "           ",
+    "[Init]     ",
+    "[PhyMem]   ",
+    "[Paging]   ",
+    "[Segment]  ",
+    "[Inter]    ",
+    "[Screen]   ",
+    "[Kbd]      ",
+    "[Mouse]    ",
+    "[Syscalls] ",
+    "[Graphics] ",
+    "[Hdd]      ",
+    "[Ext2]     ",
+    "[VFS]      ",
+    "[RamFS]    "
+};
+
+
+void vlog(LogLevel lvl, LogModule mod, const char* format, va_list ap){
+    if(logLvls[mod] >= lvl){
+        printf(true, "%s%s ",txtMods[mod],txtLvls[lvl]);
+        vprintf(true,format,ap);
+        printf(true, "\n\x1b[m");
+    }
+    else{
+        printf(false, "%s%s ",txtMods[mod],txtLvls[lvl]);
+        vprintf(false,format,ap);
+        printf(false, "\n\x1b[m");
+    }
+
 }

@@ -17,6 +17,7 @@ extern "C" {
     extern FILE* stdin;
     extern FILE* stdout;
     extern FILE* stderr;
+    extern FILE* stdlog;
 
     int fgetc(FILE* file);
     int fputc(int character,FILE* file);

@@ -14,7 +14,7 @@ u64 StreamZero::getMask() const {
     return READABLE | WRITABLE | SEEKABLE | APPENDABLE;
 }
 
-size_t StreamZero::read(void* buf, size_t count) const {
+size_t StreamZero::read(void* buf, size_t count){
     memset(buf, 0, count);
     return count;
 }
@@ -47,7 +47,7 @@ u64 StreamNull::getMask() const {
     return READABLE | WRITABLE | SEEKABLE | APPENDABLE;
 }
 
-size_t StreamNull::read(void*, size_t) const {
+size_t StreamNull::read(void*, size_t){
     return 0;
 }
 
@@ -79,7 +79,7 @@ u64 StreamRandom::getMask() const {
     return READABLE | WRITABLE | SEEKABLE | APPENDABLE;
 }
 
-size_t StreamRandom::read(void* buf, size_t count) const {
+size_t StreamRandom::read(void* buf, size_t count){
     size_t nb = count/4;
     u32* buf32 = (u32*)buf;
     for(size_t i = 0; i < nb; ++i) {

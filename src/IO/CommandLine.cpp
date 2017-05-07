@@ -1,17 +1,19 @@
 #include "CommandLine.h"
 #include "FrameBuffer.h"
 #include "Keyboard.h"
+#include "../log.h"
 
 using namespace std;
 
-CommandLine::CommandLine(table_type table):_table(table){
+void CommandLine::init(table_type table){
+    _table = table;
 
     //builtin commands here
     _table.insert(make_pair("echo", [](CommandLine*, const vector<string>& args) {
         for(auto s : args) {
             printf("%s ", s.c_str());
         }
-        fb.printf("\n");
+        printf("\n");
     }));
 
     _table.insert(make_pair("help",[](CommandLine*, const vector<string>&) {
@@ -165,50 +167,40 @@ CommandLine::CommandLine(table_type table):_table(table){
     _table.insert(make_pair("reboot", [](CommandLine*, const vector<string>&) {
         reboot();
     }));
+    printf("$ ");
 }
 
 void CommandLine::run(){
     while(true) {
-        printf("$ ");
         auto input = readCommand();
         if(input.size() == 0) continue;
+        if(input.size() == 1 and input[0].size() == 1 and input[0][0] == EOF) break;
         auto it = _table.find(input[0]);
         if(it == _table.end()){
             printf("Command %s not found\n",input[0].c_str());
+            printf("$ ");
             continue;
         }
         input.erase(input.begin());
         it->second(this,input);
+        printf("$ ");
     }
 }
 
 std::string CommandLine::readCommandText(){
     std::string res;
-    //fb.printf("hey ! \n");
-    while(true) {
-        Keycode kc = kbd.poll();
-        //fb.printf("Reading Command");
-        if(!kc.isRelease && kc.symbol > 0) {
-            if(kc.symbol == '\b') {
-                if(!res.empty()) {
-                    fb.puts("\b \b");
-                }
-            } else {
-                fb.putc(kc.symbol);
-            }
+    int c = getchar();
+    //debug(CmdLine,"Command Line recieved %d",c);
+    res.push_back(c);
+    if(c == EOF) return res;
+    while((c= getchar()) != EOF){
+        if (c == '\n'){
+            debug(CmdLine,"Command Line recieved %s",res.c_str());
+            return res;
         }
-        else continue;
-        if(kc.symbol == '\n') break;
-        if(kc.symbol == '\b'){
-            if(!res.empty()) {
-                res.pop_back();
-            }
-            continue;
-        }
-        if (kc.symbol != -1) res.push_back(kc.symbol);
+        res.push_back(c);
     }
-    //fb.printf("Command : %s",res.c_str());
-    return res;
+    assert(false);
 }
 std::vector<std::string> CommandLine::readCommand(){
     return split(readCommandText(),' ',false); // may be more complicated later.
@@ -217,3 +209,5 @@ std::vector<std::string> CommandLine::readCommand(){
 void CommandLine::add(std::string name,command_func func){
     _table[name] = func;
 }
+
+CommandLine cl;

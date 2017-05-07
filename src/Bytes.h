@@ -8,6 +8,7 @@
 */
 class Bytes {
 public:
+    virtual ~Bytes(){}
     /// Write `data` of size `size` at the address `addr`
     virtual void writeaddr(u64 addr, const void* data, size_t size) = 0;
     /// Read `data` of size `size` at the address `addr`

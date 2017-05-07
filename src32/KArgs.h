@@ -2,6 +2,7 @@
 #define KARGS_H
 
 #include "../src/utility.h"
+#include "Graphics.h"
 
 /**
    @brief This structure is used by KArgs to mark a segment of memory used
@@ -13,6 +14,9 @@ struct OccupArea{
     u32 addr; ///< The address of the beginning of the segment.
     u32 nbPages; ///< The number of pages (4K) occupied by the segment.
 }__attribute__((packed));
+
+
+
 
 
 
@@ -63,6 +67,10 @@ struct KArgs{
     u64 PML4; ///< PML4 position
     u64 freeAddr; ///< First free adress : no memory is used by the loader beyond this point.
     u64 RAMSize; ///< The RAMSize except the first 1MB
+    u64 GraphicalParam; ///< The address of a GraphicalParam structure.
+    u64 font; ///< The address of default font.
+    u64 logBuffer; ///< The address of loader buffer.
+    u64 posInLogBuffer; ///< Current position in this buffer.
 }__attribute__((packed));
 
 

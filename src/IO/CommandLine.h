@@ -14,13 +14,15 @@ public :
 private:
     table_type _table;
 public :
-    explicit CommandLine(table_type table = table_type());
+    void init(table_type table = table_type());
     void run();
     std::string readCommandText();
     std::vector<std::string> readCommand();
     void add(std::string name,command_func func);
     HDD::Directory * pwd;
 };
+
+extern CommandLine cl;
 
 
 #endif

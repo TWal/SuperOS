@@ -5,7 +5,7 @@
 #include "../Bytes.h"
 #include "Stream.h"
 
-class BytesStream : public Stream{
+class BytesStream : public Stream{ // TODO test this
     Bytes* _data;
     u64 _addr;
 public:

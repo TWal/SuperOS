@@ -6,7 +6,7 @@
 class StreamZero : public Stream {
     public:
         virtual u64 getMask() const;
-        virtual size_t read(void* buf, size_t count) const;
+        virtual size_t read(void* buf, size_t count);
         virtual bool eof() const;
         virtual size_t write(const void* buf, size_t count);
         virtual size_t tell() const;
@@ -16,7 +16,7 @@ class StreamZero : public Stream {
 class StreamNull : public Stream {
     public:
         virtual u64 getMask() const;
-        virtual size_t read(void* buf, size_t count) const;
+        virtual size_t read(void* buf, size_t count);
         virtual bool eof() const;
         virtual size_t write(const void* buf, size_t count);
         virtual size_t tell() const;
@@ -26,7 +26,7 @@ class StreamNull : public Stream {
 class StreamRandom : public Stream {
     public:
         virtual u64 getMask() const;
-        virtual size_t read(void* buf, size_t count) const;
+        virtual size_t read(void* buf, size_t count);
         virtual bool eof() const;
         virtual size_t write(const void* buf, size_t count);
         virtual size_t tell() const;

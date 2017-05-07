@@ -12,21 +12,40 @@
    and providing clean IO for the OS
 */
 /**
-   @brief list of OS wide Streams
+   @brief list of OS wide Streams (POSIX file descriptors interfaces)
 
-   Currently 1 is a compound of FrameBuffer and Serial and 2 is serial
-   (see OutMixStream).
+   stdin(0) & stdout(1) are for kernel command line.
+
+   stderr(2) point to serial
+
+   stdlog(3) sends kernel logs in as many place as possible.
 
    The number 0 (stdin) is currently disabled.
+
+   see @read and @write
  */
 extern std::vector<Stream*> OSStreams;
 
-/// Initialize OS file descriptors, no @ref printf (but @ref kprintf) before calling this function.
-void IOinit();
+/**
+   @brief Initialize IO Sytem after graphics : print all waiting kernel log to Stream str.
+
+   From now all input-output pass through @ref Stream "Streams" in @ref OSStreams.
+
+   @todo handle graphical Output
+
+ */
+void IOinit(Stream * str);
 
 // OS posix read
 extern "C" size_t read(int fd, void* buf, size_t count);
+
+/**
+   @brief OS write, see @ref OSStreams
+ */
 extern "C" size_t write(int fd, const void* buf, size_t count);
+
+
+
 
 class FBStream : public Stream{
 public:
@@ -36,12 +55,12 @@ public:
 
 class SerialStream : public Stream{
 public:
-    u64 getMask() const {return Stream::WRITABLE;}
+    u64 getMask() const {return Stream::WRITABLE | Stream::APPENDABLE;}
     size_t write(const void* buf,size_t count);
 };
 
 
-/// When true fd 2 is ignored before IOinit();
+/// When true fd 2 is ignored before IOPostGraphicinit();
 extern bool unitTest;
 
 

@@ -1,6 +1,7 @@
 #include "PhysicalMemoryAllocator.h"
 #include "../../src32/KArgs.h"
 #include <stdio.h>
+#include "../log.h"
 
 
 extern "C" void* kernel_code_end;
@@ -12,15 +13,15 @@ void PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupA
     assert(((u64)phyBitset & (0x1000 -1)) == 0);
     _bitset.init(phyBitset,RAMSize/0x1000);
     _bitset.fill();
-    fprintf(stderr,"\nInitializing physical memory with %llx\n",RAMSize);
+    info(PhyMem,"Initializing physical memory with %u MB of RAM",RAMSize/1024/1024);
 
-    fprintf(stderr,"Bitset pageSize %lld\n",getPageSize());
+    debug(PhyMem,"Bitset pageSize %lld",getPageSize());
     for(u64 i = 0 ; i < getPageSize() ; ++i){ // allocate itself
         unset(((uptr)_bitset.getAddr()) + 0x1000 * i);
     }
 
     for(u64 i = 0 ; i < occupSize ; ++i){
-        fprintf(stderr,"Physical allocation of 0x%p with %d\n",
+        debug(PhyMem,"Physical allocation of 0x%p with %d",
                 occupArea[i].addr,occupArea[i].nbPages);
         for(u64 j = 0 ; j < occupArea[i].nbPages ; ++j){
             unset(occupArea[i].addr + j * 0x1000);

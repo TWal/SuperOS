@@ -6,6 +6,8 @@
 #include "../src/IO/FrameBuffer.h"
 #include "../src/User/Elf64.h"
 #include "../src/IO/Serial.h"
+#include "Graphics.h"
+#include "log.h"
 
 /**
    @brief Check if long mode is available on this processor
@@ -86,105 +88,61 @@ void push(char*& rsp,T t){
 
  */
 
-struct VbeInfoBlock {
-    char VbeSignature[4];             // == "VESA"
-    uint16_t VbeVersion;                 // == 0x0300 for VBE 3.0
-    uint16_t OemStringPtr[2];            // isa vbeFarPtr
-    uint8_t Capabilities[4];
-    uint16_t VideoModePtr[2];         // isa vbeFarPtr
-    uint16_t TotalMemory;             // as # of 64KB blocks
-} __attribute__((packed));
-
-struct ModeInfoBlock {
-    uint16_t attributes;
-    uint8_t winA,winB;
-    uint16_t granularity;
-    uint16_t winsize;
-    uint16_t segmentA, segmentB;
-    u32 fctptr;
-    uint16_t pitch; // bytes per scanline
-
-    uint16_t Xres, Yres;
-    uint8_t Wchar, Ychar, planes, bpp, banks;
-    uint8_t memory_model, bank_size, image_pages;
-    uint8_t reserved0;
-
-    uint8_t red_mask, red_position;
-    uint8_t green_mask, green_position;
-    uint8_t blue_mask, blue_position;
-    uint8_t rsv_mask, rsv_position;
-    uint8_t directcolor_attributes;
-
-    uint32_t physbase;  // your LFB (Linear Framebuffer) address ;)
-    uint32_t reserved1;
-    uint16_t reserved2;
-    u16 BytePerLine;
-} __attribute__((packed));
 
 extern "C" void load(multibootInfo * mb){
-    init();
-    /*kprintf("hey \n");
-    kprintf("Is graphics activated ? : %d\n",mb->check(multibootInfo::GRAPHICS));
-    kprintf("VBE mode : %x\n",mb->VBE_mode);
-    kprintf("VBE mode addr : %x\n",mb->VBE_mode_info);
-    VbeInfoBlock* vib = (VbeInfoBlock*)mb->VBE_control_info;
     ModeInfoBlock* mib = (ModeInfoBlock*)mb->VBE_mode_info;
-    kprintf("Attributes : %c\n",vib->VbeSignature[1]);
-    kprintf("Attributes : %x\n",mib->attributes);
-    kprintf("X resolution : %d\n",mib->Xres);
-    kprintf("Y resolution : %d\n",mib->Yres);
-    kprintf("bpp : %d\n",mib->bpp);
-    kprintf("Linear FB : %p\n",mib->physbase);
-    kprintf("BPL : %d\n",mib->BytePerLine);
-    char* FB = (char*)mib->physbase;
+    _mib = mib; // to allow crash quickly
+    info("Booting Super OS v0.1");
+    info("Loader starts");
+    info("Loader built on %s at %s", __DATE__,__TIME__);
 
-    for(int i = 0 ; i < mib->Yres ; ++i){
-        for(int j = 0 ; j < mib->Xres ; ++j){
-            if( j < mib->Xres / 3){
-                FB[i * mib->BytePerLine + 4*j] = 255;
-                continue;
-            }if( j < 2*mib->Xres / 3){
-                FB[i * mib->BytePerLine + 4*j] = 255;
-                FB[i * mib->BytePerLine + 4*j+1] = 255;
-                FB[i * mib->BytePerLine + 4*j+2] = 255;
-                continue;
-            }
-            FB[i * mib->BytePerLine + 4*j+2] = 255;
-
-        }
+    init();
+    VbeInfoBlock* vib = (VbeInfoBlock*)mb->VBE_control_info;
+        GraphicalParam gp = graphParse(vib,mib);
+    if(mb->mods_count <= 1){
+        error("Not enough modules");
+        fail(mib,ModuleNumber);
     }
-    stop;*/
 
-
-    LMcheck(); // checking Long mode available
+    info(Init,"Checking if long mode is available");
+    LMcheck();
+    info(Init,"Setup basic paging");
     setupBasicPaging();
     GDTDescriptor gdt;
+    info(Init,"Setup Loader Segmentation");
     gdt.init();
+    info(Init,"Switching to long mode");
     enableLM(PML4);
     // loading code
-    if(mb->mods_count == 0){
-        bsod("No module given to loader : unable to load kernel.");
-    }
     assert(mb->mods_addr);
     char* kernelAddr = (char*)mb->mods_addr[0].startAddr;
     char* kernelEnd = (char*)mb->mods_addr[0].endAddr;
     u32 kernelSize = kernelEnd - kernelAddr;
-    char * kernelStack = (char*)(((u64(kernelEnd) + 0x1000)/0x1000)*0x1000);
-    kprintf("Stack start %p",kernelStack);
+
+
+    // FONT
+    u32 fontbeg = (u32)mb->mods_addr[1].startAddr,fontend = (u32)mb->mods_addr[1].endAddr;
+    debug(Graphics,"Font Beg 0x%p",fontbeg);
+
+    char * kernelStack = (char*)(((u64(max((u32)kernelEnd,fontend)) + 0x1000)/0x1000)*0x1000);
+    debug(Init,"Stack start %p",kernelStack);
     char * kernelrsp = kernelStack + 0X1000;
     char * freeMem = kernelrsp;
-    assert(freeMem + 0x1000 < (char*)0x600000 && "Initial identity paging too small");
-    int occupAreaSize = 1;
-    kprintf("Stack start %p",kernelStack);
-    push(kernelrsp,OccupArea{(u32)kernelStack,1});
-    kprintf("loader from 1MB to %p\n",&loader_code_end);
 
-    kprintf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
+    assert(freeMem + 0x1000 < (char*)0x600000 && "Initial identity paging too small");
+    debug(Init,"Stack start %p",kernelStack);
+    int occupAreaSize = 2;
+
+    push(kernelrsp,OccupArea{(u32)kernelStack,1});
+    push(kernelrsp,OccupArea{fontbeg,(fontend - fontbeg + 0x1000 -1)/0x1000});
+
+    debug(Init,"loader from 1MB to %p",&loader_code_end);
+    debug(Init,"kernel from %p to %p of size %d",kernelAddr,kernelEnd,kernelSize);
 
 
     Elf64::Elf64 kernelFile(kernelAddr,kernelSize);
 
-    kprintf("%d sections and %d prog section\n",kernelFile.shnum, kernelFile.phnum);
+    debug(Init,"%d sections and %d prog section",kernelFile.shnum, kernelFile.phnum);
     /*for(int i = 0; i < kernelFile.shnum ; ++ i){
         auto sh = kernelFile.getSectionHeader(i);
         const char* type = sh.type == Elf64::SHT_PROGBITS ? "ProgBit" :
@@ -197,7 +155,7 @@ extern "C" void load(multibootInfo * mb){
     for(int i = 0; i < kernelFile.phnum ; ++ i){
         auto ph = kernelFile.getProgramHeader(i);
 
-        //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
+        debug(Init,"%d, t : %d, off : %p, virt : %llx, size :%d %d",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
         if(ph.type == Elf64::PT_LOAD){
             createMapping(ph.getData(),ph.vaddr,(ph.filesz + 0x1000-1) / 0x1000);
             push(kernelrsp,OccupArea{u32(ph.getData()),u32((ph.filesz + 0x1000-1) / 0x1000)});
@@ -214,6 +172,9 @@ extern "C" void load(multibootInfo * mb){
     push(kernelrsp,OccupArea{(u32)PTs,nbPTused});
     ++occupAreaSize;
 
+    push(kernelrsp,OccupArea{(u32)logBuffer,LOADERBUFFER});
+    ++occupAreaSize;
+
     KArgs args;
     args.PML4 = u64(PML4);
     args.occupAreaSize = occupAreaSize;
@@ -221,8 +182,17 @@ extern "C" void load(multibootInfo * mb){
     args.stackAddr = u64(kernelStack);
     args.freeAddr = u64(freeMem);
     args.RAMSize = mb->mem_upper * 1024;
+    args.font = fontbeg;
+    args.logBuffer = (u64)logBuffer;
+    args.posInLogBuffer = posInLogBuffer;
+
+    push(kernelrsp,gp);
+    args.GraphicalParam = u64(kernelrsp);
+
+
     push(kernelrsp,args);
 
+    info(Init,"Starting Kernel");
     startKernel(kernelFile.entry,(KArgs*)kernelrsp,kernelrsp);
 }
 
