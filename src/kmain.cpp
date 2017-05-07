@@ -29,6 +29,9 @@
 #include "Graphics/Screen.h"
 #include "Graphics/Workspace.h"
 #include "Graphics/TextWindow.h"
+#include "Streams/PrefixStream.h"
+#include "Streams/OutMixStream.h"
+#include "log.h"
 
 #include<vector>
 #include<string>
@@ -37,6 +40,7 @@
 
 using namespace std;
 using namespace video;
+using namespace input;
 
 //multibootInfo multiboot;
 
@@ -130,6 +134,7 @@ void unittest();
 #endif
 
 
+
 /**
     @brief This is the entry point of the kernel
 
@@ -145,25 +150,36 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #ifdef UNITTEST
     unitTest = true;
 #endif
-    fprintf(stderr,"Kernel Starting\n"); // TODO lots of logging.
+    //fprintf(stderr,"Kernel Starting\n"); // TODO lots of logging.
+    info("Kernel Starting");
+    info("Kernel built on %s at %s",__DATE__,__TIME__);
     cli; // clear interruption
     init(); //C++ global constructors should not change machine state.
 
-
+    info(Init,"Setup segmentation");
     gdt.init();
-    idt.init(); // interruption initialization
+    info(Init,"Setup interrupts");
+    idt.init();
     idt.addInt(0, div0); // adding various interruption handlers
     idt.addInt(6, invalidOpcode);
     idt.addInt(8, doublefault);
     idt.addInt(13, gpfault);
     idt.addInt(14, pagefault);
-    sti; // enable interruption
+    info(Init,"Enabling interrupts");
+    sti;
     // initializing memory allocation by marking occupied Areas (code + stack + paging).
+    info(Init,"Initializing physical memory allocator");
     physmemalloc.init((void*)kargs->freeAddr,kargs->RAMSize,
                       (OccupArea*)kargs->occupArea,kargs->occupAreaSize);
-    paging.init((PageEntry*)kargs->PML4); // initializing paging
-    paging.allocStack(kargs->stackAddr,10); // allocation of kernel stack (fixed size )
+    info(Init,"Initializing paging");
+    paging.init((PageEntry*)kargs->PML4);
+    debug(Init,"Allocation of kernel Stack of %d pages",10);
+    paging.allocStack(kargs->stackAddr,10);
     u64 fontPtr = kargs->font;
+    u64 phyLoaderLogBuffer = kargs->logBuffer;
+    u64 loaderPosInBuffer = kargs->posInLogBuffer;
+
+    debug(Init,"Switching stack",10);
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
@@ -171,70 +187,95 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
 
-    //Graphical Initializing
+    info(Init,"Loading Graphical system/Screen");
     GraphicalParam* gp = (GraphicalParam*)kargs->GraphicalParam;
-    fprintf(stderr,"Kernel Graphics 2 : %d * %d\n",gp->Xsize,gp->Ysize);
     video::screen.init(gp);
-    fprintf(stderr,"Kernel Graphics OK\n");
+    Workspace::init();
 
+    info(Init,"Removing identity mapping");
+    paging.removeIdent();
 
-    paging.removeIdent(); // remove the identity paging necessary for boot process
-    gdt.initkernelTLS(1); // Initialize kernel TLS with 1 page.
-    kheap.init(&kernel_code_end);// creating kernel heap
+    info(Init,"Setup heaps");
+    debug(Init,"Intializing TLS with %d pages",1);
+    gdt.initkernelTLS(1);
+    debug(Init,"Setup kernel heap");
+    kheap.init(&kernel_code_end);
+    debug(Init,"Initializing malloc");
     __initmalloc(); // initializing kernel malloc : no heap access before this point.
+    debug(Init,"Setup page heap");
     pageHeap.init(); // initializing page Heap to map physical pages on will.
     // (i.e a heap with 4K aligned malloc).
+
+
+    //Kernel Logging system initialization.
+    info(Init,"Setup user mode");
+    //User Mode initialization
+    debug(Init,"Setup Syscalls");
     syscallInit(); // intialize syscall API
+    debug(Init,"Setup TSS");
     tss.load(); // load TSS for enabling interrupts from usermode
     tss.RSP[0] = nullptr; // the kernel stack really start from 0.
+
+    Font::defInit(fontPtr);
+
+    Vec2u ssize = screen.getSize();
+
+    TextWindow* kernelLog = new TextWindow(Vec2u{ssize.x/2,0},Vec2u{ssize.x/2,ssize.y},Font::def);
+    kernelLog->allowInput = false;
+    TextWindow* kernelCmd = new TextWindow(Vec2u{0,0},Vec2u{ssize.x/2,ssize.y},Font::def);
+    Workspace::get(0).addWin(kernelLog);
+    Workspace::get(0).addWin(kernelCmd);
+    kernelLog->show();
+    kernelCmd->show();
+
+    char* loaderLogBuffer = pageHeap.alloc<char>(phyLoaderLogBuffer,LOADERBUFFER);
+    debug(Init,"loader log size %lld",loaderPosInBuffer);
+    kernelLog->bwrite(loaderLogBuffer,loaderPosInBuffer);
+
+    OSStreams.resize(4);
+    SerialStream* sers = new SerialStream();
+    OutMixStream* log = new OutMixStream({sers,kernelLog});
+    PrefixStream* cmd2log = new PrefixStream(log,"[Cmd Out]  ");
+    OutMixStream* cmdOut = new OutMixStream({cmd2log,kernelCmd});
+    OSStreams[0] = kernelCmd;
+    OSStreams[1] = cmdOut;
+    OSStreams[2] = sers;
+    OSStreams[3] = log;
+    IOinit(kernelLog);
+
+
+
 
 #ifdef UNITTEST
     unittest();
     stop;
 #endif
 
-    printf("\n64 bits kernel booted!! built on %s at %s \n",__DATE__,__TIME__);
+    info("64 bits kernel booted!!");
+    Workspace::draw();
 
 #define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
-    printf("fontPtr %p\n",fontPtr);
-    Font* font = pageHeap.alloc<Font>(fontPtr,2);
-    font->init();
+    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
 
-    TextWindow* tw = new TextWindow(Vec2u{0,0},Vec2u{400,666},font);
-    TextWindow* tw2 = new TextWindow(Vec2u{400,0},Vec2u{400,666},font);
-    Workspace::get(0).addWin(tw2);
-    Workspace::get(0).addWin(tw);
-    tw->show();
-    tw2->show();
-    tw->write("hello !",7);
-    //tw->drawEdge();
-    fprintf(stderr, "Sended\n");
-    //tw->send();
-    fprintf(stderr, "Sended2\n");
+    HDD::HDD first(1,true);
+    first.init();
+    HDD::PartitionTableEntry part1 = first[1];
+    printf("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
+    HDD::Partition pa1(&first,part1);
+    HDD::Ext2::FS fs1(&pa1);
+    HDD::VFS::FS fs(&fs1);
 
+    cl.init();
+    cl.pwd = fs.getRoot();
 
-    OSStreams.resize(3);
-    OSStreams[1] = tw;
-    fprintf(stderr, "Sended3 %lld\n",OSStreams.size());
-    IOPostGraphicinit();
-    fprintf(stderr, "Sended4\n");
-    ser.write("after\n\n");
-    for(int i = 0 ; i < 500 ; ++i){
-        printf("%d \n",i);
-        tw2->write("test \n",6);
-        WAIT(1000000);
-        screen.clear();
-        /*tw->drawEdge();
-        tw->send();
-        tw2->drawEdge();
-        tw2->send();*/
-        Workspace::draw();
-        screen.send();
+    while(true){
+        kloop();
     }
 
-    screen.send();
 
 #elif BLA == GRAPH_TEST
     printf("fontPtr %p\n",fontPtr);
@@ -431,6 +472,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #endif
 
     kend();
+    Workspace::draw();
 }
 
 
@@ -447,6 +489,19 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
  */
 
 void kloop(){
+    //debug("Entering kloop");
+
+    // poll keyboard
+    Keyboard::KeyCode kc;
+    while((kc = kbd.poll()).scanCode.valid){
+        Workspace::handleEvent(input::Event(kc));
+    }
+
+    // poll mouse
+
+    cl.run();
+
+    Workspace::draw();
 }
 
 
@@ -457,8 +512,10 @@ void kloop(){
 */
 [[noreturn]] void kend(){
     cli;
-    //fb.clear();
-    printf("\n\nKernel is ready to Shutdown, please press power button for 5 sec");
+    fprintf(stdlog,
+            "\n\n\x1b[35m\x1b[4mKernel is ready to Shutdown,"
+            " please press power button for 5s\x1b[m\n");
+    Workspace::draw();
     while(true) stop;
 }
 
@@ -468,7 +525,10 @@ void kloop(){
 
    Welcome to the Super OS documentation, WIP, good luck !
 
-   @authors Thibaut Pérami, Théophille Wallez, Luc Chabassier
+   @authors Thibaut Pérami, Théophile Wallez
+
+   Thanks to:
+       - Luc Chabassier
 
  */
 

@@ -76,6 +76,7 @@ namespace video{
         void clear();
         void clear(Vec2u offset,Vec2u size);
         void putChar(char c, uint x, uint y, const Font& font, Color fg, Color bg);
+        inline Vec2u getSize(){return {Xsize,Ysize};}
     };
 
     extern Screen screen;

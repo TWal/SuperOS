@@ -2,6 +2,7 @@
 #include "PhysicalMemoryAllocator.h"
 #include <new>
 #include <stdio.h>
+#include "../log.h"
 
 PageEntry* const Paging::virtTables =  (PageEntry*)-0xC0000000ll;
 u64* const Paging::bitset =  (u64*)-0xA0000000ll; // physmemalloc
@@ -55,9 +56,9 @@ Paging::Paging(){
 
 
 void Paging::init(PageEntry* pPML4){ // physical PML4
-    fprintf(stderr,"\nPaging Initializing\n");
+    info(Pagingl,"Paging Initializing");
     assert(pPML4[511].getAddr());
-    fprintf(stderr,"PML4 physical address : %p\n",pPML4);
+    debug(Pagingl,"PML4 physical address : %p",pPML4);
     PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
     PageEntry* PPD = new ((void*)physmemalloc.alloc()) PageEntry[512]; // paging page directory
@@ -139,7 +140,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
 
 
 void Paging::allocStack(uptr stackPos,size_t nbPages){
-    fprintf(stderr,"Allocating %lld pages of stack\n",nbPages);
+    info(Pagingl,"Allocating %lld pages of stack",nbPages);
     assert(nbPages < 512); // TODO support more than 2M of stack
     stackPD[511].activeAddr(new((void*)physmemalloc.alloc()) PageTable[512]);
     actTmpPT(stackPD[511].getAddr());
@@ -271,14 +272,15 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 void Paging::createMapping(uptr phy,void* virt,bool wt){
+    //debug(Pagingl,"mapping %p to %p",virt,phy);
     if(phy & ((1<< 12 )-1)) {
-        bsod("Create mapping : physical addres is not page-aligned : %p",phy);
+        bsod("Create mapping : physical address is not page-aligned : %p",phy);
     }
     if((uptr)virt & ((1<< 12 )-1)){
-        bsod("Create mapping : virtual addres is not page-aligned : %p",phy);
+        bsod("Create mapping : virtual address is not page-aligned : %p",phy);
     }
     if(phy >> 52) {
-        bsod("Create mapping : physical addres is too large (more than 52 bits)",phy);
+        bsod("Create mapping : physical address is too large (more than 52 bits)",phy);
     }
     uptr PT = getPTphy(virt);
     //printf("PT address get %p\n",PT);

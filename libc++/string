@@ -242,8 +242,16 @@ namespace std {
             assert(_size > 0 && "pop_back on empty basic_string");
             --_size;
         }
+
         bool empty(){
             return _size == 0;
+        }
+
+        void clear(){// switch any valid state to the empty valid state
+            this->~basic_string();
+            _data = nullptr;
+            _size = 0;
+            _capacity = 0;
         }
         bool operator==(const basic_string& str2){
             if (_size != str2._size) return false;
@@ -271,6 +279,7 @@ namespace std {
             //printf("Compare %s %s %d\n",c_str(),str.c_str(),i);
             //return i;
         }
+
         bool operator<  (const basic_string& rhs) const noexcept  {
             return compare(rhs) <0;
         }

@@ -21,7 +21,7 @@ public:
     }
     size_t write(const void * buf,size_t count){
         for(auto s: _outputs){
-            size_t v =  s->write(buf,count);
+            size_t v =  s->bwrite(buf,count);
             assert(v == count);
         }
     }

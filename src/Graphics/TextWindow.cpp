@@ -1,5 +1,8 @@
 #include "TextWindow.h"
 #include <string.h>
+#include <errno.h>
+
+using namespace input;
 
 namespace video{
     void TextWindow::newLine(){
@@ -28,7 +31,7 @@ namespace video{
     size_t TextWindow::write(const void* buf, size_t count){
         //fprintf(stderr,"write TextWindow\n");
         const char* buf2 = reinterpret_cast<const char*>(buf);
-        const size_t limit = 1000;
+        const size_t limit = 1024;
         if(count > limit) count = limit;
         for(size_t i = 0 ; i < count ; ++i){
             putChar(buf2[i]);
@@ -36,7 +39,6 @@ namespace video{
         return count;
     }
 
-    void draw();
     void TextWindow::error(){
         _state = NORMAL;
         putChar('~');
@@ -103,10 +105,8 @@ namespace video{
                     case '\t':
                         // A clean way to do it.
                         val = _curs.x%4;
-                        if(val){
-                            for(uint i = 0 ; i < 4-val ; ++i){
-                                addPrintableChar(' ');
-                            }
+                        for(uint i = 0 ; i < 4-val ; ++i){
+                            addPrintableChar(' ');
                         }
                         return;
 
@@ -129,7 +129,7 @@ namespace video{
                         return;
 
                     default:
-                        if(c < 32){
+                        if(c < 32 and c >= EOF){
                             error();
                             return;
                         }
@@ -189,7 +189,7 @@ namespace video{
             _cursFormat.fg.B = _stack[5];
         }
         else if(command == 39){
-            _cursFormat.fg = Color24::white;
+            _cursFormat.fg = Color24::lwhite;
         }
 
         else if(command >=40 and command <= 47){
@@ -209,7 +209,7 @@ namespace video{
             _cursFormat.bg.B = _stack[5];
         }
         else if(command == 49){
-            _cursFormat.bg = Color24::white;
+            _cursFormat.bg = Color24::black;
         }
     }
 
@@ -219,21 +219,68 @@ namespace video{
         //fprintf(stderr,"hoy !\n");
         size_t s = _lineBuffer.size();
         size_t offset = max(i64(s - _height),i64(0));
-        fprintf(stderr,"number line %llu and height %llu and offset \n",s,_height);
+        //fprintf(stderr,"number line %llu and height %llu and offset \n",s,_height);
         for(size_t i =  0; i < min(s,(size_t)_height) ; ++i){
             //fprintf(stderr,"printing line %llu \n",i + offset);
             size_t j = 0;
             //fprintf(stderr,"of size %d \n",_lineBuffer[i + offset].data.size());
             for(auto fmc : _lineBuffer[i + offset].data){
                 //fprintf(stderr,"printing %llu %llu\n",i,j);
-                screen.putChar(fmc.c,_offset.x + j*8+1,_offset.y + i*16 + 1,*_font,fmc.fg,fmc.bg);
-                if(fmc.underline){
-                    for(uint k = 0 ; k < 8 ; ++k){
-                        screen.set(_offset.x + j*8+1+k, _offset.y + i*16+16,fmc.fg);
-                    }
-                }
+                drawFMC({j,i},fmc);
                 ++j;
             }
         }
+
     }
+    void TextWindow::drawFMC(Vec2u pos, FormatedChar fmc) const{
+        screen.putChar(fmc.c,_offset.x + pos.x*8+1,_offset.y + pos.y*16 + 1,*_font,fmc.fg,fmc.bg);
+        if(fmc.underline){
+            for(uint k = 0 ; k < 8 ; ++k){
+                screen.set(_offset.x + pos.x*8+1+k, _offset.y + pos.y*16+16,fmc.fg);
+            }
+        }
+    }
+
+    bool TextWindow::handleEvent(input::Event e){
+        if(e.type == Event::KEYBOARD){
+            if(e.kcode.symbol and !e.kcode.scanCode.release and allowInput){
+                char sym = e.kcode.symbol;
+                if(sym == '\b' ){
+                    if(!_keyboardBuffer.empty()){
+                        _keyboardBuffer.pop_back();
+                        putChar('\b');
+                        putChar(' ');
+                        putChar('\b');
+                    }
+                }
+                else if(sym == '\n'){
+                    for(auto c : _keyboardBuffer){
+                        _inputBuffer.push_back(c);
+                    }
+                    _keyboardBuffer.clear();
+                    _inputBuffer.push_back('\n');
+                    putChar('\n');
+                }
+                else{
+                    _keyboardBuffer.push_back(sym);
+                    putChar(sym);
+                }
+            }
+        }
+        return true;
+    }
+
+    size_t TextWindow::read(void* buf, size_t count){
+        char* buf2 = reinterpret_cast<char*>(buf);
+        if(count > 1000) count = 1000;
+        size_t reallyRead =0;
+        while(!_inputBuffer.empty() and reallyRead < count){
+            *buf2 = _inputBuffer.front();
+            _inputBuffer.pop_front();
+            ++reallyRead;
+            ++buf2;
+        }
+        return reallyRead;
+    }
+
 };

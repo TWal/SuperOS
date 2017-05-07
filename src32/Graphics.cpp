@@ -1,5 +1,6 @@
 #include "Graphics.h"
 #include "../src/IO/FrameBuffer.h"
+#include "log.h"
 
 void copy(char* a, char* b, u8 size){
     for(u32 i = 0 ; i < size ; ++i){
@@ -8,7 +9,7 @@ void copy(char* a, char* b, u8 size){
 }
 
 
-void fail(ModeInfoBlock* mib){
+void fail(ModeInfoBlock* mib, ErrNum errNum){
     kprintf("Entering fail\n");
     u8 bytesPerp = mib->bpp / 8;
     char* FB = (char*)mib->physbase;
@@ -30,52 +31,71 @@ void fail(ModeInfoBlock* mib){
             copy(FB+(i * mib->pitch + bytesPerp*j),(char*)&red,bytesPerp);
         }
     }
-
-
+    for(int i = 1 ; i <= errNum ; ++i){
+        for(int j = 0 ; j < 100 ; ++j){
+            copy(FB+(i*10 * mib->pitch + bytesPerp*j),(char*)&white,bytesPerp);
+            copy(FB+((i*10)+1 * mib->pitch + bytesPerp*j),(char*)&white,bytesPerp);
+        }
+    }
     stop;
 }
 
+ModeInfoBlock* _mib = nullptr;
+
+void rfail(ErrNum errNum){
+    fail(_mib,errNum);
+}
+
 GraphicalParam graphParse(VbeInfoBlock* vid, ModeInfoBlock* mib){
-    kprintf("Checking graphics Format :\n");
-    kprintf("VBE Signature: %c%c%c%c\n",vid->VbeSignature[0],vid->VbeSignature[1],
+    info(Screenl,"Checking graphics Format");
+    debug(Screenl,"VBE Signature: %c%c%c%c",vid->VbeSignature[0],vid->VbeSignature[1],
             vid->VbeSignature[2],vid->VbeSignature[3]);
     if(!(vid->VbeSignature[0] == 'V' and vid->VbeSignature[1] == 'E'
          and vid->VbeSignature[2] =='S' and vid->VbeSignature[3] == 'A' )){
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl,"Wrong VBE Signature");
+        fail(mib,WrongSignature);
     }
-    kprintf("VBE mode attributes : %d\n",mib->attributes);
-    if(!((mib->attributes &(8 + 16)) == (8 + 16))){
-        kprintf("Fail\n");
-        fail(mib);
+
+    debug(Screenl,"VBE mode attributes : %x",mib->attributes);
+    if(!((mib->attributes &(8 + 16)) == (8 + 16))){ // TODO understand that again
+        error(Screenl,"VBE Attributes not OK");
+        fail(mib,WrongAttribute);
     }
-    kprintf("Resolution : %d * %d\n", mib->Xres * mib->Yres);
-    kprintf("Pitch : %d\n", mib->pitch);
-    kprintf("Bit per pixel : %d",mib->bpp);
+
+
+    debug(Screenl,"Linear Buffer physical address : %p",mib->physbase);
+    info(Screenl,"Resolution : %d * %d", mib->Xres, mib->Yres);
+    debug(Screenl,"Pitch : %d", mib->pitch);
+    info(Screenl,"Bit per pixel : %d",mib->bpp);
     if(mib->bpp !=32){
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl,"No 32bit depth");
+        fail(mib,WrongDepth);
     }
-    kprintf("Memory Model : %d\n",mib->memory_model);
+
+    debug(Screenl,"Memory Model : %d",mib->memory_model);
     if(mib->memory_model !=6){ // Direct Color
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl,"Wrong Memory model");
+        fail(mib,WrongMemoryModel);
     }
-    kprintf("Red width : %d and pos : %d\n", mib->red_mask,mib->red_position);
+
+    debug(Screenl,"Red width : %d and pos : %d", mib->red_mask,mib->red_position);
     if(!(mib->red_mask == 8 and mib->red_position == 16)){
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl, "Invalid Red mask");
+        fail(mib,InvalidRedMask);
     }
-    kprintf("Green width : %d and pos : %d\n", mib->green_mask,mib->green_position);
+
+    debug(Screenl,"Green width : %d and pos : %d", mib->green_mask,mib->green_position);
     if(!(mib->green_mask == 8 and mib->green_position == 8)){
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl,"Invalid Green mask");
+        fail(mib,InvalidGreenMask);
     }
-    kprintf("Blue width : %d and pos : %d\n", mib->blue_mask,mib->blue_position);
+
+    debug(Screenl,"Blue width : %d and pos : %d", mib->blue_mask,mib->blue_position);
     if(!(mib->blue_mask == 8 and mib->blue_position == 0)){
-        kprintf("Fail\n");
-        fail(mib);
+        error(Screenl,"Invalid Blue mask");
+        fail(mib,InvalidBlueMask);
     }
+
     GraphicalParam params;
     params.physptr = mib->physbase;
     params.Xsize = mib->Xres;

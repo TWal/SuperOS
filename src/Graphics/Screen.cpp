@@ -2,42 +2,43 @@
 #include "../Memory/Paging.h"
 #include "../Memory/PhysicalMemoryAllocator.h"
 #include <string.h>
+#include "../log.h"
 
 namespace video {
     Color24 Color24::white{255,255,255};
     Color24 Color24::black{0,0,0};
     Color24 Color24::red{0,0,255};
-    Color24 Color24::blue{255,0,0};
+    Color24 Color24::blue{255,100,40};
     Color24 Color24::green{0,255,0};
     Color24 Color24::yellow{0,255,255};
     Color24 Color24::magenta{255,0,255};
     Color24 Color24::cyan{255,255,0};
     Color24 Color24::lred{0,0,187};
-    Color24 Color24::lblue{187,0,0};
-    Color24 Color24::lgreen{0,187,0};
+    Color24 Color24::lblue{187,50,20};
+    Color24 Color24::lgreen{0,128,0};
     Color24 Color24::lyellow{0,187,187};
-    Color24 Color24::lmagenta{187,0,187};
+    Color24 Color24::lmagenta{187,30,187};
     Color24 Color24::lcyan{187,187,0};
     Color24 Color24::lwhite{187,187,187};
 
     char* const Screen::VGAbuffer = (char*)-0x140000000ll;
     Color* const Screen::buffer= (Color*)-0x120000000ll;
     void Screen::init(GraphicalParam* gp){
-        fprintf(stderr,"Screen init with: %p\n",gp);
+        info(Screenl,"Screen init with: %p",gp);
         Xsize = gp->Xsize;
         Ysize = gp->Ysize;
         pitch = gp->pitch;
-        printf("Pitch :%d\n",pitch);
+        debug(Screenl,"Pitch :%d",pitch);
 
 
         // VRAM mapping
         u32 VRAMsize = Ysize*pitch;
-        printf("VGAbuffer %p, VRAMsize %d\n",VGAbuffer,VRAMsize);
+        debug(Screenl,"VGAbuffer %p, VRAMsize %d",VGAbuffer,VRAMsize);
         paging.createMapping(gp->physptr,VGAbuffer,(int)VRAMsize/0x1000,true);
 
         // RAM mapping
         u32 RAMsize = Ysize*Xsize*4;
-        printf("buffer %p, RAMsize %d\n",buffer,RAMsize);
+        debug(Screenl,"buffer %p, RAMsize %d",buffer,RAMsize);
         for(u32 i =0 ; i < RAMsize / 0x1000 ; ++i){
             paging.createMapping(physmemalloc.alloc(),buffer + i * (0x1000 / 4));
         }

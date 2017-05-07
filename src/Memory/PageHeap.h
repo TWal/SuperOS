@@ -24,6 +24,7 @@ public :
     }
 
     void free(void* virt);
+    void free(void* virt, uint nb);
 
 };
 

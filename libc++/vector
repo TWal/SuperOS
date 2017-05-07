@@ -70,6 +70,7 @@ namespace std{
                 new(_data +i) T();
             }
         }
+
         vector (const vector& oth): _alloc(oth._alloc),_data(nullptr),
                                     _size(0),_capacity(0){
             reserve(oth._size);
@@ -84,6 +85,13 @@ namespace std{
             oth._data = nullptr;
             oth._size = 0;
             oth._capacity = 0;
+        }
+
+        vector(initializer_list<T> il): vector(){
+            reserve(il.size());
+            for(auto t : il){
+                push_back(t);
+            }
         }
 
         //vector (size_type n, const value_type& val,

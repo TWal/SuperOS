@@ -19,8 +19,7 @@ void* PageHeap::ialloc(u64 phy){
 void* PageHeap::ialloc(u64 phy,uint nb){
     int i = _bitset.largeBsf(nb);
     assert(i != -1);
-    for(int i = 0; i < nb ; ++i)
-    _bitset.unset(i);
+    for(uint j = 0; j < nb ; ++j) _bitset.unset(i+j);
     //printf("found %d",i);
     u8* addr = base - i * 0x1000;
     printf("page Heap alloc at %p of size %d\n",addr,nb);
@@ -42,6 +41,13 @@ void PageHeap::free(void* virt){
     assert(pos < 0x1000);
     paging.freeMapping(virt);
     _bitset.set(pos);
+}
+void PageHeap::free(void* virt, uint nb){
+    size_t pos = uptr(base - (u8*)virt) / 0x1000;
+    //printf("base : %p, virt : %p, pos : %d",base,virt,pos);
+    assert(pos < 0x1000);
+    paging.freeMapping(virt,nb);
+    for(uint j = 0; j < nb ; ++j) _bitset.set(pos+j);
 }
 
 PageHeap pageHeap;

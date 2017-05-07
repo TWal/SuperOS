@@ -131,6 +131,7 @@ void pbool(bool b,const char* = "");
 std::vector<std::string> split(std::string str,char separator,bool keepEmpty = true);
 std::string concat(std::vector<std::string> strs,char separator);
 
+void kloop();
 [[noreturn]]void kend(); // close the kernel
 
 #endif

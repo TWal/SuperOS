@@ -1,136 +1,119 @@
 #include "Keyboard.h"
+#include "../log.h"
 
+namespace input{
+    Keyboard::Keyboard() : _deque(){ }
 
-const Keymap azertyKeymap = {
-    {
-        -1, 0x1b,
-        '&', 'e', '"', '\'', '(', '-', 'e', '_', 'c', 'a', ')', '=',
-        '\b', '\t',
-        'a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '^', '$',
-        '\n', -1,
-        'q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'u',
-        '2',
-        -1,
-        '*',
-        'w', 'x', 'c', 'v', 'b', 'n', ',', ';', ':', '!',
-        -1, -1, -1, ' ', -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    }, {
-        -1, 0x1b,
-        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'o', '+',
-        '\b', '\t',
-        'A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '^', '$',
-        '\n', -1,
-        'Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'U',
-        '~',
-        -1,
-        'u',
-        'W', 'X', 'C', 'V', 'B', 'N', '?', '.', '/', 'S'
-        -1, -1, -1, ' ', -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    void Keyboard::handleScanCode(uchar sc) {
+        _deque.push_back(sc);
     }
-};
-
-const Keymap dvorakKeymap = {
-    {
-        -1, 0x1b,
-        '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '[', ']',
-        '\b', '\t',
-        '\'', ',', '.', 'p', 'y', 'f', 'g', 'c', 'r', 'l', '/', '=',
-        '\n', -1,
-        'a', 'o', 'e', 'u', 'i', 'd', 'h', 't', 'n', 's', '-',
-        '`',
-        -1,
-        '\\',
-        ';', 'q', 'j', 'k', 'x', 'b', 'm', 'w', 'v', 'z',
-        -1, -1, -1, ' ', -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    }, {
-        -1, 0x1b,
-        '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '{', '}',
-        '\b', '\t',
-        '"', '<', '>', 'P', 'Y', 'F', 'G', 'C', 'R', 'L', '?', '+',
-        '\n', -1,
-        'A', 'O', 'E', 'U', 'I', 'D', 'H', 'T', 'N', 'S', '_',
-        '~',
-        -1,
-        '|',
-        ':', 'Q', 'J', 'K', 'X', 'B', 'M', 'W', 'V', 'Z',
-        -1, -1, -1, ' ', -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    }
-};
-
-Keyboard::Keyboard() : _deque(), _flags(0), _lastIsE0(false) { }
-
-void Keyboard::handleScanCode(uchar sc) {
-    _deque.push_back(sc);
-}
 
 //Code qui peut être modifié par une interruption : __attribute__((optimize("O0")))
-uchar __attribute__((optimize("O0"))) Keyboard::pollSC(){
-    while(_deque.empty()) {
-        asm volatile("hlt");
+    Keyboard::EScanCode __attribute__((optimize("O0"))) Keyboard::pollSC(){
+        /*while(_deque.empty()) {
+          asm volatile("hlt");
+          }*/
+        if(_deque.empty()) return EScanCode();
+
+        uchar sc = _deque.front();
+        if(sc == 0xe0){
+            if(_deque.size() <= 1) return EScanCode();
+            EScanCode e (_deque[1]);
+            debug(Kbd,"Polled scan code extended : %x",_deque[1]);
+            e.extended = true;
+            _deque.pop_front();
+            _deque.pop_front();
+            return e;
+        }
+        debug(Kbd,"Polled scan code : %x",sc);
+        _deque.pop_front();
+        return sc;
     }
-    uchar sc = _deque.front();
-    _deque.pop_front();
-    return sc;
-}
 
 
-Keycode Keyboard::poll() {
-    //TODO: handle e0
-    while(true) {
+    Keyboard::KeyCode Keyboard::poll() {
+        //TODO: handle e0
+        while(true) {
 
-        uchar sc = pollSC();
-
-        const uchar RELEASE = 0x80;
-        const uchar CTRL_SC = 0x1d;
-        const uchar SHIFT_SC = 0x2a;
-        const uchar ALT_SC = 0x38;
-        const uchar CAPSLOCK_SC = 0x3a;
-
-        bool release = (sc & RELEASE) != 0;
-        char bit = -1;
-        uchar rsc = sc & ~RELEASE;
-        if(rsc == CTRL_SC) {
-            bit = LCTRL;
-        } else if(rsc == SHIFT_SC) {
-            bit = LSHIFT;
-        } else if(rsc == ALT_SC) {
-            bit = LALT;
-        } else if(rsc == CAPSLOCK_SC) {
-            bit = CAPSLOCK;
-        }
-        if(bit >= 0) {
-            if(release) {
-                _flags &= ~(1<<bit);
-            } else {
-                _flags |= (1<<bit);
+            EScanCode sc = pollSC();
+            if(!sc.valid){ // EOF
+                return {_state,EOF,sc};
             }
-        }
+            /*const uchar CTRL = 0x1d;
+            const uchar LSHIFT = 0x2a;
+            const uchar RSHIFT = 0x36;
+            const uchar ALT = 0x38;
+            const uchar CAPSLOCK = 0x3a;
+            const uchar NUMLOCK = 0x45;*/
 
-        char symbol;
-        if((sc & ~RELEASE) > 0x45) {
-            symbol = -1;
-        } else {
-            if(_flags & ((1<<LSHIFT) | (1<<RSHIFT) | (1<<CAPSLOCK))) {
-                symbol = _keymap->shift[sc & ~RELEASE];
-            } else {
-                symbol = _keymap->noShift[sc & ~RELEASE];
+            switch(sc.code){
+                case CTRL:
+                    if(sc.extended) _state.rCtrl = !sc.release;
+                    else            _state.lCtrl = !sc.release;
+                    break;
+                case LSHIFT:
+                    _state.lShift = !sc.release;
+                    break;
+                case RSHIFT:
+                    _state.rShift = !sc.release;
+                    break;
+                case ALT:
+                    if(sc.extended) _state.rAlt = !sc.release;
+                    else            _state.lAlt = !sc.release;
+                    break;
+                case CAPSLOCK:
+                    if(!sc.release) _state.capsLock = !_state.capsLock;
+                    setLeds((_state.capsLock << 2) + (_state.numLock << 1));
+                    break;
+                case NUMLOCK:
+                    if(!sc.release) _state.numLock = !_state.numLock;
+                    setLeds((_state.capsLock << 2) + (_state.numLock << 1));
+                    break;
+            };
+
+            // to ASCII
+            char symbol = 0;
+            if(sc.code >= 0x57);
+            else if(sc.extended and sc.code == 0x35) symbol = '/';
+            else if(sc.extended);
+
+            else if(_state.lShift or _state.rShift or _state.capsLock){ // shift
+                if(sc.code == 0x56){
+                    symbol = _keymap->shift56;
+                }
+                else if(sc.code >= 0x47 and sc.code < 0x54){
+                    if(_state.numLock and !sc.extended) symbol = _keymap->main[sc.code -0x47];
+                    else symbol = _keymap->pad[sc.code - 0x47];
+                }
+                else if(sc.code < 0x38) symbol = _keymap->shift[sc.code];
             }
-        }
 
-        Keycode res;
-        res.flags = _flags;
-        res.symbol = symbol;
-        res.scanCode = sc;
-        res.isRelease = release;
-        return res;
+            else if(_state.rAlt){ // alt gr
+                if(sc.code < 0xe) symbol = _keymap->altGr[sc.code];
+            }
+
+            else{ // no shift, no alt gr
+                if(sc.code >= 0x47 and sc.code < 0x54 and _state.numLock and !sc.extended){
+                    symbol = _keymap->pad[sc.code - 0x47];
+                }
+                else symbol = _keymap->main[sc.code];
+            }
+            if(symbol) debug(Kbd,"Polled char %c",symbol);
+            else debug(Kbd,"Polled non printable char");
+
+            return {_state,symbol,sc};
+        }
     }
-}
-void Keyboard::setKeymap(const Keymap* km) {
-    _keymap = km;
-}
+    void Keyboard::setKeymap(const Keymap* km) {
+        _keymap = km;
+    }
+    void Keyboard::setLeds(u8 f){
+        outb(0x60,0xED);
+        WAIT(10000);
+        outb(0x60,f);
+        WAIT(10000);
+        debug(Kbd,"Led output %x",inb(0x60));
+    }
 
-Keyboard kbd;
+    Keyboard kbd;
+}

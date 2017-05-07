@@ -4,6 +4,8 @@
 #include "Vec2.h"
 #include "../Bytes.h"
 #include "Screen.h"
+#include "../IO/Event.h"
+
 namespace video{
 
     /**
@@ -42,6 +44,8 @@ namespace video{
         void show(){_active = true;}
         /// just change internal state (@ref _active) to have an inactive mode.
         void hide(){_active = false;}
+        ///handle an event on this window : return true if the event has been handled.
+        virtual bool handleEvent(input::Event e) = 0;
 
 
 

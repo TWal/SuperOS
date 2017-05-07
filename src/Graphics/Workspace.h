@@ -5,6 +5,7 @@
 #include <vector>
 #include <assert.h>
 #include "../utility.h"
+#include "../IO/Event.h"
 
 
 
@@ -33,7 +34,7 @@ namespace video{
         /// List of window. _win."first" has focus.
         std::deque<Window*> _wins;
         /// Total number of workspaces
-        static const uint _totalNumber = 5;
+        static const uint _totalNumber = 10;
         /// All workspaces are statically allocated here.
         static Workspace _elems[_totalNumber];
     public:
@@ -60,7 +61,8 @@ namespace video{
         void addWin(Window* win){
             _wins.push_front(win);
         }
-
+        bool handleEventOnMe(input::Event e);
+        static bool handleEvent(input::Event e);
     };
 }
 

@@ -7,6 +7,7 @@
 #include "../src/User/Elf64.h"
 #include "../src/IO/Serial.h"
 #include "Graphics.h"
+#include "log.h"
 
 /**
    @brief Check if long mode is available on this processor
@@ -89,42 +90,28 @@ void push(char*& rsp,T t){
 
 
 extern "C" void load(multibootInfo * mb){
-    init();
-    kprintf("hey \n");
-    kprintf("Is graphics activated ? : %d\n",mb->check(multibootInfo::GRAPHICS));
-    kprintf("VBE mode : %x\n",mb->VBE_mode);
-    kprintf("VBE mode addr : %x\n",mb->VBE_mode_info);
-    VbeInfoBlock* vib = (VbeInfoBlock*)mb->VBE_control_info;
     ModeInfoBlock* mib = (ModeInfoBlock*)mb->VBE_mode_info;
-    kprintf("VBE version : %x\n",vib->VbeVersion);
-    kprintf("Signature : %c\n",vib->VbeSignature[1]);
-    kprintf("Attributes : %x\n",mib->attributes);
-    kprintf("Win attr : %x %x\n",mib->winA,mib->winB);
-    kprintf("X resolution : %d\n",mib->Xres);
-    kprintf("Y resolution : %d\n",mib->Yres);
-    kprintf("Nb banks : %d\n",mib->banks);
-    kprintf("Nb planes : %d\n",mib->planes);
-    kprintf("Bank size : %d & Image pages %d\n",mib->bank_size,mib->image_pages);
-    kprintf("bpp : %d\n",mib->bpp);
-    kprintf("Memory Model : %x\n",mib->memory_model);
-    kprintf("Red mask : %d and pos : %d\n",mib->blue_mask,mib->blue_position);
-    kprintf("Linear FB : %p\n",mib->physbase);
-    kprintf("BPL : %d\n",mib->pitch);
-    //char* FB = (char*)mib->physbase;
-    /*kprintf("Is graphics activated ? : %d\n",mb->check(multibootInfo::GRAPHICS));
+    _mib = mib; // to allow crash quickly
+    info("Booting Super OS v0.1");
+    info("Loader starts");
+    info("Loader built on %s at %s", __DATE__,__TIME__);
+
+    init();
     VbeInfoBlock* vib = (VbeInfoBlock*)mb->VBE_control_info;
-    ModeInfoBlock* mib = (ModeInfoBlock*)mb->VBE_mode_info;*/
-    GraphicalParam gp = graphParse(vib,mib);
+        GraphicalParam gp = graphParse(vib,mib);
     if(mb->mods_count <= 1){
-        //kprintf("Not enough modules");
-        fail(mib);
+        error("Not enough modules");
+        fail(mib,ModuleNumber);
     }
 
-
-    LMcheck(); // checking Long mode available
+    info(Init,"Checking if long mode is available");
+    LMcheck();
+    info(Init,"Setup basic paging");
     setupBasicPaging();
     GDTDescriptor gdt;
+    info(Init,"Setup Loader Segmentation");
     gdt.init();
+    info(Init,"Switching to long mode");
     enableLM(PML4);
     // loading code
     assert(mb->mods_addr);
@@ -135,27 +122,27 @@ extern "C" void load(multibootInfo * mb){
 
     // FONT
     u32 fontbeg = (u32)mb->mods_addr[1].startAddr,fontend = (u32)mb->mods_addr[1].endAddr;
-    kprintf("Font Beg 0x%p\n",fontbeg);
+    debug(Graphics,"Font Beg 0x%p",fontbeg);
 
     char * kernelStack = (char*)(((u64(max((u32)kernelEnd,fontend)) + 0x1000)/0x1000)*0x1000);
-    kprintf("Stack start %p",kernelStack);
+    debug(Init,"Stack start %p",kernelStack);
     char * kernelrsp = kernelStack + 0X1000;
     char * freeMem = kernelrsp;
 
     assert(freeMem + 0x1000 < (char*)0x600000 && "Initial identity paging too small");
-    kprintf("Stack start %p",kernelStack);
+    debug(Init,"Stack start %p",kernelStack);
     int occupAreaSize = 2;
 
     push(kernelrsp,OccupArea{(u32)kernelStack,1});
     push(kernelrsp,OccupArea{fontbeg,(fontend - fontbeg + 0x1000 -1)/0x1000});
 
-    kprintf("loader from 1MB to %p\n",&loader_code_end);
-    kprintf("kernel from %p to %p of size %d\n",kernelAddr,kernelEnd,kernelSize);
+    debug(Init,"loader from 1MB to %p",&loader_code_end);
+    debug(Init,"kernel from %p to %p of size %d",kernelAddr,kernelEnd,kernelSize);
 
 
     Elf64::Elf64 kernelFile(kernelAddr,kernelSize);
 
-    kprintf("%d sections and %d prog section\n",kernelFile.shnum, kernelFile.phnum);
+    debug(Init,"%d sections and %d prog section",kernelFile.shnum, kernelFile.phnum);
     /*for(int i = 0; i < kernelFile.shnum ; ++ i){
         auto sh = kernelFile.getSectionHeader(i);
         const char* type = sh.type == Elf64::SHT_PROGBITS ? "ProgBit" :
@@ -168,7 +155,7 @@ extern "C" void load(multibootInfo * mb){
     for(int i = 0; i < kernelFile.phnum ; ++ i){
         auto ph = kernelFile.getProgramHeader(i);
 
-        //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
+        debug(Init,"%d, t : %d, off : %p, virt : %llx, size :%d %d",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
         if(ph.type == Elf64::PT_LOAD){
             createMapping(ph.getData(),ph.vaddr,(ph.filesz + 0x1000-1) / 0x1000);
             push(kernelrsp,OccupArea{u32(ph.getData()),u32((ph.filesz + 0x1000-1) / 0x1000)});
@@ -185,8 +172,8 @@ extern "C" void load(multibootInfo * mb){
     push(kernelrsp,OccupArea{(u32)PTs,nbPTused});
     ++occupAreaSize;
 
-    
-
+    push(kernelrsp,OccupArea{(u32)logBuffer,LOADERBUFFER});
+    ++occupAreaSize;
 
     KArgs args;
     args.PML4 = u64(PML4);
@@ -196,12 +183,16 @@ extern "C" void load(multibootInfo * mb){
     args.freeAddr = u64(freeMem);
     args.RAMSize = mb->mem_upper * 1024;
     args.font = fontbeg;
+    args.logBuffer = (u64)logBuffer;
+    args.posInLogBuffer = posInLogBuffer;
 
     push(kernelrsp,gp);
     args.GraphicalParam = u64(kernelrsp);
 
+
     push(kernelrsp,args);
 
+    info(Init,"Starting Kernel");
     startKernel(kernelFile.entry,(KArgs*)kernelrsp,kernelrsp);
 }
 

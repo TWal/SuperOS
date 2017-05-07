@@ -48,7 +48,23 @@ struct ModeInfoBlock {
     uint16_t reserved2;
 } __attribute__((packed));
 
-void fail(ModeInfoBlock* mib);
+extern ModeInfoBlock* _mib;
+
+enum ErrNum{
+    WrongSignature,
+    WrongAttribute,
+    WrongDepth,
+    WrongMemoryModel,
+    InvalidRedMask,
+    InvalidGreenMask,
+    InvalidBlueMask,
+    ModuleNumber,
+    OutOfLoggingBuffer,
+};
+
+
+void fail(ModeInfoBlock* mib, ErrNum errNum);
+void rfail(ErrNum errNum);
 /// Parse both structures and fail with a red screen or return a GraphicalParam.
 GraphicalParam graphParse(VbeInfoBlock* vid, ModeInfoBlock* mib);
 
