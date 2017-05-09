@@ -52,7 +52,16 @@ u16 Pic::getMask() {
     return _mask;
 }
 
+#include "../Graphics/Workspace.h"
+#include "../log.h"
+
 void Pic::setMask(u16 mask) {
+    //Activate slave pic if needed
+    if((mask & 0xFF00) != 0) {
+        mask &= ~(1<<SLAVE_PIC);
+    } else {
+        mask |= (1<<SLAVE_PIC);
+    }
     _mask = mask;
     outb(PIC1_DATA, _mask&0x00FF);
     outb(PIC2_DATA, (_mask&0xFF00) >> 8);

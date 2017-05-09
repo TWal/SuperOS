@@ -35,6 +35,7 @@
 #include "Streams/PrefixStream.h"
 #include "Streams/OutMixStream.h"
 #include "log.h"
+#include "IO/Mouse.h"
 
 #include<vector>
 #include<string>
@@ -106,6 +107,12 @@ void pagefault(const InterruptParamsErr& par){
 void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
     pic.endOfInterrupt(1);
+}
+
+//int 0x2c
+void mouseint(const InterruptParams& i){
+    mouse.handleByte(inb(0x60));
+    pic.endOfInterrupt(12);
 }
 
 void dummy(const InterruptParams&){
@@ -262,9 +269,16 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA USER_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
+    mouse.init();
+    idt.addInt(0x2c, mouseint);
+    pic.activate(Pic::MOUSE);
+
+    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
 
     HDD::HDD first(1,true);
     first.init();

@@ -1,5 +1,6 @@
 #include "Workspace.h"
 #include "Window.h"
+#include "../IO/Mouse.h"
 #include "../log.h"
 
 using namespace input;
@@ -28,6 +29,7 @@ namespace video{
             (*it)->send();
         }
         _wins.front()->drawEdge();
+        mouse.draw();
         screen.send();
     }
 

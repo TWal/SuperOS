@@ -63,10 +63,11 @@ namespace video {
         }
         //printf("Screen Updated");
     }
-    void Screen::writeLine(uint nb, uint offset, uint size, Color* buffer){
+    void Screen::writeLine(uint nb, uint offset, uint size, Color* buf){
         assert(offset + size <= Xsize);
         assert(nb <= Ysize);
-        memcpy(VGAbuffer +nb * pitch + 4* offset,buffer,size*4);
+        memcpy(VGAbuffer +nb * pitch + 4* offset,buf,size*4);
+        memcpy(buffer + nb*Xsize + offset, buf, size*4);
     }
     void Screen::clear(){
         u32 RAMsize = Ysize*Xsize*4;

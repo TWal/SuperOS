@@ -88,7 +88,6 @@ inline void* getCR2(){
 }
 
 
-
 [[noreturn]] void vbsod(const char* s, va_list ap);
 extern "C" [[noreturn]]  void bsod(const char* s, ...);
 
