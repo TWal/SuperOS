@@ -12,7 +12,7 @@ void* const tidBitset = (void*)(-0x80000000ll - 0x2000ll);
 
 Scheduler::Scheduler() : _current(nullptr),_remainingTime(0),
                          _halted(false),_timeToRendering(0),_runTryNum(0){
-    Pit::set(0,2000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
+    Pit::set(0,1000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
 }
 static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){

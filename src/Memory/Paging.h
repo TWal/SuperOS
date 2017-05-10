@@ -87,6 +87,7 @@ struct PageEntry {
     inline void setAddr(uptr a){
 #ifdef SUP_OS_KERNEL
         assert((a & ((1<<12)-1)) == 0 && a >> 52 == 0);
+        //assert(a <= 4ll*1024*1024*1024);
 #else
         assert((a & ((1<<12)-1)) == 0);
 #endif
@@ -158,6 +159,7 @@ struct PageTable {
     inline void setAddr(uptr a){
 #ifdef SUP_OS_KERNEL
         assert((a & ((1<<12)-1)) == 0 && a >> 52 == 0);
+        //assert(a <= 4ll*1024*1024*1024);
 #else
         assert((a & ((1<<12)-1)) == 0);
 #endif

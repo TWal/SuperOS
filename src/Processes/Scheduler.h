@@ -36,7 +36,7 @@ public :
     void addP(u16 pid,Process* pro){_processes[pid]=pro;}
     void addG(u16 gid,ProcessGroup* pg){_groups[gid]=pg;}
     void freeT(u16 tid){
-        assert(_current->getTid() != tid);
+        assert(!_current or _current->getTid() != tid);
         assert(_threads.count(tid));
         _threads.erase(tid);
         if(!_groups.count(tid)&&!_processes.count(tid)){

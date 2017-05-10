@@ -26,8 +26,8 @@ constexpr LogLevel serLvls[LAST_LOGMOD] =
 {
     Debug, // Generic
     Debug, // Init
-    Debug, // PhyMem
-    Debug, // Pagingl
+    Info, // PhyMem
+    Info, // Pagingl
     Debug, // Segment
     Debug, // Inter
     Debug, // Screenl
@@ -48,7 +48,7 @@ constexpr LogLevel logLvls[LAST_LOGMOD] =
 {
     Debug, // Generic
     Info,  // Init
-    Debug, // PhyMem
+    Info, // PhyMem
     Info, // Pagingl
     Debug, // Segment
     Debug, // Inter

@@ -35,14 +35,7 @@ void thread(){
 
 
 int main(){
-    printf("[Init] start");
-    int i = 0;
-    while(1){
-        for(int i = 0 ; i < 1000000 ; ++i);
-        printf("%d\n",i);
-        ++i;
-    }
-    /*printf("[Init] Init start\n");
+    printf("[Init] Init start\n");
     void* test = malloc(1024);
 
     pid_t t = clone(thread,(char*)test +1024);
@@ -61,7 +54,7 @@ int main(){
         printf("Second Process");
         for(int i = 0 ; i < 10000000 ; ++i);
         return 57;
-    }
+        }
 
     int status;
     errno = 0;
@@ -72,7 +65,10 @@ int main(){
     wait(&status);
     printf("[init] errno : %lld and status %d\n",errno,status);
 
+    printf("[init] end of test");
+    while(1);
+
     _texit(42);
 
-    return factorial(5);*/
+    return factorial(5);
 }

@@ -66,6 +66,7 @@ namespace video{
         /// Pointer to the real buffer corresponding to the screen
         static char* const VGAbuffer;
         static Color* const buffer; ///< buffer which is written to (double buffering)
+        bool _OK = false;
     public:
         void init(GraphicalParam* gp);
         ///slow low-level access;
@@ -76,7 +77,8 @@ namespace video{
         void clear();
         void clear(Vec2u offset,Vec2u size);
         void putChar(char c, uint x, uint y, const Font& font, Color fg, Color bg);
-        inline Vec2u getSize(){return {Xsize,Ysize};}
+        Vec2u getSize(){return {Xsize,Ysize};}
+        bool isOK(){return _OK;}
     };
 
     extern Screen screen;

@@ -93,7 +93,7 @@ public :
        paging structure and physical pages in freshly allocated new pages.
      */
     UserMemory& operator=(const UserMemory& other);
-    void DumpTree(); ///< Print the mappings of this objects.
+    void DumpTree() const ; ///< Print the mappings of this objects.
 
 };
 

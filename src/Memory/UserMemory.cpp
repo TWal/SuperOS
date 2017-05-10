@@ -35,7 +35,7 @@ void UserMemory::freePages(uptr PT){
 void UserMemory::freePTs(uptr PD, bool start){
     paging.actTmpPD(PD);
     for(int i = start ? 1 : 0 ; i < 512 ; ++i){
-        if(Paging::tmpPD[i].getAddr()&& Paging::tmpPD[i].present){
+        if(Paging::tmpPD[i].getAddr() and Paging::tmpPD[i].present){
             freePages(Paging::tmpPD[i].getAddr());
             physmemalloc.free(Paging::tmpPD[i].getAddr());
             if(start){
@@ -52,7 +52,7 @@ void UserMemory::freePDs(uptr PDP){
     freePTs(Paging::tmpPDP[0].getAddr(),true);
     for(int i = 1 ; i < 512 ; ++i){
         uptr PD;
-        if( (PD = Paging::tmpPDP[i].getAddr()) && Paging::tmpPDP[i].present ){
+        if( (PD = Paging::tmpPDP[i].getAddr()) and Paging::tmpPDP[i].present ){
             freePTs(PD,false);
             physmemalloc.free(PD);
             Paging::tmpPDP[i].present = false;
@@ -61,6 +61,8 @@ void UserMemory::freePDs(uptr PDP){
     paging.freeTmpPDP();
 }
 void UserMemory::clear(){
+    debug(Proc,"Clearing :");
+    DumpTree();
     assert(_PDP != Paging::pagePT[6].getAddr()); // ensure we do not delete the kernel userPDP.
     if(_PDP == Paging::PML4[0].getAddr()){ // if this mapping is active return to the default mapping
         paging.switchUser(Paging::pagePT[6].getAddr());
@@ -94,6 +96,9 @@ void UserMemory::copyPages(uptr PTdest,uptr PTsrc){
             pageHeap.free(pdest);
             dest[i].setAddr(newp);
         }
+        else{
+            new(dest +i) PageTable();
+        }
     }
     pageHeap.free(src);
     pageHeap.free(dest);
@@ -111,6 +116,9 @@ void UserMemory::copyPTs(uptr PDdest,uptr PDsrc, bool start){
             uptr oldPT = src[i].getAddr();
             dest[i].setAddr(newPT);
             copyPages(newPT,oldPT);
+        }
+        else{
+            new(dest +i) PageEntry();
         }
     }
     pageHeap.free(src);
@@ -136,25 +144,40 @@ void UserMemory::copyPDs(uptr PDPdest,uptr PDPsrc){
             uptr oldPD = src[i].getAddr();
             copyPTs(newPD,oldPD, i == 0);
         }
+        else{
+            new(dest +i) PageEntry();
+        }
     }
     pageHeap.free(src);
     pageHeap.free(dest);
 }
 
 UserMemory::UserMemory(const UserMemory& other):UserMemory(){
+    /*debug(Proc,"before copy :");
+      other.DumpTree();*/
     copyPDs(_PDP,other._PDP);
+    /*debug(Proc,"after copy original :");
+    other.DumpTree();
+    debug(Proc,"after copy copied:");
+    DumpTree();*/
 }
 
 UserMemory& UserMemory::operator=(const UserMemory& other){
     clear();
+    /*debug(Proc,"before copy :");
+      other.DumpTree();*/
     copyPDs(_PDP,other._PDP);
+    /*debug(Proc,"after copy original :");
+    other.DumpTree();
+    debug(Proc,"after copy copied:");
+    DumpTree();*/
     return *this;
 }
 void UserMemory::printPages(uptr PT){
     PageEntry* tPT = pageHeap.alloc<PageEntry>(PT);
     for(int i = 0 ; i < 512 ; ++i){
         if(tPT[i].getAddr() and tPT[i].present){
-            debug(Proc, "\t\t\tPage : %d : %p\n",i,tPT[i].getAddr());
+            debug(Proc, "\t\t\tPage : %d : %p",i,tPT[i].getAddr());
         }
     }
     pageHeap.free(tPT);
@@ -182,7 +205,7 @@ void UserMemory::printPDs(uptr PDP){
     pageHeap.free(tPDP);
 }
 
-void UserMemory::DumpTree(){
+void UserMemory::DumpTree() const {
     if(serLvls[Proc] < Debug) return;
     debug(Proc, "PDP : %llx", _PDP);
     printPDs(_PDP);

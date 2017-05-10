@@ -70,6 +70,8 @@ static void drawText(const char* s, video::Vec2u pos, const video::Color& fg, co
 static video::Color blueline[2000];
 [[noreturn]]void vbsod(const char* s, va_list ap) {
     cli;
+    vfprintf(stderr,s,ap);
+    if(!video::screen.isOK()) stop;
     video::Color bg({142, 0, 0});
     video::Color fg({200, 200, 200});
     for(int i = 0; i < 2000; ++i) {

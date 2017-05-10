@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "../log.h"
 
-
+extern bool pageLog;
 extern "C" void* kernel_code_end;
 
 PhysicalMemoryAllocator::PhysicalMemoryAllocator() : _bitset(nullptr,0){
@@ -53,12 +53,12 @@ uptr PhysicalMemoryAllocator::alloc() {
     assert(bsf != (size_t)-1 && "Kernel is out of physical memory");
 
     _bitset[bsf] = false;
-    //printf("allocating %p",(0x100000 + ((64*i+pos)<<12)));
+    if(pageLog) debug(PhyMem,"allocating %p",0x100000 + (bsf<<12));
     return 0x100000 + (bsf<<12); //4kb page = 2^12 byte
 }
 
 void PhysicalMemoryAllocator::free(uptr page) {
-    //printf("freeing %p",page);
+    if(pageLog) debug(PhyMem,"freeing %p",page);
     u64 index = page - 0x100000;
     assert((index&((1<<12)-1)) == 0);
     index >>= 12;

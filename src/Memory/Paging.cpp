@@ -280,7 +280,7 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 void Paging::createMapping(uptr phy,void* virt,bool wt){
-    //debug(Pagingl,"mapping %p to %p",virt,phy);
+    if(pageLog) debug(Pagingl,"mapping %p to %p",virt,phy);
     if(phy & ((1<< 12 )-1)) {
         bsod("Create mapping : physical address is not page-aligned : %p",phy);
     }
@@ -314,6 +314,7 @@ void Paging::createMapping(uptr phy,void* virt,uint numPg,bool wt){
 
 
 void Paging::freeMapping(void* virt,int nbPages){
+    if(pageLog) debug(Pagingl,"free mapping %p to %d",virt,nbPages);
     for(int i=0 ; i < nbPages ; ++i){
         uptr PT = getPTphy((u8*)virt+i*0x1000);
         actTmpPT(PT);

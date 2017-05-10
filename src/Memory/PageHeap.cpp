@@ -41,7 +41,7 @@ void PageHeap::init(){
 
 void PageHeap::free(void* virt){
     size_t pos = uptr(base - (u8*)virt) / 0x1000;
-    //printf("base : %p, virt : %p, pos : %d",base,virt,pos);
+    debug(Pagingl,"free base : %p, virt : %p, pos : %d",base,virt,pos);
     assert(pos < 0x1000);
     paging.freeMapping(virt);
     _bitset.set(pos);

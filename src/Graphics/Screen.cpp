@@ -47,6 +47,7 @@ namespace video {
             buffer[i] = Color::white;
         }
         send();*/
+        _OK = true;
 
     }
     void Screen::set(uint x, uint y, Color c){

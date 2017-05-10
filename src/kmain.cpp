@@ -98,7 +98,7 @@ void gpfault(const InterruptParamsErr& par){
 */
 
 void pagefault(const InterruptParamsErr& par){
-    printf("Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
+    fprintf(stderr,"Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
@@ -332,7 +332,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     Workspace::get(1).addWin(initLog);
     FileDescriptor* fd = new FileDescriptor(initLog);
     //FileDescriptor* fd2 = new FileDescriptor(sers);
-    printf("Init process %p\n",&initp);
+    printf("Init process %p\n",initp);
     initp->_fds.push_back(FileDescriptor());
     initp->_fds.push_back(*fd);
     //initp->_fds.push_back(*fd2);
@@ -410,7 +410,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
 #elif BLA == FAT_TEST
     HDD first(1,true);
-    first.init();
+    first.init()
 
     //first.writeaddr(0xf0095,"random data !",13);
     /*char text [15] = {};

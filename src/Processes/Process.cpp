@@ -260,6 +260,7 @@ Thread::Thread(u16 tid, u64 rip,Process* process)
 Thread::~Thread(){
     info(Proc,"Deletion of thread %d",_tid);
     schedul.freeT(_tid);
+    info(Proc,"Deleted of thread %d",_tid);
     //("thread %d deleted\n",_tid);
 }
 
