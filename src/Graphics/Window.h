@@ -29,8 +29,8 @@ namespace video{
         bool hasEdge;
         /// Create window
         Window(Vec2u offset, Vec2u size);
-        /// Draw a red line around the window to represent the focus
-        void drawEdge();
+        /// Draw a line around the window to represent the focus
+        void drawEdge(const Color& color);
         /**
            @brief Draw window on screen.
 

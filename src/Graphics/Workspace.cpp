@@ -27,8 +27,9 @@ namespace video{
         while(it != _wins.begin()){
             --it;
             (*it)->send();
+            (*it)->drawEdge(Color({0, 50, 150}));
         }
-        _wins.front()->drawEdge();
+        _wins.front()->drawEdge(Color::red);
         mouse.draw();
         screen.send();
     }
@@ -68,8 +69,8 @@ namespace video{
                     _currentWindow = _wins.front();
                     _startMousePos = {e.mousec.x, e.mousec.y};
                     _startWindow = _currentWindow->getSize();
-                } else if(e.mousec.get(MouseEvent::LEFT, MouseEvent::PRESSED)
-                       || e.mousec.get(MouseEvent::RIGHT, MouseEvent::PRESSED)) {
+                } else if(!e.mousec.get(MouseEvent::LEFT, MouseEvent::PRESSED)
+                       && !e.mousec.get(MouseEvent::RIGHT, MouseEvent::PRESSED)) {
                     _state = NORMAL;
                     _currentWindow = nullptr;
                 }

@@ -75,7 +75,7 @@ namespace video {
     }
     void Screen::clear(Vec2u offset,Vec2u size){
         for(uint y = offset.y ; y < offset.y + size.y; ++y){
-            memset(buffer + offset.x,0,size.x);
+            memset(buffer + Xsize*y + offset.x, 0, size.x*4);
         }
     }
     void Screen::putChar(char c, uint x, uint y, const Font& font, Color fg, Color bg){

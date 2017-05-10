@@ -253,6 +253,11 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     OSStreams[3] = log;
     IOinit(kernelLog);
 
+    info(Init,"Mouse initialization");
+    mouse.init();
+    idt.addInt(0x2c, mouseint);
+    pic.activate(Pic::MOUSE);
+
     info(Init,"Keyboard initialization");
     idt.addInt(0x21,keyboard); // register keyboard interrupt handler
     pic.activate(Pic::KEYBOARD); // activate keyboard interruption
@@ -272,14 +277,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
-    mouse.init();
-    idt.addInt(0x2c, mouseint);
-    pic.activate(Pic::MOUSE);
-
-    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
-    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
-    kbd.setKeymap(&azertyKeymap); // activate azerty map.
-
     HDD::HDD first(1,true);
     first.init();
     HDD::PartitionTableEntry part1 = first[1];

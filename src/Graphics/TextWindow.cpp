@@ -20,8 +20,6 @@ namespace video{
     }
 
     void TextWindow::addPrintableChar(char c){
-        assert(_curs.x <= _width);
-        if(_curs.x == _width) newLine();
         //fprintf(stderr,"pos %d %d %d %d %d\n",_curs.x, _curs.y,_cursFormat.fg.R,
         //_cursFormat.fg.G,_cursFormat.fg.B);
         _lineBuffer.at(_curs.y).write(_curs.x,FormatedChar(c,_cursFormat));
@@ -213,30 +211,44 @@ namespace video{
         }
     }
 
-    void TextWindow::send() const{
-        //fprintf(stderr,"hey !\n");
+    void TextWindow::send() const {
         if(!_active) return;
-        //fprintf(stderr,"hoy !\n");
-        size_t s = _lineBuffer.size();
-        size_t offset = max(i64(s - _height),i64(0));
-        //if(getWID()>=2) fprintf(stderr,"number line %llu and height %llu and offset \n",s,_height);
-        for(size_t i =  0; i < min(s,(size_t)_height) ; ++i){
-            //fprintf(stderr,"printing line %llu \n",i + offset);
-            size_t j = 0;
-            //fprintf(stderr,"of size %d \n",_lineBuffer[i + offset].data.size());
-            for(auto fmc : _lineBuffer[i + offset].data){
-                //fprintf(stderr,"printing %llu %llu\n",i,j);
-                drawFMC({j,i},fmc);
-                ++j;
+        screen.clear(_offset, _size);
+        //avoid infinite loop
+        if(_width == 0) return;
+
+        uint height = 0;
+        auto it = _lineBuffer.end();
+        while(it != _lineBuffer.begin()){
+            --it;
+            height += (it->data.size() + _width - 1)/_width;
+            if(height >= _height) {
+                height = _height;
+                break;
             }
         }
 
+        it = _lineBuffer.end();
+        while(it != _lineBuffer.begin()){
+            --it;
+            uint nbLine = (it->data.size() + _width - 1)/_width;
+            for(uint i_ = 0; i_ < nbLine; ++i_) {
+                if(height == 0) return;
+                uint i = nbLine - 1 - i_;
+                uint startx = i*_width;
+                for(uint x = 0; x < min((uint)_width, (uint)(it->data.size()-startx)); ++x) {
+                    drawFMC({x, height-1},  it->data[startx + x]);
+                }
+                height -= 1;
+            }
+        }
     }
+
     void TextWindow::drawFMC(Vec2u pos, FormatedChar fmc) const{
         screen.putChar(fmc.c,_offset.x + pos.x*8+1,_offset.y + pos.y*16 + 1,*_font,fmc.fg,fmc.bg);
         if(fmc.underline){
             for(uint k = 0 ; k < 8 ; ++k){
-                screen.set(_offset.x + pos.x*8+1+k, _offset.y + pos.y*16+16,fmc.fg);
+                screen.set(_offset.x + pos.x*8+1+k, _offset.y + pos.y*16+16, fmc.fg);
             }
         }
     }

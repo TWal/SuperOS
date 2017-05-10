@@ -98,7 +98,7 @@ MouseEvent Mouse::poll() {
 }
 
 MouseEvent Mouse::pollLast() {
-    return MouseEvent(_totalX, _totalY, 0, 0);
+    return MouseEvent(_totalX, _totalY, _lastPressed, _lastPressed);
 }
 
 
