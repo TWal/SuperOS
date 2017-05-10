@@ -22,7 +22,10 @@ class Waitable{
     std::set<Waiting*> _waitings;
 protected:
     /**
-       @brief The deriving class must call this when the reason number i is no longer needed
+       @brief The deriving class must call this when something happen.
+
+       Waiting objects will be waken up ans then can check whether they want to do something
+       or not.
     */
     void free();
 public:
@@ -63,6 +66,7 @@ public:
     ~Waiting(){
         assert(!_waited && _waiting.empty());
     };
+
     /// When you finally decide not to wait.
     inline void wait(std::set<Waitable*> waiting,checker checker){
         assert(!_waited && _waiting.empty());
@@ -73,6 +77,7 @@ public:
             w->_waitings.insert(this);
         }
     }
+
     /// Check if we are still waiting.
     inline bool OK(){
         if(!_waited) return _waiting.empty();
@@ -82,9 +87,11 @@ public:
         _checker(this,tmp);
         return OK();
     }
+
     inline void accept(){
         _waiting.clear();
     }
+
     inline void refuse(){
         for(auto w : _waiting){
             w->_waitings.insert(this);

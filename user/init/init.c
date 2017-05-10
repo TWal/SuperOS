@@ -36,9 +36,11 @@ void thread(){
 
 int main(){
     printf("[Init] start");
+    int i = 0;
     while(1){
-        for(int i = 0 ; i < 10000000 ; ++i);
-        printf("[Init] coucou");
+        for(int i = 0 ; i < 1000000 ; ++i);
+        printf("%d\n",i);
+        ++i;
     }
     /*printf("[Init] Init start\n");
     void* test = malloc(1024);

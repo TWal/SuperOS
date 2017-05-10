@@ -178,6 +178,7 @@ Process::Process(Process& other, Thread* toth, u16 pid):
 }
 
 
+
 void Process::addThread(Thread* thread){
     _threads.insert(thread);
 }
@@ -201,6 +202,7 @@ void Process::terminate(u64 returnCode){
     for(auto th : _threads){
         delete th;
     }
+    _threads.clear();
     if(_pid == 1){
         info(Proc,"init died with code %lld",returnCode);
         kend(); // shutdown.
@@ -235,7 +237,7 @@ void Process::addChild(Process* pro){
 }
 
 void Process::orphan(){
-    Process *init = schedul.getP(1);
+    Process* init = schedul.getP(1);
     _parent = init;
     init->addChild(this);
 }
@@ -281,7 +283,7 @@ u64 Thread::waitp(u64* status){
         if(pro->_terminated){
             u64 res = pro->getPid();
             // TODO check valid address
-            if(status)*status = pro->_returnCode;
+            if(status) *status = pro->_returnCode;
             delete pro;
             return res;
         }
@@ -382,11 +384,11 @@ static u64 swrite(Thread*t,uint fd,const void* buf,u64 count){
 /// @brief Handler of SYSWRITE
 static u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
     Thread* t = schedul.enterSys();
-    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
-            t->getTid(),fd,buf,count);
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+    //        t->getTid(),fd,buf,count);
     auto tmp = swrite(t,fd,(const void*)buf,count);
-    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
-            t->getTid(),fd,buf,count,tmp);
+    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
+    //       t->getTid(),fd,buf,count,tmp);
     return tmp;
 }
 

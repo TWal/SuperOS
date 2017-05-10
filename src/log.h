@@ -34,7 +34,7 @@ constexpr LogLevel serLvls[LAST_LOGMOD] =
     Info, // Kbd
     Debug, // Mousel
     Debug, // Syscalls
-    Warning, // Schedul
+    Info, // Schedul
     Info, // Proc
     Debug, // Graphics
     Debug, // Hdd

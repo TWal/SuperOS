@@ -252,6 +252,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     OSStreams[2] = sers;
     OSStreams[3] = log;
     IOinit(kernelLog);
+    mouse.init();
+    idt.addInt(0x2c, mouseint);
+    pic.activate(Pic::MOUSE);
 
     info(Init,"Mouse initialization");
     mouse.init();
@@ -274,8 +277,8 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA TMP_TEST
-#define EMUL // comment for LORDI version
+#define BLA USER_TEST
+//#define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     HDD::HDD first(1,true);
     first.init();
@@ -294,50 +297,56 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
 #elif BLA == USER_TEST
     breakpoint;
-    HDD::HDD first(1,true);
-    first.init();
+    HDD::HDD* first = new HDD::HDD(1,true);
+    first->init();
     //PartitionTableEntry part1 = first[1];
     //fb.printf ("Partition 1 beginning at %8x of size %8x \n",part1.begLBA,part1.size);
     //Partition pa1 (&first,part1);
 #ifdef EMUL
 
-    HDD::PartitionTableEntry part1 = first[1];
-    HDD::Partition pa1 (&first,part1); // load first partition
+    HDD::PartitionTableEntry part1 = (*first)[1];
+    HDD::Partition* pa1 = new HDD::Partition(first,part1); // load first partition
 
 #else
 
-    const HDD::PartitionTableEntry *part1 = first.partWithPred([](const HDD::Partition&part){
-            //u32 UUID[4] = {0xe9be36b1,0x894793a2,0x32db3294,0xa907a74a};
-            u32 UUID[4]= {0x1e0a2799,0x9e4e1c52,0x1868dc89,0x0397fcb7};
+    const HDD::PartitionTableEntry *part1 = first->partWithPred([](const HDD::Partition&part){
+            u32 UUID[4] = {0xe9be36b1,0x894793a2,0x32db3294,0xa907a74a}; // LORDI
             return HDD::Ext2::CheckUUID(UUID,part);
         });
     if(part1 == nullptr)bsod("Main partition not found");
-    HDD::Partition pa1 (&first,*part1); // load partition with FAT UUID 04728457
+    HDD::Partition* pa1 = new HDD::Partition(first,*part1);
 #endif
 
-    HDD::Ext2::FS fs (&pa1);
+    HDD::Ext2::FS* fs = new HDD::Ext2::FS(pa1);
 
     ProcessInit();
 
     pageLog = true;
 
-    HDD::File* initf = (*(fs.getRoot()))["init"];
+    HDD::File* initf = (*(fs->getRoot()))["init"];
     assert(initf);
     assert(initf->getType() == HDD::FileType::RegularFile);
     HDD::RegularFile* init = static_cast<HDD::RegularFile*>(initf);
-    ProcessGroup pg(1);
-    Process initp(1,&pg);
-    Thread* initt = initp.loadFromBytes(init);
+    ProcessGroup* pg = new ProcessGroup(1);
+    Process* initp = new Process(1,pg);
+    Thread* initt = initp->loadFromBytes(init);
     TextWindow* initLog = new TextWindow({0,0},screen.getSize(),Font::def);
     initLog->show();
     Workspace::get(1).addWin(initLog);
-    FileDescriptor fd(initLog);
+    FileDescriptor* fd = new FileDescriptor(initLog);
+    //FileDescriptor* fd2 = new FileDescriptor(sers);
     printf("Init process %p\n",&initp);
-    initp._fds.push_back(FileDescriptor());
-    initp._fds.push_back(fd);
+    initp->_fds.push_back(FileDescriptor());
+    initp->_fds.push_back(*fd);
+    //initp->_fds.push_back(*fd2);
+    delete fd;
+    //delete fd2;
     schedul.init(initt);
     cl.init();
-    cl.pwd = fs.getRoot();
+    cl.pwd = fs->getRoot();
+    //while(true){
+    //     kloop();
+    //}
     schedul.run();
 
 

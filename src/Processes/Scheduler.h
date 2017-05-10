@@ -32,10 +32,11 @@ public :
     Thread* getT(u16 tid){return _threads.at(tid);}
     Process* getP(u16 pid){return _processes.at(pid);}
     ProcessGroup* getG(u16 gid){return _groups.at(gid);}
-    void addT(u16 tid,Thread* th){_threads[tid]=th; _threadFIFO.push_back(th);}
+    void addT(u16 tid,Thread* th){_threads[tid]=th; _threadFIFO.push_back(tid);}
     void addP(u16 pid,Process* pro){_processes[pid]=pro;}
     void addG(u16 gid,ProcessGroup* pg){_groups[gid]=pg;}
     void freeT(u16 tid){
+        assert(_current->getTid() != tid);
         assert(_threads.count(tid));
         _threads.erase(tid);
         if(!_groups.count(tid)&&!_processes.count(tid)){
@@ -54,17 +55,18 @@ public :
         _groups.erase(gid);
         _tids.set(gid);
     }
+
 private :
     std::map<u16,Process*> _processes;
     std::map<u16,Thread*> _threads;
     std::map<u16,ProcessGroup*> _groups;
-    std::deque<Thread*> _threadFIFO; // no priority queue for now.
+    std::deque<u16> _threadFIFO; // no priority queue for now.
     Thread* volatile _current; // nullptr when no thread is active (in kernel mode)
 
     static const u8 processQuantum = 5; ///< Number of tick each thread gets when starting.
     volatile u8 _remainingTime; ///< Number of tick remaining for _current
-    static const u8 renderingQuantum = 10; ///< Number of tick between renderings
-    volatile u8 _timeToRendering; ///< Number of tick remaining before rendering
+    static const u8 renderingQuantum = 30; ///< Number of tick between renderings
+    volatile u8 _timeToRendering; ///-< Number of tick remaining before rendering
     volatile bool _halted;
     u64 _runTryNum;
     Bitset _tids; // used tid : 1 is free, 0 is occupied

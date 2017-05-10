@@ -12,7 +12,7 @@ void* const tidBitset = (void*)(-0x80000000ll - 0x2000ll);
 
 Scheduler::Scheduler() : _current(nullptr),_remainingTime(0),
                          _halted(false),_timeToRendering(0),_runTryNum(0){
-    Pit::set(0,5000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
+    Pit::set(0,2000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
 }
 static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
@@ -59,39 +59,40 @@ void Scheduler::init(Thread* initThread){
 
 
     debug(Schedul,"current queue is : ");
-    for(auto t : _threadFIFO){
-        debug(Schedul,"%d ",t->getTid());
+    for(auto tid : _threadFIFO){
+        debug(Schedul,"%d ",tid);
     }//printf("\n");
     if(_runTryNum >= _threadFIFO.size()){
         // If all processes are waiting
         debug(Schedul,"Idle\n");
         _runTryNum = 0;
+        cli;
         _halted = true;
         // passive sleep : processor stopped until next interruption.
         // TODO interrupts may return from this
-        while(true) asm volatile("xor %rsp,%rsp; hlt");
+        while(true) asm volatile("xor %rsp,%rsp; sti; hlt");
         error(Schedul," After while (true) hlt : Should never happen");
     }
 
-    // pop the next candidate
-    _current = _threadFIFO[0];
+    // pop the next candidate's TID
+    u16 nextTid = _threadFIFO[0];
     _threadFIFO.pop_front();
+    auto it  = _threads.find(nextTid);
+    // if it has been deleted continue
+    if(it == _threads.end()) run();
 
-    // If this thread has been deleted
-    if(!_threads.count(_current->getTid())){
-        _current = nullptr;
-        run(); // stack will disappear no return cost.
-    }
+    _current = it->second;
+
     // If this thread is waiting something
     if(!_current->OK()){
-        _threadFIFO.push_back((Thread*)_current);
+        _threadFIFO.push_back(nextTid);
         _current = nullptr;
         ++_runTryNum;
         run();
     }
 
     // All is right, this thread can run
-    _remainingTime = 5; // by default program runs for 5 ticks
+    _remainingTime = processQuantum; // by default program runs for processQuantum ticks
     _runTryNum = 0; // OK we have found it
     _current->run();
 
@@ -107,7 +108,8 @@ void Scheduler::init(Thread* initThread){
     Process* pro = _current->getProcess();
     u16 tid = _current->getTid();
     _current = nullptr;
-    info(Schedul,"Process %d died with %lld\n",tid,returnCode);
+    info(Schedul,"Process %d died because thread %d exited with %lld\n",
+         pro->getPid(),tid,returnCode);
     pro->terminate(returnCode); // call kend if it is init.
 
     run();
@@ -141,7 +143,7 @@ Thread* Scheduler::enterSys(){
 
 void Scheduler::stopCurent(){
     if(Context::lastContext) enterSys();
-    _threadFIFO.push_back((Thread*)_current);
+    _threadFIFO.push_back(_current->getTid());
     _current = nullptr;
 }
 
@@ -186,11 +188,6 @@ u16 Scheduler::clone(u64 rip, u64 stack){
 }
 
 
-u16 wait(i64 pid, int* status){
-    
-}
-
-
 
 
 
@@ -204,7 +201,7 @@ void Scheduler::timerHandler(const InterruptParams& params){
     }
     if(_halted){
         assert((iptr)params.rip < 0);
-        if(params.rsp != 0) warning(Schedul,"Halted rsp not 0");
+        if(params.rsp != 0) warning(Schedul, "Halted rsp not 0");
         _halted = false;
         pic.endOfInterrupt(0);
         if(_timeToRendering == 0){
@@ -215,12 +212,16 @@ void Scheduler::timerHandler(const InterruptParams& params){
     }
     else{
         if((iptr)params.rip < 0){
-            goto returnToCurrent;
+            pic.endOfInterrupt(0);
+            return;
         }
+        debug(Schedul,"Time Interrupt at %p",params.rip);
+        Context::save(params); // saving context.
         pic.endOfInterrupt(0);
         // prempting userMode program.
         if(_timeToRendering == 0){
             stopCurent();
+            //debug("Rendering");
             kloop();
             _timeToRendering = renderingQuantum;
             run();
@@ -230,54 +231,9 @@ void Scheduler::timerHandler(const InterruptParams& params){
             run();
         }
         // nothing to do
-        goto returnToCurrent;
-
     }
 
 
-    /*_kernelExecuting = true;
-    u64 rsp;
-    debug(Schedul,"Timer handler %llx and %llx",params.rsp,params.rip);
-    kloop();
-    _kernelExecuting = false;
-    if(_halted){
-        _halted = false;
-        pic.endOfInterrupt(0);
-        run();
-    }
-
-    if((iptr)params.rip <0){
-        //printf("Timer Interrupt during kernel execution %p \n",params.rip);
-        // TODO store it somewhere
-        pic.endOfInterrupt(0);
-        return;
-    }
-    // If no thread is running : we are executing kernel
-    if(!_current){
-        if(_remainingTime) -- _remainingTime;
-        pic.endOfInterrupt(0);
-        return; // TODO find a way to tell that in tick has occured
-    }
-
-    // If current thread still has time
-    if(_remainingTime > 0){
-        --_remainingTime;
-        pic.endOfInterrupt(0);
-        return; // return to current execution
-    }
-
-    // saving context
-    _current->context = params;
-
-    // thread is now last in queue
-    _threadFIFO.push_back((Thread*)_current);
-    _current = nullptr;
-
-    // if there is another timer interrupt during run, it will enter first case
-    pic.endOfInterrupt(0);
-    run();*/
-
-returnToCurrent:
     pic.endOfInterrupt(0);
     return;
 }
@@ -288,14 +244,6 @@ returnToCurrent:
 
 
 void timerHandler(const InterruptParams& params){
-    
-    /*int i = 0;
-    ++i;
-    if((i % 10) != 0){
-        pic.endOfInterrupt(0);
-        return;
-        }*/
-    //printf("Timer Interrupt at %p\n",params.rip);
     schedul.timerHandler(params);
 }
 

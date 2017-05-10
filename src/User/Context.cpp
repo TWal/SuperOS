@@ -1,5 +1,6 @@
 #include "Context.h"
 #include "../Interrupts/Interrupt.h"
+#include "../log.h"
 
 Context::Context(const InterruptParams& params){
     assert((i64)params.rip > 0 && params.cs == 0x2b);  // we are in user mode
