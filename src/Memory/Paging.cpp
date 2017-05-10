@@ -164,28 +164,36 @@ void Paging::removeIdent(){
     invlpg(0x400000);
 }
 
+bool pageLog = false;
+
 void Paging::actTmpPDP (uptr PDPphyAddr){
+    //fprintf(stderr,"Activating TmpPDP at %p\n",PDPphyAddr);
     assert(!pagePT[TMPPDPOFF].present);
     pagePT[TMPPDPOFF].activeAddr(PDPphyAddr);
     invlpg(tmpPDP);
 }
 void Paging::actTmpPD (uptr PDphyAddr){
+    //fprintf(stderr,"Activating TmpPD at %p\n",PDphyAddr);
     assert(!pagePT[TMPPDOFF].present);
     pagePT[TMPPDOFF].activeAddr(PDphyAddr);
     invlpg(tmpPD);
 }
 void Paging::actTmpPT (uptr PTphyAddr){
+    // fprintf(stderr,"Activating TmpPT at %p\n",PTphyAddr);
     assert(!pagePT[TMPPTOFF].present);
     pagePT[TMPPTOFF].activeAddr(PTphyAddr);
     invlpg(tmpPT);
 }
 void Paging::freeTmpPDP (){
+    // fprintf(stderr,"DeActivating TmpPDP\n");
     pagePT[TMPPDPOFF].present = false;
 }
 void Paging::freeTmpPD (){
+    // fprintf(stderr,"DeActivating TmpPD\n");
     pagePT[TMPPDOFF].present = false;
 }
 void Paging::freeTmpPT (){
+    //fprintf(stderr,"DeActivating TmpPT\n");
     pagePT[TMPPTOFF].present = false;
 }
 

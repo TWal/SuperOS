@@ -23,6 +23,8 @@ const char* txtMods[LAST_LOGMOD] = {
     "[Kbd]      ",
     "[Mouse]    ",
     "[Syscalls] ",
+    "[Schedul]  ",
+    "[Process]  ",
     "[Graphics] ",
     "[Hdd]      ",
     "[Ext2]     ",

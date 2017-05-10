@@ -37,6 +37,7 @@ namespace video{
         Window* tmp = _wins.front();
         _wins.pop_front();
         _wins.push_back(tmp);
+        _wins.front()->show();
     }
 
     bool Workspace::handleEventOnMe(input::Event e){

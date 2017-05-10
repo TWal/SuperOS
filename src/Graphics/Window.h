@@ -47,6 +47,9 @@ namespace video{
         ///handle an event on this window : return true if the event has been handled.
         virtual bool handleEvent(input::Event e) = 0;
 
+        /// get WID of window.
+        uint getWID() const {return _wid;}
+
 
 
     };

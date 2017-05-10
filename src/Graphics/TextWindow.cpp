@@ -29,7 +29,7 @@ namespace video{
     }
 
     size_t TextWindow::write(const void* buf, size_t count){
-        //fprintf(stderr,"write TextWindow\n");
+        fprintf(stderr,"write TextWindow\n");
         const char* buf2 = reinterpret_cast<const char*>(buf);
         const size_t limit = 1024;
         if(count > limit) count = limit;
@@ -46,7 +46,7 @@ namespace video{
     }
 
     void TextWindow::putChar(char c){
-        //fprintf(stderr,"putChar('%c'); with %d\n",c,_state);
+        fprintf(stderr,"putChar('%c'); with %d in win %d\n",c,_state,getWID());
         switch(_state){
             case WAITINGOB:
                 if(c != '['){
@@ -219,7 +219,7 @@ namespace video{
         //fprintf(stderr,"hoy !\n");
         size_t s = _lineBuffer.size();
         size_t offset = max(i64(s - _height),i64(0));
-        //fprintf(stderr,"number line %llu and height %llu and offset \n",s,_height);
+        //if(getWID()>=2) fprintf(stderr,"number line %llu and height %llu and offset \n",s,_height);
         for(size_t i =  0; i < min(s,(size_t)_height) ; ++i){
             //fprintf(stderr,"printing line %llu \n",i + offset);
             size_t j = 0;

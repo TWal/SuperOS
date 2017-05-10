@@ -4,6 +4,7 @@
 #include"../utility.h"
 #include"../Bitset.h"
 #include "Paging.h"
+#include "../log.h"
 
 //#define NBUSERSTACK 1
 

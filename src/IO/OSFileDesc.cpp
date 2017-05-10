@@ -39,7 +39,8 @@ size_t write(int fd, const void* buf, size_t count){
             const char* buf2 = (const char*)buf;
             for(size_t i = 0 ; i < count ; ++i){
                 ser.write(buf2[i]);
-                assert(posInBuffer < KERNELBUFFER * 0x1000);
+                if(posInBuffer >= KERNELBUFFER * 0x1000)continue;
+                //assert(posInBuffer < KERNELBUFFER * 0x1000);
                 preGraphicBuffer[posInBuffer] = buf2[i];
                 ++posInBuffer;
             }

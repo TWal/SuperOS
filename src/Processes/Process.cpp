@@ -5,8 +5,17 @@
 #include "../User/Elf64.h"
 #include "../User/Syscall.h"
 #include "Scheduler.h"
+#include "../log.h"
 
 using namespace std;
+
+
+// ____                                 ____
+//|  _ \ _ __ ___   ___ ___  ___ ___   / ___|_ __ ___  _   _ _ __
+//| |_) | '__/ _ \ / __/ _ \/ __/ __| | |  _| '__/ _ \| | | | '_ \
+//|  __/| | | (_) | (_|  __/\__ \__ \ | |_| | | | (_) | |_| | |_) |
+//|_|   |_|  \___/ \___\___||___/___/  \____|_|  \___/ \__,_| .__/
+//                                                          |_|
 
 ProcessGroup::ProcessGroup(u16 gid) : _gid(gid){
     schedul.addG(_gid,this);
@@ -22,16 +31,15 @@ void ProcessGroup::remProcess(Process* pro){
     if(_processes.empty()) delete this;
 }
 
-
-void* const loadedProcess = (void*)-0x100000000ll; // -4G
-const uptr stackStart =  0x8000000000ull; // 512 G
-
 // ____                                _                    _ _
 //|  _ \ _ __ ___   ___ ___  ___ ___  | |    ___   __ _  __| (_)_ __   __ _
 //| |_) | '__/ _ \ / __/ _ \/ __/ __| | |   / _ \ / _` |/ _` | | '_ \ / _` |
 //|  __/| | | (_) | (_|  __/\__ \__ \ | |__| (_) | (_| | (_| | | | | | (_| |
 //|_|   |_|  \___/ \___\___||___/___/ |_____\___/ \__,_|\__,_|_|_| |_|\__, |
 //                                                                    |___/
+
+void* const loadedProcess = (void*)-0x100000000ll; // -4G
+const uptr stackStart =  0x8000000000ull; // 512 G
 
 Thread* Process::loadFromBytes(Bytes* file){
     std::vector<uptr> allocPages;
@@ -75,25 +83,25 @@ Thread* Process::loadFromBytes(Bytes* file){
         //printf("%d, t : %d, off : %p, virt : %llx, size :%d %d\n",i,ph.type,ph.getData(),ph.vaddr,ph.filesz,ph.memsz);
 
         if(ph.type == Elf64::PT_LOAD){
-            printf("Loading Program Header at %p\n",ph.vaddr);
+            debug(Proc,"Loading Program Header at %p",ph.vaddr);
             // if this program header is to be loaded
             assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
 
             size_t offset = ph.offset;
-            printf("Offset in file is %llu\n",offset);
+            debug(Proc,"Offset in file is %llu",offset);
             if(offset % 0x1000 == 0){
                 // the mapping is 4K aligned : better case
                 size_t po = offset / 0x1000;
                 size_t nbfPages = (ph.filesz + 0x1000-1) / 0x1000;
                 size_t nbvPages = (ph.memsz + 0x1000-1) / 0x1000;
-                printf("file pages : %llu ans virtual pages %llu\n",nbfPages,nbvPages);
+                debug(Proc,"file pages : %llu ans virtual pages %llu",nbfPages,nbvPages);
                 //mapping page by page
                 for(size_t i = 0 ; i < nbvPages ; ++i){
                     if(i>= nbfPages){
                         paging.createMapping(physmemalloc.alloc()
                                              ,(char*)ph.vaddr + i * 0x1000);
                         __builtin_memset((char*)ph.vaddr + i * 0x1000,0,0x1000);
-                        printf("Mapping %p to nothing",(char*)ph.vaddr + i * 0x1000);
+                        debug(Proc,"Mapping %p to nothing",(char*)ph.vaddr + i * 0x1000);
                         continue;
                     }
                     uptr phyblock;
@@ -122,10 +130,10 @@ Thread* Process::loadFromBytes(Bytes* file){
         paging.createMapping(block,(char*)stackStart - i * 0x1000);
     }
     //TODO preparing Heap
-    printf("Initializing heap with %p",lastUsedAddr);
+    debug(Proc,"Initializing heap with %p",lastUsedAddr);
     _heap.init(lastUsedAddr);
 
-    printf("User mem after loading :");
+    debug(Proc,"User mem after loading :");
     _usermem.DumpTree();
 
     //printf("Creating thread\n");
@@ -147,7 +155,7 @@ Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor> fds) :
     _returnCode(0), _fds(fds){
     schedul.addP(_pid,this);
     pg->addProcess(this);
-    printf("Creating Process %p with pid %d\n",this,pid);
+    info(Proc,"Creating Process %p with pid %d",this,pid);
 }
 
 
@@ -176,7 +184,7 @@ void Process::addThread(Thread* thread){
 
 // Only called when its parent process has wait him.
 Process::~Process(){
-    printf("Deleting Process %p\n",this);
+    debug(Proc,"Deleting Process %p",this);
     assert(_terminated); // check the process is effectively a zombie
     schedul.freeP(_pid);
     for(auto p : _sons){
@@ -194,7 +202,7 @@ void Process::terminate(u64 returnCode){
         delete th;
     }
     if(_pid == 1){
-        printf("init died with code %lld",returnCode);
+        info(Proc,"init died with code %lld",returnCode);
         kend(); // shutdown.
     }
     free(); // free the waiting ressources.
@@ -240,7 +248,7 @@ void Process::orphan(){
 */
 Thread::Thread(u16 tid, u64 rip,Process* process)
     : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process){
-    printf("Thread %d at %p\n",tid,this);
+    info(Proc,"Creating thread %d at %p",tid,this);
     schedul.addT(_tid,this);
     process->addThread(this);
     context.rip = rip;
@@ -248,15 +256,15 @@ Thread::Thread(u16 tid, u64 rip,Process* process)
     context.rsp = stackStart;
 }
 Thread::~Thread(){
-    printf("Deletion of thread %d\n",_tid);
+    info(Proc,"Deletion of thread %d",_tid);
     schedul.freeT(_tid);
     //("thread %d deleted\n",_tid);
 }
 
 [[noreturn]] void Thread::run(){
-    fprintf(stderr,"Starting thread %d in %d at %p\n",_tid,_pid,context.rip);
+    debug(Proc,"Starting thread %d in %d at %p",_tid,_pid,context.rip);
     _process->prepare();
-    fprintf(stderr,"started\n");
+    //fprintf(stderr,"started\n");
     context.launch();
 }
 void Thread::terminate(u64 returnCode){
@@ -265,7 +273,7 @@ void Thread::terminate(u64 returnCode){
 }
 
 u64 Thread::waitp(u64* status){
-    printf("Thread %p is waiting\n",this);
+    debug(Proc,"Thread %p is waiting",this);
     if(_process->_sons.empty()){
         return -ECHILD;
     }
@@ -284,7 +292,7 @@ u64 Thread::waitp(u64* status){
     }
     u16 tid = _tid;
     wait(s,[status,tid](Waiting* th,Waitable*){
-            printf("Checker for waitp in %d",tid);
+            debug(Proc,"Checker for waitp in %d",tid);
             th->accept();
             static_cast<Thread*>(th)->getProcess()->prepare();
             static_cast<Thread*>(th)->waitp(status);
@@ -374,11 +382,11 @@ static u64 swrite(Thread*t,uint fd,const void* buf,u64 count){
 /// @brief Handler of SYSWRITE
 static u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
     Thread* t = schedul.enterSys();
-    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
-    //        t->getTid(),fd,buf,count);
+    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+            t->getTid(),fd,buf,count);
     auto tmp = swrite(t,fd,(const void*)buf,count);
-    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
-    //        t->getTid(),fd,buf,count,tmp);
+    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
+            t->getTid(),fd,buf,count,tmp);
     return tmp;
 }
 

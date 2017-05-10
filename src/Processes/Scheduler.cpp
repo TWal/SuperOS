@@ -5,13 +5,14 @@
 #include "../User/Syscall.h"
 #include "../Memory/Paging.h"
 #include "../Memory/PhysicalMemoryAllocator.h"
+#include "../log.h"
 
 void* const tidBitset = (void*)(-0x80000000ll - 0x2000ll);
 
 
 Scheduler::Scheduler() : _current(nullptr),_remainingTime(0),
-                         _halted(false),_runTryNum(0){
-    Pit::set(0,10000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
+                         _halted(false),_timeToRendering(0),_runTryNum(0){
+    Pit::set(0,5000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
 }
 static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
@@ -56,19 +57,20 @@ void Scheduler::init(Thread* initThread){
     assert(!_current);
     assert(_threadFIFO.size() > 0 && "Empty Scheduler");
 
-    fprintf(stderr,"current queue is : ");
+
+    debug(Schedul,"current queue is : ");
     for(auto t : _threadFIFO){
-        fprintf(stderr,"%d ",t->getTid());
+        debug(Schedul,"%d ",t->getTid());
     }//printf("\n");
     if(_runTryNum >= _threadFIFO.size()){
         // If all processes are waiting
-        printf("Idle\n");
+        debug(Schedul,"Idle\n");
         _runTryNum = 0;
         _halted = true;
         // passive sleep : processor stopped until next interruption.
         // TODO interrupts may return from this
         while(true) asm volatile("xor %rsp,%rsp; hlt");
-        printf("Should never happen");
+        error(Schedul," After while (true) hlt : Should never happen");
     }
 
     // pop the next candidate
@@ -105,7 +107,7 @@ void Scheduler::init(Thread* initThread){
     Process* pro = _current->getProcess();
     u16 tid = _current->getTid();
     _current = nullptr;
-    printf("Process %d died with %lld\n",tid,returnCode);
+    info(Schedul,"Process %d died with %lld\n",tid,returnCode);
     pro->terminate(returnCode); // call kend if it is init.
 
     run();
@@ -116,7 +118,7 @@ void Scheduler::init(Thread* initThread){
     Thread* th = _current;
     u16 tid = _current->getTid();
     _current = nullptr;
-    printf("Thread %d died with %lld\n",tid,returnCode);
+    info(Schedul,"Thread %d died with %lld\n",tid,returnCode);
     th->terminate(returnCode);
 
     delete th;
@@ -150,7 +152,7 @@ void Scheduler::stopCurent(){
 u16 Scheduler::fork(){
     Thread* old = enterSys();
 
-    printf("Fork on instruction %p\n",_current->context.rip);
+    info(Schedul,"Fork by %d, on instruction %p\n",_current->getTid(),_current->context.rip);
 
     // get its process
     Process* pro = old->getProcess();
@@ -161,7 +163,7 @@ u16 Scheduler::fork(){
     // Copy process onto the new tid.
     new Process(*pro,old,newTid);
 
-    printf("End of fork, created %d\n",newTid);
+    debug(Schedul,"End of fork, created %d\n",newTid);
     // return to parent process the new pid
     return newTid;
 }
@@ -170,7 +172,7 @@ u16 Scheduler::fork(){
 u16 Scheduler::clone(u64 rip, u64 stack){
     assert(stack && (i64)rip > 0);
     Thread* old = enterSys();
-    printf("Clone on instruction %p to instruction %p \n",_current->context.rip,rip);
+    info(Schedul,"Clone on instruction %p to instruction %p \n",_current->context.rip,rip);
     Process* pro = old->getProcess();
     u16 newTid = getFreshTid();
 
@@ -179,7 +181,7 @@ u16 Scheduler::clone(u64 rip, u64 stack){
     newTh->context.rsp = stack;
 
 
-    printf("End of clone, created %d\n",newTid);
+    debug(Schedul,"End of clone, created %d\n",newTid);
     return newTid;
 }
 
@@ -194,6 +196,50 @@ u16 wait(i64 pid, int* status){
 
 
 void Scheduler::timerHandler(const InterruptParams& params){
+    if(_remainingTime > 0){
+        --_remainingTime;
+    }
+    if(_timeToRendering > 0){
+        --_timeToRendering;
+    }
+    if(_halted){
+        assert((iptr)params.rip < 0);
+        if(params.rsp != 0) warning(Schedul,"Halted rsp not 0");
+        _halted = false;
+        pic.endOfInterrupt(0);
+        if(_timeToRendering == 0){
+            kloop();
+            _timeToRendering = renderingQuantum;
+        }
+        run();
+    }
+    else{
+        if((iptr)params.rip < 0){
+            goto returnToCurrent;
+        }
+        pic.endOfInterrupt(0);
+        // prempting userMode program.
+        if(_timeToRendering == 0){
+            stopCurent();
+            kloop();
+            _timeToRendering = renderingQuantum;
+            run();
+        }
+        if(_remainingTime == 0){
+            stopCurent();
+            run();
+        }
+        // nothing to do
+        goto returnToCurrent;
+
+    }
+
+
+    /*_kernelExecuting = true;
+    u64 rsp;
+    debug(Schedul,"Timer handler %llx and %llx",params.rsp,params.rip);
+    kloop();
+    _kernelExecuting = false;
     if(_halted){
         _halted = false;
         pic.endOfInterrupt(0);
@@ -229,7 +275,11 @@ void Scheduler::timerHandler(const InterruptParams& params){
 
     // if there is another timer interrupt during run, it will enter first case
     pic.endOfInterrupt(0);
-    run();
+    run();*/
+
+returnToCurrent:
+    pic.endOfInterrupt(0);
+    return;
 }
 
 

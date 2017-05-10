@@ -410,6 +410,8 @@ private:
 
 extern Paging paging;
 
+extern bool pageLog;
+
 /**
    @page mappings Virtual mappings
 

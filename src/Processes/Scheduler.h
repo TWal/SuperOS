@@ -60,8 +60,12 @@ private :
     std::map<u16,ProcessGroup*> _groups;
     std::deque<Thread*> _threadFIFO; // no priority queue for now.
     Thread* volatile _current; // nullptr when no thread is active (in kernel mode)
-    u8 _remainingTime; // number of tick remaining for _current
-    bool _halted;
+
+    static const u8 processQuantum = 5; ///< Number of tick each thread gets when starting.
+    volatile u8 _remainingTime; ///< Number of tick remaining for _current
+    static const u8 renderingQuantum = 10; ///< Number of tick between renderings
+    volatile u8 _timeToRendering; ///< Number of tick remaining before rendering
+    volatile bool _halted;
     u64 _runTryNum;
     Bitset _tids; // used tid : 1 is free, 0 is occupied
     inline u16 getFreshTid(){

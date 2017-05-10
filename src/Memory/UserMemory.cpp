@@ -151,39 +151,40 @@ UserMemory& UserMemory::operator=(const UserMemory& other){
     return *this;
 }
 void UserMemory::printPages(uptr PT){
-    paging.actTmpPT(PT);
+    PageEntry* tPT = pageHeap.alloc<PageEntry>(PT);
     for(int i = 0 ; i < 512 ; ++i){
-        if(Paging::tmpPT[i].getAddr()){
-            printf ("\t\t\tPage : %d : %p\n",i,Paging::tmpPT[i].getAddr());
+        if(tPT[i].getAddr() and tPT[i].present){
+            debug(Proc, "\t\t\tPage : %d : %p\n",i,tPT[i].getAddr());
         }
     }
-    paging.freeTmpPT();
+    pageHeap.free(tPT);
 }
 
 void UserMemory::printPTs(uptr PD,bool start){
-    paging.actTmpPD(PD);
+    PageEntry* tPD = pageHeap.alloc<PageEntry>(PD);
     for(int i = start ? 1 : 0 ; i < 512 ; ++i){
-        if(Paging::tmpPD[i].getAddr()){
-            printf("\t\tPT : %d : %p\n",i,Paging::tmpPD[i].getAddr());
-            printPages(Paging::tmpPD[i].getAddr());
+        if(tPD[i].getAddr() and tPD[i].present){
+            debug(Proc, "\t\tPT : %d : %p",i,tPD[i].getAddr());
+            printPages(tPD[i].getAddr());
         }
     }
-    paging.freeTmpPD();
+    pageHeap.free(tPD);
 }
 void UserMemory::printPDs(uptr PDP){
-    paging.actTmpPDP(PDP);
+    PageEntry* tPDP = pageHeap.alloc<PageEntry>(PDP);
     for(int i = 0 ; i < 512 ; ++i){
-        if(Paging::tmpPDP[i].getAddr()){
-            printf("\tPD : %d : %p\n",i,Paging::tmpPDP[i].getAddr());
-            if(!i)printf("\t\tstandard physical mapping PT\n");
-            printPTs(Paging::tmpPDP[i].getAddr(),!i);
+        if(tPDP[i].getAddr() and tPDP[i].present){
+            debug(Proc, "\tPD : %d : %p", i, tPDP[i].getAddr());
+            if(!i)debug(Proc, "\t\tstandard physical mapping PT");
+            printPTs(tPDP[i].getAddr(),!i);
         }
     }
-    paging.freeTmpPDP();
+    pageHeap.free(tPDP);
 }
 
 void UserMemory::DumpTree(){
-    printf("PDP : %llx\n",_PDP);
+    if(serLvls[Proc] < Debug) return;
+    debug(Proc, "PDP : %llx", _PDP);
     printPDs(_PDP);
 }
 

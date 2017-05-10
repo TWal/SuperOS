@@ -125,7 +125,6 @@ void hello(const InterruptParams&){
 #define CL_TEST 3
 #define EXT2_TEST 4
 #define USER_TEST 5
-#define GRAPH_TEST 6
 
 
 #define NO_TEST 42
@@ -235,6 +234,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     debug(Init,"loader log size %lld",loaderPosInBuffer);
     kernelLog->bwrite(loaderLogBuffer,loaderPosInBuffer);
 
+    info(Init,"Workspace 0 initialization");
     OSStreams.resize(4);
     SerialStream* sers = new SerialStream();
     OutMixStream* log = new OutMixStream({sers,kernelLog});
@@ -245,6 +245,11 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     OSStreams[2] = sers;
     OSStreams[3] = log;
     IOinit(kernelLog);
+
+    info(Init,"Keyboard initialization");
+    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
+    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
+    kbd.setKeymap(&azertyKeymap); // activate azerty map.
 
 
 
@@ -257,12 +262,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA EXT2_TEST
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
-    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
-    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
-    kbd.setKeymap(&azertyKeymap); // activate azerty map.
 
     HDD::HDD first(1,true);
     first.init();
@@ -277,28 +279,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     while(true){
         kloop();
-    }
-
-
-#elif BLA == GRAPH_TEST
-    printf("fontPtr %p\n",fontPtr);
-    Font* font = pageHeap.alloc<Font>(fontPtr,2);
-    font->init();
-    screen.putChar('H', 0,0,*font,Color::white,Color::black);
-    screen.putChar('e', 8,0,*font,Color::white,Color::black);
-    screen.putChar('l',16,0,*font,Color::white,Color::black);
-    screen.putChar('l',24,0,*font,Color::white,Color::black);
-    screen.putChar('o',32,0,*font,Color::white,Color::black);
-    screen.putChar('W',48,0,*font,Color::white,Color::black);
-    screen.putChar('o',56,0,*font,Color::white,Color::black);
-    screen.putChar('r',64,0,*font,Color::white,Color::black);
-    screen.putChar('l',72,0,*font,Color::white,Color::black);
-    screen.putChar('d',80,0,*font,Color::white,Color::black);
-    screen.putChar('!',88,0,*font,Color::white,Color::black);
-    for(int i = 0 ; i < 1024 ; ++i){
-        //video::screen.clear();
-        screen.set(i,18,Color::white);
-        screen.send();
     }
 
 #elif BLA == USER_TEST
@@ -328,19 +308,25 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     ProcessInit();
 
+    pageLog = true;
+
     HDD::File* initf = (*(fs.getRoot()))["init"];
     assert(initf);
     assert(initf->getType() == HDD::FileType::RegularFile);
-    HDD::RegularFile* init = dynamic_cast<HDD::RegularFile*>(initf);
+    HDD::RegularFile* init = static_cast<HDD::RegularFile*>(initf);
     ProcessGroup pg(1);
     Process initp(1,&pg);
     Thread* initt = initp.loadFromBytes(init);
-    FBStream* s= new FBStream();
-    FileDescriptor fd(s);
+    TextWindow* initLog = new TextWindow({0,0},screen.getSize(),Font::def);
+    initLog->show();
+    Workspace::get(1).addWin(initLog);
+    FileDescriptor fd(initLog);
     printf("Init process %p\n",&initp);
     initp._fds.push_back(FileDescriptor());
     initp._fds.push_back(fd);
     schedul.init(initt);
+    cl.init();
+    cl.pwd = fs.getRoot();
     schedul.run();
 
 

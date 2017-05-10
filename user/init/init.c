@@ -35,7 +35,12 @@ void thread(){
 
 
 int main(){
-    printf("[Init] Init start\n");
+    printf("[Init] start");
+    while(1){
+        for(int i = 0 ; i < 10000000 ; ++i);
+        printf("[Init] coucou");
+    }
+    /*printf("[Init] Init start\n");
     void* test = malloc(1024);
 
     pid_t t = clone(thread,(char*)test +1024);
@@ -67,5 +72,5 @@ int main(){
 
     _texit(42);
 
-    return factorial(5);
+    return factorial(5);*/
 }

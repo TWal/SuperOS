@@ -19,7 +19,8 @@
 enum LogLevel{Error, Warning, Info, Debug};
 
 enum LogModule{Generic, Init, PhyMem, Pagingl, Segment, Inter, Screenl, Kbd, Mouse,
-               Syscalls, Graphics, Hdd, Ext2, VFS, RamFS, CmdLine, LAST_LOGMOD};
+               Syscalls, Schedul, Proc, Graphics, Hdd, Ext2, VFS, RamFS, CmdLine,
+               LAST_LOGMOD};
 
 constexpr LogLevel serLvls[LAST_LOGMOD] =
 {
@@ -33,6 +34,8 @@ constexpr LogLevel serLvls[LAST_LOGMOD] =
     Info, // Kbd
     Debug, // Mouse
     Debug, // Syscalls
+    Warning, // Schedul
+    Info, // Proc
     Debug, // Graphics
     Debug, // Hdd
     Debug, // Ext2
@@ -46,13 +49,15 @@ constexpr LogLevel logLvls[LAST_LOGMOD] =
     Debug, // Generic
     Info,  // Init
     Debug, // PhyMem
-    Debug, // Pagingl
+    Info, // Pagingl
     Debug, // Segment
     Debug, // Inter
     Debug, // Screenl
     Info, // Kbd
     Debug, // Mouse
     Debug, // Syscalls
+    Warning, // Schedul
+    Info, // Proc
     Debug, // Graphics
     Debug, // Hdd
     Debug, // Ext2
