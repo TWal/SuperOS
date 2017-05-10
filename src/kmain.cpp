@@ -532,6 +532,11 @@ void kloop(){
     }
 
     // poll mouse
+    MouseEvent me;
+    while((me = mouse.poll()).isValid()) {
+        Workspace::handleEvent(input::Event(me));
+    }
+    Workspace::handleEvent(input::Event(mouse.pollLast()));
 
     cl.run();
 

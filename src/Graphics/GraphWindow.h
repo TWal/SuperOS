@@ -9,7 +9,7 @@ namespace video{
         /// draw a buffer at offset. buffer must be of size size.area();
         void draw(Vec2u offset,Vec2u size,Color* buffer);
         void send() const;
-        
+
         // Bytes interface
 
         /// Write `data` of size `size` at the address `addr`
@@ -18,7 +18,6 @@ namespace video{
         void readaddr (u64 addr, void * data, size_t size) const;
         /// Get the size of this sequence. 0 means "unknown"
         size_t getSize() const{return 4 * _size.area();}
-        
     };
 };
 

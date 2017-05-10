@@ -109,6 +109,7 @@ namespace input{
             '0', '.', // last keypad line
         }
     };
+
     const Keymap dvorakKeymap = {
         { // main
             0, 0,  // NULL + ESC

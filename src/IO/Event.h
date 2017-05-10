@@ -1,18 +1,20 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include"Keyboard.h"
+#include "Keyboard.h"
+#include "Mouse.h"
 
 namespace input{
     struct Event{
         enum Type{KEYBOARD,MOUSE,WINDOW};
         union{
             Keyboard::KeyCode kcode;
-            int mousec;
+            MouseEvent mousec;
             int windowc;
         };
         Type type;
-        Event(Keyboard::KeyCode keyCode) : kcode(keyCode),type(KEYBOARD){}
+        Event(Keyboard::KeyCode keyCode) : kcode(keyCode), type(KEYBOARD){}
+        Event(MouseEvent mouseevent) : mousec(mouseevent), type(MOUSE){}
     };
 
     /*class EventHandler{

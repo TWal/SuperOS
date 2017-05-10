@@ -119,9 +119,10 @@ namespace video{
         /// Add char to the buffer (parse escape codes)
         void putChar(char c);
         /// handle Event (Ignore mouse).
-        virtual bool handleEvent(input::Event e);
+        virtual void handleEvent(input::Event e);
         /// if false all keyboard input is ignored
         bool allowInput;
+        virtual void setSize(const Vec2u& v);
     };
 
 };

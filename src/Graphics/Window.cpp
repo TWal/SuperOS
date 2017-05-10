@@ -19,4 +19,30 @@ namespace video{
             screen.set(_offset.x + _size.x -1,_offset.y + i,Color::red);
         }
     }
+
+    bool Window::isInside(const Vec2u& point) {
+        return point.x >= _offset.x
+            && point.y >= _offset.y
+            && point.x <  _offset.x + _size.x
+            && point.y <  _offset.y + _size.y;
+    }
+
+    Vec2u Window::getOffset() const {
+        return _offset;
+    }
+
+    void Window::setOffset(const Vec2u& v) {
+        _offset = v;
+    }
+
+    Vec2u Window::getSize() const {
+        return _size;
+    }
+
+    void Window::setSize(const Vec2u& v) {
+        _size = v;
+    }
+
+
 };
+

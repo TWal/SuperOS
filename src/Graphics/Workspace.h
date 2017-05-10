@@ -6,8 +6,7 @@
 #include <assert.h>
 #include "../utility.h"
 #include "../IO/Event.h"
-
-
+#include "Vec2.h"
 
 namespace video{
 
@@ -37,6 +36,15 @@ namespace video{
         static const uint _totalNumber = 10;
         /// All workspaces are statically allocated here.
         static Workspace _elems[_totalNumber];
+        enum State {
+            NORMAL, MOVING, RESIZING
+        };
+        bool _superState = false;
+        State _state = NORMAL;
+        Window* _currentWindow = nullptr;
+        Vec2i _startMousePos;
+        Vec2i _startWindow;
+
     public:
         /// Access Workspace number i
         static Workspace& get(uint i){
@@ -61,8 +69,8 @@ namespace video{
         void addWin(Window* win){
             _wins.push_front(win);
         }
-        bool handleEventOnMe(input::Event e);
-        static bool handleEvent(input::Event e);
+        void handleEventOnMe(input::Event e);
+        static void handleEvent(input::Event e);
     };
 }
 

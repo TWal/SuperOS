@@ -33,10 +33,12 @@ namespace input{
             bool rCtrl  :1;
             bool lAlt  :1;
             bool rAlt  :1; // Alt Gr
+            bool lWin : 1;
+            bool rWin : 1;
             bool capsLock  :1;
             bool numLock  :1;
         }__attribute__((packed));
-        static_assert(sizeof(State) == 1,"Wrong Size for Keyboard::State");
+        static_assert(sizeof(State) == 2,"Wrong Size for Keyboard::State");
 
         enum Code{
             ERROR, ESC, FL1, FL2, FL3, FL4, FL5, FL6, FL7, FL8, FL9, FL10, FL11, FL12,
@@ -52,7 +54,7 @@ namespace input{
             K7, K8, K9, KMINUS,
             K4, K5, K6, KPLUS,
             K1, K2, K3,
-            K0, KDEL
+            K0, KDEL, T56 = 0x56, LWIN = 0x5b, RWIN = 0x5c
         };
 
         struct ScanCode{
@@ -75,7 +77,7 @@ namespace input{
             char symbol; // ASCII (0 if not printable)
             EScanCode scanCode;
         };
-        static_assert(sizeof(KeyCode) == 4,"Wrong Size for KeyCode");
+        static_assert(sizeof(KeyCode) == 5,"Wrong Size for KeyCode");
         Keyboard();
         void handleScanCode(uchar sc);
         KeyCode poll();

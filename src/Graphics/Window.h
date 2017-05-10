@@ -44,14 +44,18 @@ namespace video{
         void show(){_active = true;}
         /// just change internal state (@ref _active) to have an inactive mode.
         void hide(){_active = false;}
-        ///handle an event on this window : return true if the event has been handled.
-        virtual bool handleEvent(input::Event e) = 0;
 
+        ///handle an event on this window
+        virtual void handleEvent(input::Event e) = 0;
         /// get WID of window.
         uint getWID() const {return _wid;}
+        /// check if a point is in the window
+        bool isInside(const Vec2u& point);
 
-
-
+        Vec2u getOffset() const;
+        void setOffset(const Vec2u& v);
+        Vec2u getSize() const;
+        virtual void setSize(const Vec2u& v);
     };
 }
 

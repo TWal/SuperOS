@@ -241,7 +241,7 @@ namespace video{
         }
     }
 
-    bool TextWindow::handleEvent(input::Event e){
+    void TextWindow::handleEvent(input::Event e){
         if(e.type == Event::KEYBOARD){
             if(e.kcode.symbol and !e.kcode.scanCode.release and allowInput){
                 char sym = e.kcode.symbol;
@@ -267,7 +267,6 @@ namespace video{
                 }
             }
         }
-        return true;
     }
 
     size_t TextWindow::read(void* buf, size_t count){
@@ -283,4 +282,9 @@ namespace video{
         return reallyRead;
     }
 
+    void TextWindow::setSize(const Vec2u& v) {
+        Window::setSize(v);
+        _height = (v.y - 2) / 16;
+        _width = (v.x - 2) / 8;
+    }
 };

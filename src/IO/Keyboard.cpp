@@ -32,7 +32,6 @@ namespace input{
 
 
     Keyboard::KeyCode Keyboard::poll() {
-        //TODO: handle e0
         while(true) {
 
             EScanCode sc = pollSC();
@@ -68,6 +67,12 @@ namespace input{
                 case NUMLOCK:
                     if(!sc.release) _state.numLock = !_state.numLock;
                     setLeds((_state.capsLock << 2) + (_state.numLock << 1));
+                    break;
+                case LWIN:
+                    if(sc.extended) _state.lWin = !sc.release;
+                    break;
+                case RWIN:
+                    if(sc.extended) _state.rWin = !sc.release;
                     break;
             };
 
