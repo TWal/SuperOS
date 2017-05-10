@@ -9,6 +9,7 @@ namespace video{
     }
 
     void Window::drawEdge(const Color& color) {
+        if(_size.x < 2 || _size.y < 2) return;
         for(uint i = 0 ; i < _size.x ; ++i){
             screen.set(_offset.x + i, _offset.y, color);
             screen.set(_offset.x + i, _offset.y + _size.y -1, color);

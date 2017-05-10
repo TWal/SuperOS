@@ -297,6 +297,10 @@ namespace video{
     void TextWindow::setSize(const Vec2u& v) {
         Window::setSize(v);
         _height = (v.y - 2) / 16;
-        _width = (v.x - 2) / 8;
+        if(v.x < 2) {
+            _width = 0;
+        } else {
+            _width = (v.x - 2) / 8;
+        }
     }
 };

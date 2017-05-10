@@ -92,8 +92,8 @@ namespace video{
                         Vec2i newSize = _startWindow - _startMousePos + Vec2i(e.mousec.x, e.mousec.y);
                         Vec2i winOff = _currentWindow->getOffset();
                         Vec2i screenSize = screen.getSize();
-                        newSize.x = max(0, min(newSize.x, screenSize.x - winOff.x));
-                        newSize.y = max(0, min(newSize.y, screenSize.y - winOff.y));
+                        newSize.x = max(10, min(newSize.x, screenSize.x - winOff.x));
+                        newSize.y = max(10, min(newSize.y, screenSize.y - winOff.y));
                         _currentWindow->setSize(newSize);
                     }
                 } else {
