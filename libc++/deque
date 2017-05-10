@@ -61,12 +61,10 @@ namespace std{
         inline void incr(size_t& n){
             ++n;
             if(n == _capacity) n = 0;
-
         }
 
         inline void decr(size_t& n){
             n = n == 0 ? _capacity -1 : n -1;
-
         }
 
         class deque_pos{
@@ -97,6 +95,10 @@ namespace std{
                 _index += _mod - n;
                 _index %= _mod;
                 return *this;
+            }
+
+            size_type operator-(const deque_pos& oth) const {
+                return (_index + _mod - oth._index) % _mod;
             }
 
             bool operator==(const deque_pos& oth) const{
@@ -151,13 +153,29 @@ namespace std{
                 --_dp;
                 return *this;
             }
+
             iterator& operator+=(size_t n){
                 _dp+=n;
                 return *this;
             }
+            iterator operator+(size_t n) const {
+                iterator it = *this;
+                it +=n;
+                return it;
+            }
+
             iterator& operator-=(size_t n){
                 _dp-=n;
                 return *this;
+            }
+            iterator operator-(size_t n) const {
+                iterator it = *this;
+                it -=n;
+                return it;
+            }
+
+            size_type operator-(const iterator& oth) const {
+                return _dp - oth._dp;
             }
 
             bool operator==(const iterator& oth) const{
@@ -191,13 +209,29 @@ namespace std{
                 --_dp;
                 return *this;
             }
+
             const_iterator& operator+=(size_t n){
                 _dp+=n;
                 return *this;
             }
+            const_iterator operator+(size_t n) const {
+                const_iterator it = *this;
+                it +=n;
+                return it;
+            }
+
             const_iterator& operator-=(size_t n){
                 _dp-=n;
                 return *this;
+            }
+            const_iterator operator-(size_t n) const {
+                iterator it = *this;
+                it -=n;
+                return it;
+            }
+
+            size_type operator-(const const_iterator& oth){
+                return _dp - oth._dp;
             }
 
             bool operator==(const const_iterator& oth) const{
@@ -320,6 +354,24 @@ namespace std{
             size_t tmp  =_endIndex;
             decr(tmp);
             return _data[tmp];
+        }
+
+        iterator erase(iterator first, iterator last){
+            fprintf(stderr,"erase\n");
+            size_type diff = last - first;
+            fprintf(stderr,"erase %llu\n",diff);
+            if(!diff) return first;
+            move(last,end(),first);
+            auto it = end();
+            it-= diff;
+            for(; it != end(); ++it){
+                it->~value_type();
+            }
+            _endIndex = (_endIndex + _capacity - diff) % _capacity;
+            return first;
+        }
+        iterator erase(iterator position){
+            erase(position,position+1);
         }
 
 
