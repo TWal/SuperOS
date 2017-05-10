@@ -29,7 +29,7 @@ namespace video{
     }
 
     size_t TextWindow::write(const void* buf, size_t count){
-        fprintf(stderr,"write TextWindow\n");
+        //fprintf(stderr,"write TextWindow\n");
         const char* buf2 = reinterpret_cast<const char*>(buf);
         const size_t limit = 1024;
         if(count > limit) count = limit;
@@ -46,7 +46,7 @@ namespace video{
     }
 
     void TextWindow::putChar(char c){
-        fprintf(stderr,"putChar('%c'); with %d in win %d\n",c,_state,getWID());
+        //fprintf(stderr,"putChar('%c'); with %d in win %d\n",c,_state,getWID());
         switch(_state){
             case WAITINGOB:
                 if(c != '['){
