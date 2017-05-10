@@ -252,9 +252,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     OSStreams[2] = sers;
     OSStreams[3] = log;
     IOinit(kernelLog);
-    mouse.init();
-    idt.addInt(0x2c, mouseint);
-    pic.activate(Pic::MOUSE);
 
     info(Init,"Mouse initialization");
     mouse.init();
@@ -278,7 +275,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     Workspace::draw();
 
 #define BLA USER_TEST
-//#define EMUL // comment for LORDI version
+#define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     HDD::HDD first(1,true);
     first.init();
