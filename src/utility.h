@@ -93,7 +93,7 @@ extern "C" [[noreturn]]  void bsod(const char* s, ...);
 
 void reboot();
 
-template<typename T> T alignup(T n, T multiple) {
+template<typename T, typename U> T alignup(T n, U multiple) {
     return ((n+multiple-1)/multiple)*multiple;
 }
 

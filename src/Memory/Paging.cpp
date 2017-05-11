@@ -300,6 +300,7 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
     tmpPT[getPTindex(virt)].writeThrough = wt;
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;
+        tmpPT[getPTindex(virt)].user = false;
     }
     freeTmpPT();
     invlpg(virt);
@@ -324,6 +325,52 @@ void Paging::freeMapping(void* virt,int nbPages){
     }
 }
 
+void Paging::createMapping2M(uptr phy, void* virt, bool wt){
+    if(pageLog) debug(Pagingl,"mapping 2M %p to %p",virt,phy);
+    if(phy & ((1<< 20 )-1)) {
+        bsod("Create mapping 2M : physical address is not 2M-page-aligned : %p",phy);
+    }
+    if((uptr)virt & ((1<< 20 )-1)){
+        bsod("Create mapping : virtual address is not 2M-page-aligned : %p",phy);
+    }
+    if(phy >> 52) {
+        bsod("Create mapping : physical address is too large (more than 52 bits)",phy);
+    }
+    uptr PD = getPDphy(virt);
+    //printf("PT address get %p\n",PT);
+    actTmpPD(PD);
+    if(tmpPD[getPDindex(virt)].present){
+        bsod("The virtual 2M page %p was already mapped to something",virt);
+    }
+    tmpPD[getPDindex(virt)].activeAddr(phy);
+    tmpPD[getPDindex(virt)].writeThrough = wt;
+    tmpPD[getPDindex(virt)].isSizeMega = true;
+    if(iptr(virt) < 0){ // if we are in kernel space
+        //tmpPD[getPDindex(virt)].global = true;
+        tmpPD[getPDindex(virt)].user = false;
+    }
+    freeTmpPD();
+    invlpg(virt);
+}
+
+void Paging::createMapping2M(uptr phy,void* virt,uint numPg,bool wt){
+    for(uint i = 0 ; i < numPg ; ++i){
+        createMapping2M(phy + i * 0x200000,(u8*)virt+i*0x200000,wt);
+    }
+}
+
+void Paging::freeMapping2M(void* virt,int nbPages){
+    if(pageLog) debug(Pagingl,"free 2M mapping %p to %d",virt,nbPages);
+    for(int i=0 ; i < nbPages ; ++i){
+        uptr PD = getPDphy((u8*)virt+i*0x200000);
+        actTmpPD(PD);
+        assert(tmpPD[getPDindex((u8*)virt+i*0x200000)].present);
+        assert(tmpPD[getPDindex((u8*)virt+i*0x200000)].isSizeMega);
+        tmpPD[getPDindex((u8*)virt+i*0x1000)].present = false;
+        tmpPD[getPDindex((u8*)virt+i*0x1000)].isSizeMega = false;
+        freeTmpPD();
+    }
+}
 
 void Paging::freeMappingAndPhy(void* virt,int nbPages){
     for(int i = 0 ; i < nbPages ; ++i){

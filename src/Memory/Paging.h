@@ -294,6 +294,7 @@ public:
        The only valid positive addresses are from 4K to 1M (device RAM mappings).
      */
     void removeIdent();
+
     /**
        @brief Map the virtual address virt to phy.
        @param virt The virtual address to be mapped.
@@ -314,6 +315,16 @@ public:
 
      */
     void createMapping(uptr phy, void* virt, bool wt = false);
+
+    /**
+       @brief The same thing than @ref createMapping but for 2M pages
+
+       @warning If a 4K page has already be allocated on this virtual address,
+       even if it has already be freed, the allocation will fail with message
+       already allocated.
+     */
+    void createMapping2M(uptr phy, void* virt, bool wt = false);
+
     /**
        @brief Map nbPages starting from virt to a physical chunk of same size
        starting from phy.
@@ -324,9 +335,14 @@ public:
 
        This function is strictly equivalent to nbPages calls to the other
        @ref createMapping(uptr,void*) "createMapping".
-
      */
     void createMapping(uptr phy, void* virt, uint nbPages, bool wt = false);
+
+    /**
+       @brief The same thing than @ref createMapping but for 2M pages
+    */
+    void createMapping2M(uptr phy, void* virt, uint nbPages, bool wt = false);
+
     /**
        @brief Remove the the mapping of the chunk starting at virt with nbPages Pages.
        @param virt The starting virtual address
@@ -335,6 +351,12 @@ public:
        If the mapping does not exists then, there is a @ref bsod "Blue Screen".
      */
     void freeMapping(void* virt, int nbPages = 1);
+
+    /**
+       @brief The same thing than @ref freeMapping but for 2M pages
+    */
+    void freeMapping2M(void* virt, int nbPages = 1);
+
     /**
        @brief Remove the the mapping of a chunk and free pointed physical memory
        @param virt The starting virtual address
@@ -346,6 +368,7 @@ public:
        PhysicalMemoryAllocator::free.
     */
     void freeMappingAndPhy(void* virt, int nbPages = 1);
+
     /**
        @brief Setup a valid user memory PDP.
 
@@ -354,6 +377,7 @@ public:
        Mainly used by UserMemory, it may not be a good idea to use it outside of UserMemory.
      */
     void switchUser(uptr usPDP);
+
     /**
        @brief Prints current mappings
 

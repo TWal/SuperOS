@@ -8,10 +8,8 @@
 #include "Memory/Segmentation.h"
 #include "HDD/HardDrive.h"
 #include "Memory/PhysicalMemoryAllocator.h"
-//#include "HDD/FAT.h"
 #include <stdarg.h>
 #include "IO/CommandLine.h"
-//#include <functional>
 #include "Interrupts/Pic.h"
 #include "HDD/Ext2.h"
 #include "Memory/Heap.h"
@@ -188,7 +186,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     u64 phyLoaderLogBuffer = kargs->logBuffer;
     u64 loaderPosInBuffer = kargs->posInLogBuffer;
 
-    debug(Init,"Switching stack",10);
+    debug(Init,"Switching stack %d",10);
     asm volatile(
         "and $0xFFF,%rsp; sub $0x1000,%rsp"
         ); // rsp switch : all stack pointer are invalidated (kargs for example);
@@ -274,9 +272,36 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA TMP_TEST
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
-#if BLA == TMP_TEST
+#if TMP_TEST
+
+    /*while (true){
+        for(int i = 0 ; i < 1024 ; ++i){
+            screen.clear();
+            screen.set(i,100,Color24::white);
+            screen.send();
+        }
+        }*/
+
+
+
+    /*pageLog = true;
+
+    uptr page2M = physmemalloc.alloc2M();
+
+    int* vpage2M = (int*)-(6ll*1024*1024*1024);
+
+
+    paging.createMapping2M(page2M,vpage2M);
+
+    vpage2M[1] = 42;
+
+    while(true){
+        kloop();
+        }*/
+
+#elif BLA == CL_TEST
     HDD::HDD first(1,true);
     first.init();
     HDD::PartitionTableEntry part1 = first[1];
@@ -293,7 +318,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     }
 
 #elif BLA == USER_TEST
-    breakpoint;
+    debug("hey!");
     HDD::HDD* first = new HDD::HDD(1,true);
     first->init();
     //PartitionTableEntry part1 = first[1];
@@ -462,17 +487,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     while(true) {
         auto k = kbd.poll();
         if(!k.isRelease)printf("%c",k.symbol);}
-
-
-#elif BLA == CL_TEST
-    idt.addInt(0x21,keyboard); // register keyboard interrupt handler
-    pic.activate(Pic::KEYBOARD); // activate keyboard interruption
-    kbd.setKeymap(&azertyKeymap); // activate azerty map.
-    CommandLine cl; // load Command line
-    cl.run(); //run command line
-    stop;
-
-
 
 
 #else // ---------------NON-TEST CODE----------------------

@@ -28,6 +28,7 @@ void PhysicalMemoryAllocator::init(void*phyBitset,u64 RAMSize,OccupArea * occupA
         }
     }
 }
+
 bool PhysicalMemoryAllocator::get(uptr addr){
     assert(((u64)addr & (0x1000 -1)) == 0);
     return _bitset.get(((u64)addr - 0x100000)/ 0x1000);
@@ -67,6 +68,25 @@ void PhysicalMemoryAllocator::free(uptr page) {
         bsod("Trying to free physical page %p which is already free",page);
     }
     _bitset[index] = true;
+}
+
+uptr PhysicalMemoryAllocator::alloc2M(){
+    size_t usr = _bitset.usr();
+    assert(usr != (size_t)-1 and "Kernel is out of physical memory");
+    usr = alignup(usr+1,256);
+    if(usr%512 == 0) usr += 256; // hack to handle initial offset of 1M.
+    assert(usr + 512 <=  _bitset.size() and "Kernel out of 2M pages");
+    if(pageLog) debug(PhyMem,"Allocating 2M %p",0x100000 + (usr<<12));
+    _bitset.unset(usr,512);
+    return 0x100000 + (usr << 12);
+}
+
+void PhysicalMemoryAllocator::free2M(uptr page){
+    if(pageLog) debug(PhyMem,"freeing 2M %p",page);
+    u64 index = page - 0x100000;
+    assert((index&((1<<12)-1)) == 0);
+    index >>= 12;
+    _bitset.set(index,512);
 }
 
 PhysicalMemoryAllocator physmemalloc;

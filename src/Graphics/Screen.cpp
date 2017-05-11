@@ -35,13 +35,13 @@ namespace video {
         // VRAM mapping
         u32 VRAMsize = Ysize*pitch;
         debug(Screenl,"VGAbuffer %p, VRAMsize %d",VGAbuffer,VRAMsize);
-        paging.createMapping(gp->physptr,VGAbuffer,(int)VRAMsize/0x1000,true);
+        paging.createMapping2M(gp->physptr,VGAbuffer,alignup(VRAMsize,0x200000)/0x200000,true);
 
         // RAM mapping
         u32 RAMsize = Ysize*Xsize*4;
         debug(Screenl,"buffer %p, RAMsize %d",buffer,RAMsize);
-        for(u32 i =0 ; i < RAMsize / 0x1000 ; ++i){
-            paging.createMapping(physmemalloc.alloc(),buffer + i * (0x1000 / 4));
+        for(u32 i =0 ; i < (RAMsize + 0x200000) / 0x200000 ; ++i){
+            paging.createMapping2M(physmemalloc.alloc2M(),buffer + i * (0x200000 / 4));
         }
         clear();
         /*for(int i = 0 ; i < 766 * 1024 ; ++i){
