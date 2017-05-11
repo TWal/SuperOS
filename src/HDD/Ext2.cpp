@@ -733,8 +733,8 @@ void Directory::removeEntry(const std::string& name) {
     DirIterator* d = (DirIterator*)open();
     u32 lastPos = 0;
     u32 curPos = 0;
-    u32 inode;
-    u32 rec_len;
+    u32 inode = 0;
+    u32 rec_len = 0;
     u8 type = FT_UNKNOWN;
     dirent* dir;
     while(true) {

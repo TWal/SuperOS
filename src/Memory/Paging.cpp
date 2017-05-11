@@ -96,7 +96,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
     invlpg(bitsetPT);
     pagePD[256].activeAddr(pbitsetPT); // bitset PageTable activated
     char* pbitset = (char*)physmemalloc.getCurrentAddr();
-    for(int i = 0 ; i < physmemalloc.getPageSize() ; ++i){
+    for(size_t i = 0 ; i < physmemalloc.getPageSize() ; ++i){
         bitsetPT[i].activeAddr(pbitset + i * 0x1000);
         bitsetPT[i].global = true;
         invlpg(bitset +i*0x1000);
@@ -307,7 +307,7 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
 
 
 void Paging::createMapping(uptr phy,void* virt,uint numPg,bool wt){
-    for(int i = 0 ; i < numPg ; ++i){
+    for(uint i = 0 ; i < numPg ; ++i){
         createMapping(phy + i * 0x1000,(u8*)virt+i*0x1000,wt);
     }
 }

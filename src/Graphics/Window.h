@@ -26,7 +26,6 @@ namespace video{
         Vec2u _offset;
         Vec2u _size;
     public:
-        bool hasEdge;
         /// Create window
         Window(Vec2u offset, Vec2u size);
         /// Draw a line around the window to represent the focus

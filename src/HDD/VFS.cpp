@@ -24,6 +24,7 @@ void FS::mount(Directory* dir, FileSystem* fs) {
 }
 
 void FS::umount(Directory* dir) {
+    (void) dir;
     bsod("VFS::FS::umount not implemented yet\n");
 }
 

@@ -5,12 +5,10 @@ namespace video{
     const Color edge = Color::red;
     uint Window::globWid = 0;
     Window::Window(Vec2u offset, Vec2u size)
-        : _offset(offset),_size(size), _wid(globWid++),_active(false),
-          hasEdge(true){
+        : _wid(globWid++), _active(false), _offset(offset), _size(size) {
     }
 
     void Window::drawEdge(const Color& color) {
-        if(!hasEdge) return;
         for(uint i = 0 ; i < _size.x ; ++i){
             screen.set(_offset.x + i, _offset.y, color);
             screen.set(_offset.x + i, _offset.y + _size.y -1, color);

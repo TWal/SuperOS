@@ -88,13 +88,13 @@ static video::Color blueline[2000];
     const char* texterror = "Me haz an error!!!";
     const char* textlost = "(btw, you lost)";
 
-    video::Vec2u bsodpos = {size.x/2 - 8*(strlen(textbsod)/2), size.y/8};
+    video::Vec2u bsodpos = {size.x/2 - 8*uint(strlen(textbsod)/2), size.y/8};
     drawText(textbsod, bsodpos, fg, bg);
 
-    video::Vec2u tmpos = {bsodpos.x + 8*strlen(textbsod), bsodpos.y-8};
+    video::Vec2u tmpos = {bsodpos.x + 8*(uint)strlen(textbsod), bsodpos.y-8};
     drawText(texttm, tmpos, fg, bg);
 
-    video::Vec2u lostpos = {size.x - 8*strlen(textlost) - 1, size.y-16 - 1};
+    video::Vec2u lostpos = {size.x - 8*(uint)strlen(textlost) - 1, size.y-16 - 1};
     drawText(textlost, lostpos, fg, bg);
 
     video::Vec2u errorpos = {size.x/20, 2*size.y/8};

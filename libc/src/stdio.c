@@ -131,17 +131,17 @@ int printInt(lint n, uint base, uint padding, FILE* file) {
     return res + l;
 }
 
-#define SWITCHSIZE(type,typel,typell) typell val;   \
-    switch(length){                                 \
-        case 0:                                     \
-            val = va_arg(ap, type);                 \
-            break;                                  \
-        case 1 :                                    \
-            val = va_arg(ap, typel);                \
-            break;                                  \
-        case 2 :                                    \
-            val = va_arg(ap, typell);               \
-            break;                                  \
+#define SWITCHSIZE(type,typel,typell) typell val = 0;\
+    switch(length){                                  \
+        case 0:                                      \
+            val = va_arg(ap, type);                  \
+            break;                                   \
+        case 1 :                                     \
+            val = va_arg(ap, typel);                 \
+            break;                                   \
+        case 2 :                                     \
+            val = va_arg(ap, typell);                \
+            break;                                   \
     }
 
 int vfprintf (FILE* file, const char * s, va_list ap){
