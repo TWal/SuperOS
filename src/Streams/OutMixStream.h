@@ -24,6 +24,7 @@ public:
             size_t v =  s->bwrite(buf,count);
             assert(v == count);
         }
+        return count;
     }
 };
 

@@ -173,7 +173,11 @@ void CommandLine::init(table_type table){
 void CommandLine::run(){
     while(true) {
         auto input = readCommand();
-        if(input.size() == 0) continue;
+        //printf("size=%d\n",input.size());
+        if(input.size() == 0){
+            printf("$ ");
+            continue;
+        }
         if(input.size() == 1 and input[0].size() == 1 and input[0][0] == EOF) break;
         auto it = _table.find(input[0]);
         if(it == _table.end()){
@@ -193,6 +197,7 @@ std::string CommandLine::readCommandText(){
     //debug(CmdLine,"Command Line recieved %d",c);
     res.push_back(c);
     if(c == EOF) return res;
+    if(c == '\n') return "";
     while((c= getchar()) != EOF){
         if (c == '\n'){
             debug(CmdLine,"Command Line recieved %s",res.c_str());

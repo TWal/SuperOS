@@ -110,7 +110,7 @@ void keyboard(const InterruptParams&){
 }
 
 //int 0x2c
-void mouseint(const InterruptParams& i){
+void mouseint(const InterruptParams&){
     mouse.handleByte(inb(0x60));
     pic.endOfInterrupt(12);
 }
@@ -274,7 +274,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA USER_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
     HDD::HDD first(1,true);

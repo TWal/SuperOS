@@ -76,7 +76,7 @@ class Deque { //TODO rewrite it with constructor friendly implementation.
             return _size == 0;
         }
 
-    private:
+    //private:
         size_t _begin;
         size_t _end;
         size_t _size;
