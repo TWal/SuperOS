@@ -273,7 +273,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA TMP_TEST
+#define BLA CL_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 

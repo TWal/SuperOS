@@ -82,30 +82,30 @@ Directory* FS::getNewDirectory(u16 uid, u16 gid, u16 mode) {
 
 
 void FS::getInodeData(u32 inode, InodeData* res) const {
-    uint blockGroup = (inode-1) / _sb.inodes_per_group;
-    uint index      = (inode-1) % _sb.inodes_per_group;
-    uint inodeTable = _bgd[blockGroup].inode_table;
+    u64 blockGroup = (inode-1) / _sb.inodes_per_group;
+    u64 index      = (inode-1) % _sb.inodes_per_group;
+    u64 inodeTable = _bgd[blockGroup].inode_table;
     _part->readaddr(inodeTable*_blockSize + index*_sb.inode_size, res, sizeof(InodeData));
 }
 
 void FS::writeInodeData(u32 inode, const InodeData* data) {
-    uint blockGroup = (inode-1) / _sb.inodes_per_group;
-    uint index      = (inode-1) % _sb.inodes_per_group;
-    uint inodeTable = _bgd[blockGroup].inode_table;
+     u64 blockGroup = (inode-1) / _sb.inodes_per_group;
+     u64 index      = (inode-1) % _sb.inodes_per_group;
+     u64 inodeTable = _bgd[blockGroup].inode_table;
     _part->writeaddr(inodeTable*_blockSize + index*_sb.inode_size, data, sizeof(InodeData));
 }
 
 u32 FS::getNewBlock(u32 nearInode) {
     //TODO: some bitmap caching to speed up writing
-    uint blockGroup = (nearInode-1) / _sb.inodes_per_group;
+    u64 blockGroup = (nearInode-1) / _sb.inodes_per_group;
     u8* bitmap = (u8*)malloc(_blockSize);
-    for(uint i = 0; i < _nbBgd; ++i) {
-        uint bgd = (i+blockGroup)%_nbBgd;
+    for(u64 i = 0; i < _nbBgd; ++i) {
+        u64 bgd = (i+blockGroup)%_nbBgd;
         if(_bgd[bgd].free_blocks_count == 0) continue;
         _part->readaddr(_bgd[bgd].block_bitmap*_blockSize, bitmap, _blockSize);
-        for(uint j = 0; j < _blockSize; ++j) {
+        for(u64 j = 0; j < _blockSize; ++j) {
             if((u8)~bitmap[j] != 0) {
-                uint pos = __builtin_ctz(~bitmap[j]);
+                u64 pos = __builtin_ctz(~bitmap[j]);
                 assert((bitmap[j] & (1 << pos)) == 0);
                 bitmap[j] |= (1 << pos);
                 _part->writeaddr(_bgd[bgd].block_bitmap*_blockSize, bitmap, _blockSize);
@@ -147,12 +147,12 @@ void FS::freeBlock(u32 block) {
 
 u32 FS::getNewInode(bool isDirectory) {
     u8* bitmap = (u8*)malloc(_blockSize);
-    for(uint i = 0; i < _nbBgd; ++i) {
+    for(u64 i = 0; i < _nbBgd; ++i) {
         if(_bgd[i].free_inodes_count == 0) continue;
         _part->readaddr(_bgd[i].inode_bitmap*_blockSize, bitmap, _blockSize);
-        for(uint j = 0; j < _blockSize; ++j) {
+        for(u64 j = 0; j < _blockSize; ++j) {
             if((u8)~bitmap[j] != 0) {
-                uint pos = __builtin_ctz(~bitmap[j]);
+                u64 pos = __builtin_ctz(~bitmap[j]);
                 assert((bitmap[j] & (1 << pos)) == 0);
                 bitmap[j] |= (1 << pos);
                 _part->writeaddr(_bgd[i].inode_bitmap*_blockSize, bitmap, _blockSize);
@@ -212,7 +212,7 @@ void FS::_writeSuperBlock() {
     _part->writeaddr(1024, &_sb, sizeof(SuperBlock));
 
     //to write the super block backup with the sparse superblock feature:
-    //for(uint i = 1; i < _nbBgd; i *= {3,5,7}) {
+    //for(u64 i = 1; i < _nbBgd; i *= {3,5,7}) {
         //SuperBlock sb;
         //_part->readaddr((_sb.first_data_block + i*_sb.blocks_per_group)*_blockSize, &sb, sizeof(SuperBlock));
         //printf("%d %x\n", _sb.first_data_block + i*_sb.blocks_per_group, sb.magic);
@@ -225,12 +225,12 @@ void FS::_loadBlockGroupDescriptor() {
     }
 
     _bgd = (BlockGroupDescriptor*)malloc(_nbBgd*sizeof(BlockGroupDescriptor));
-    uint addr = (_sb.first_data_block+1)*_blockSize;
+    u64 addr = (_sb.first_data_block+1)*_blockSize;
     _part->readaddr(addr, _bgd, _nbBgd*sizeof(BlockGroupDescriptor));
 }
 
 void FS::_writeBlockGroupDescriptor() {
-    uint addr = (_sb.first_data_block+1)*_blockSize;
+    u64 addr = (_sb.first_data_block+1)*_blockSize;
     _part->writeaddr(addr, _bgd, _nbBgd*sizeof(BlockGroupDescriptor));
 }
 
@@ -279,7 +279,7 @@ void Inode::readrec(ReadRecArgs& args, int level, u32 blockId) const {
     }
 
     if(level == 0) {
-        uint count = min(_fs->_blockSize - args.addr, (u64)args.size);
+        u64 count = min(_fs->_blockSize - args.addr, (u64)args.size);
         _fs->_part->readaddr(blockId*_fs->_blockSize + args.addr, args.data, count);
         args.data += count;
         args.size -= count;
@@ -287,10 +287,10 @@ void Inode::readrec(ReadRecArgs& args, int level, u32 blockId) const {
     } else {
         _fs->_part->readaddr(blockId*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
 
-        uint starti = args.addr/args.indirectSize[level-1];
+        u64 starti = args.addr/args.indirectSize[level-1];
         args.addr %= args.indirectSize[level-1];
 
-        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+        for(u64 i = starti; i < _fs->_blockSize/4; ++i) {
             if(args.size == 0) return;
             readrec(args, level-1, args.blocks[level-1][i]);
         }
@@ -356,7 +356,7 @@ bool Inode::writerec(WriteRecArgs& args, int level, u32* blockId) {
         }
 
         if(args.addr < _fs->_blockSize) {
-            uint count = min(_fs->_blockSize - args.addr, (u64)args.size);
+            u64 count = min(_fs->_blockSize - args.addr, (u64)args.size);
             _fs->_part->writeaddr((*blockId)*_fs->_blockSize + args.addr, args.data, count);
             args.data += count;
             args.size -= count;
@@ -382,7 +382,7 @@ bool Inode::writerec(WriteRecArgs& args, int level, u32* blockId) {
 
         args.blockNum += 1;
 
-        uint starti = 0;
+        u64 starti = 0;
         if(canSkip) {
             starti = args.addr/args.indirectSize[level-1];
             args.addr %= args.indirectSize[level-1];
@@ -390,7 +390,7 @@ bool Inode::writerec(WriteRecArgs& args, int level, u32* blockId) {
         }
 
         bool write = false;
-        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+        for(u64 i = starti; i < _fs->_blockSize/4; ++i) {
             if(args.size == 0) {
                 break;
             }
@@ -457,12 +457,12 @@ bool Inode::resizerec(ResizeRecArgs& args, int level, u32 blockId) {
     } else {
         _fs->_part->readaddr(blockId*_fs->_blockSize, args.blocks[level-1], _fs->_blockSize);
 
-        uint starti = args.sizeAfter/args.indirectSize[level-1];
+        u64 starti = args.sizeAfter/args.indirectSize[level-1];
         args.sizeAfter  -= starti*args.indirectSize[level-1];
         args.sizeBefore -= starti*args.indirectSize[level-1];
 
         bool deleteMyself = (starti == 0);
-        for(uint i = starti; i < _fs->_blockSize/4; ++i) {
+        for(u64 i = starti; i < _fs->_blockSize/4; ++i) {
             if(args.sizeBefore == 0) break;
             if(resizerec(args, level-1, args.blocks[level-1][i])) {
                 args.blocks[level-1][i] = 0;
