@@ -23,12 +23,19 @@ int Atomic::run() {
         if(pid == 0) {
             std::vector<char*> argv;
             argv.reserve(_cmdline.size()+1);
-            std::string commandPath = "/usr/bin/" + _cmdline[0];
+            bool hasSlash = false;
+            for(size_t i = 0; i < _cmdline[0].size(); ++i) {
+                hasSlash |= (_cmdline[0][i] == '/');
+            }
+            std::string commandPath = hasSlash ? _cmdline[0] : ("/usr/bin/" + _cmdline[0]);
             for(size_t i = 0; i < _cmdline.size(); ++i) {
                 argv.push_back(const_cast<char*>(_cmdline[i].data()));
             }
             argv.push_back(nullptr);
-            execv(commandPath.data(), reinterpret_cast<char * const *>(argv.data()));
+            if(execv(commandPath.data(), reinterpret_cast<char * const *>(argv.data()))) {
+                perror("execv");
+                return -1;
+            }
             return 42; //make gcc happy
         } else {
             int res;
