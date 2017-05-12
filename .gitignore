@@ -26,3 +26,6 @@ crt0.o
 init
 index.html
 doc/*
+user/ttsh/out
+user/ttsh/ttsh
+user/ttsh/.dep
