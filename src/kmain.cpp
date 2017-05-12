@@ -193,6 +193,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     /*asm volatile(
         "and $0xFFF,%rbp; sub $0x1000,%rbp"
         );*/ // rbp switch : use this code only in O0, gcc can use rbp for other thing in O123.
+    barrier;
 
     info(Init,"Loading Graphical system/Screen");
     GraphicalParam* gp = (GraphicalParam*)kargs->GraphicalParam;

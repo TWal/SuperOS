@@ -109,6 +109,7 @@ template<typename T, typename U> T alignup(T n, U multiple) {
 }
 
 #define breakpoint asm volatile("xchg %bx, %bx")
+#define barrier asm volatile("" : : : "memory")
 
 
 #define cli asm volatile("cli");
