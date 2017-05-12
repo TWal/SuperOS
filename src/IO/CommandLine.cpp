@@ -49,11 +49,11 @@ void CommandLine::init(table_type table){
             printf("%s doesn't exist in current directory\n",args[0].c_str());
             return;
         }
-        HDD::Directory* d = static_cast<HDD::Directory*>(f);
-        if(d == nullptr) {
+        if(f->getType() != HDD::FileType::Directory) {
             printf("%s is not a directory\n",args[0].c_str());
             return;
         }
+        HDD::Directory* d = static_cast<HDD::Directory*>(f);
         cl->pwd = d;
     }));
 
