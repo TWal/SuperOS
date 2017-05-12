@@ -5,7 +5,7 @@ namespace input{
     Keyboard::Keyboard() : _deque(){ }
 
     void Keyboard::handleScanCode(uchar sc) {
-        debug(Kbd,"Handle %x",sc);
+        //debug(Kbd,"Handle %x",sc);
         _deque.push_back(sc);
     }
 
@@ -16,7 +16,7 @@ namespace input{
           }*/
         if(_deque.empty()) return EScanCode();
 
-        debug(Kbd,"Deque state %d %d %d",_deque._begin,_deque._end,_deque._size);
+        //debug(Kbd,"Deque state %d %d %d",_deque._begin,_deque._end,_deque._size);
 
         uchar sc = _deque.front();
         debug(Kbd,"Polled scan code : %x",sc);

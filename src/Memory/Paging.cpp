@@ -58,6 +58,7 @@ Paging::Paging(){
 void Paging::init(PageEntry* pPML4){ // physical PML4
     info(Pagingl,"Paging Initializing");
     assert(pPML4[511].getAddr());
+    pPML4[511].user = false; //global lock of negative adresses.
     debug(Pagingl,"PML4 physical address : %p",pPML4);
     PageEntry* KPDP = (PageEntry*)pPML4[511].getAddr(); //kernel page directory pointer
     assert(KPDP); // it should be present at kernel booting (setup by the loader)
@@ -119,6 +120,7 @@ void Paging::init(PageEntry* pPML4){ // physical PML4
         firstPT[i].activeAddr((char*)nullptr + 0x1000 * i);
         firstPT[i].writeThrough = true ; // only for device mapping RAM
         firstPT[i].global = true; // these are the only user space mapping to be global.
+        firstPT[i].user = false;
     }
     // we don't activate firstPT i.e removing identity map of RAM begining now.
 
@@ -300,7 +302,6 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
     tmpPT[getPTindex(virt)].writeThrough = wt;
     if(iptr(virt) < 0){ // if we are in kernel space
         tmpPT[getPTindex(virt)].global = true;
-        tmpPT[getPTindex(virt)].user = false;
     }
     freeTmpPT();
     invlpg(virt);
@@ -347,7 +348,7 @@ void Paging::createMapping2M(uptr phy, void* virt, bool wt){
     tmpPD[getPDindex(virt)].isSizeMega = true;
     if(iptr(virt) < 0){ // if we are in kernel space
         //tmpPD[getPDindex(virt)].global = true;
-        tmpPD[getPDindex(virt)].user = false;
+        //tmpPD[getPDindex(virt)].user = false;
     }
     freeTmpPD();
     invlpg(virt);

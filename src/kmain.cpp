@@ -68,7 +68,7 @@ void init(){
 
 /// Division by 0 exception handler
 void div0 (const InterruptParams& par){
-    printf("1/0 is not infinity at %p", par.rip);
+    bsod("1/0 is not infinity at %p", par.rip);
     stop;
 }
 
@@ -85,7 +85,7 @@ void doublefault(const InterruptParamsErr& par){
 
 /// General protection fault exception handler
 void gpfault(const InterruptParamsErr& par){
-    printf("General Protection fault at %p with code %x", par.rip, par.errorCode);
+    bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
@@ -94,9 +94,8 @@ void gpfault(const InterruptParamsErr& par){
    @brief Page fault exception handler
    @todo Not crash on user page fault
 */
-
 void pagefault(const InterruptParamsErr& par){
-    fprintf(stderr,"Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
+    bsod("Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
@@ -104,6 +103,7 @@ void pagefault(const InterruptParamsErr& par){
 //int 0x21
 void keyboard(const InterruptParams&){
     kbd.handleScanCode(inb(0x60));
+    //debug(Kbd,"And second %x",inb(0x60));
     pic.endOfInterrupt(1);
 }
 
@@ -273,9 +273,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA USER_TEST
+#define BLA TMP_TEST
 #define EMUL // comment for LORDI version
-#if TMP_TEST
+#if BLA == TMP_TEST
 
     /*while (true){
         for(int i = 0 ; i < 1024 ; ++i){
@@ -286,21 +286,12 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         }*/
 
 
-
-    /*pageLog = true;
-
-    uptr page2M = physmemalloc.alloc2M();
-
-    int* vpage2M = (int*)-(6ll*1024*1024*1024);
-
-
-    paging.createMapping2M(page2M,vpage2M);
-
-    vpage2M[1] = 42;
+    cl.init();
 
     while(true){
         kloop();
-        }*/
+        debug("Kbd %x",inb(0x60));
+    }
 
 #elif BLA == CL_TEST
     HDD::HDD first(1,true);

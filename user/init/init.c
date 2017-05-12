@@ -66,6 +66,7 @@ int main(){
     printf("[init] errno : %lld and status %d\n",errno,status);
 
     printf("[init] end of test");
+
     while(1);
 
     _texit(42);
