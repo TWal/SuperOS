@@ -1,0 +1,29 @@
+*Protective Paging (access rights).
+*2MB paging.
+Syscalls
+    - exec
+    - poll
+    - open
+    - close
+    - openWin
+    - openTWin
+    - futex
+    - pipe
+    - dup(2)
+    - resizeWin
+    - fstat
+
+
+MT-safe libc
+Shell
+Pipes
+Smart-pointer
+Smart bsod.
+
+Fix on hardware
+    - keyboard Alt-Gr -- removed
+    - HDD on big partitions
+
+BONUS:
+    - signals
+    - 3D software renderer
