@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include "assert.h"
 
 namespace std {
 
@@ -32,6 +33,277 @@ namespace std {
         }
 
     };
+
+    template<typename T>
+    class __ptr{
+    protected:
+        T* _ptr;
+        __ptr() : _ptr(nullptr){}
+        __ptr(T* p) : _ptr(p){}
+    public:
+        using element_type = T;
+        using pointer = T*;
+        pointer get(){ return _ptr;}
+
+        T& operator* (){
+            return *_ptr;
+        }
+
+        pointer operator ->(){
+            return _ptr;
+        }
+    };
+
+    struct __count{
+        unsigned int nbOwner;
+        unsigned int nbTotal;
+        __count() : nbOwner(1), nbTotal(1){
+        }
+    };
+
+    template<typename T>
+    class unique_ptr : public __ptr<T>{
+    public:
+        using element_type = T;
+        using pointer = T*;
+        using __ptr<T>::_ptr;
+        constexpr unique_ptr() : __ptr<T>(){}
+        constexpr unique_ptr(nullptr_t) : __ptr<T>(){}
+        explicit unique_ptr(pointer t) : __ptr<T>(t){}
+        unique_ptr(unique_ptr&& x) : __ptr<T>(x._ptr){
+            x._ptr = nullptr;
+        }
+        unique_ptr(const unique_ptr&) = delete;
+        ~unique_ptr(){delete _ptr;}
+
+        unique_ptr& operator=(unique_ptr&& x){
+            if(&x == this) return *this;
+            delete _ptr;
+            _ptr = x._ptr;
+            x._ptr = nullptr;
+            return *this;
+        }
+
+        unique_ptr& operator=(nullptr_t){
+            delete _ptr;
+            _ptr = nullptr;
+            return *this;
+        }
+
+        unique_ptr& operator=(const unique_ptr&) = delete;
+
+        operator bool(){ return _ptr == nullptr;}
+
+        pointer release(){
+            pointer p = _ptr;
+            _ptr = nullptr;
+            return p;
+        }
+
+        void reset(pointer p = pointer()){
+            delete _ptr;
+            _ptr = p;
+        }
+
+        void swap(unique_ptr& x){
+            swap(_ptr,x._ptr);
+        }
+    };
+
+    template<typename T>
+    class weak_ptr;
+
+    template<typename T>
+    class shared_ptr : public __ptr<T>{
+        friend weak_ptr<T>;
+        __count* _count;
+        void release(){
+            if(!_count) return;
+            _count->nbOwner--;
+            _count->nbTotal--;
+            if(_count->nbOwner == 0){
+                delete _ptr;
+            }
+            if(_count->nbTotal == 0){
+                delete _count;
+            }
+        }
+    public:
+        using element_type = T;
+        using pointer = T*;
+        using __ptr<T>::_ptr;
+        constexpr shared_ptr() : __ptr<T>(), _count(nullptr){}
+        constexpr shared_ptr(nullptr_t) : __ptr<T>(), _count(nullptr){}
+        explicit shared_ptr(pointer t) : __ptr<T>(t){
+            _count = new __count();
+        }
+        shared_ptr(shared_ptr&& x) : __ptr<T>(x._ptr), _count(x._count){}
+        shared_ptr(const shared_ptr& x): __ptr<T>(x._ptr), _count(x._count){
+            if(_count){
+                _count->nbOwner++;
+                _count->nbTotal++;
+            }
+        }
+        explicit shared_ptr(const weak_ptr<T>&);
+        ~shared_ptr(){
+            if(_count) assert(_count->nbOwner >= 1);
+            release();
+        }
+
+        shared_ptr& operator=(const shared_ptr& x){
+            if(&x == this) return *this;
+            release();
+            _ptr = x._ptr;
+            _count = x.count;
+            if(_count){
+                _count->nbOwner++;
+                _count->nbTotal++;
+            }
+            return * this;
+        }
+
+        shared_ptr& operator=(shared_ptr&& x){
+            if(&x == this) return *this;
+            release();
+            _ptr = x._ptr;
+            _count = x._count;
+            x._ptr = nullptr;
+            x._count = nullptr;
+            return *this;
+        }
+
+        shared_ptr& operator=(unique_ptr<T>&& up){
+            release();
+            _count = new __count();
+            _ptr = up._ptr;
+            up._ptr = nullptr;
+            return *this;
+        }
+
+        void swap(shared_ptr& sp){
+            swap(_ptr,sp._ptr);
+            swap(_count,sp._count);
+        }
+
+        void reset(pointer p = pointer()){
+            release();
+            if(p){
+                _count = new __count();
+                _ptr = p;
+            }
+            else{
+                _count = nullptr;
+                _ptr = nullptr;
+            }
+        }
+
+        long int use_count(){
+            if(_count) return _count->nbOwner;
+            else return 0;
+        }
+
+        bool unique(){
+            return use_count() == 1;
+        }
+
+        operator bool(){
+            return _ptr != nullptr;
+        }
+    };
+
+    template<typename T>
+    class weak_ptr : public __ptr<T>{
+        friend shared_ptr<T>;
+        __count* _count;
+        void release(){
+            if(_count){
+                _count->nbTotal--;
+                if(_count->nbTotal == 0) delete _count;
+            }
+        }
+    public:
+        using element_type = T;
+        using pointer = T*;
+        using __ptr<T>::_ptr;
+        constexpr weak_ptr():__ptr<T>(), _count(nullptr){}
+        weak_ptr(const weak_ptr& wp): __ptr<T>(wp._ptr), _count(wp._count){
+            if(_count){
+                _count->nbTotal++;
+            }
+        }
+
+        weak_ptr(const shared_ptr<T>& sp): __ptr<T>(sp._ptr) , _count(sp._count){
+            if(_count){
+                _count->nbTotal++;
+            }
+        }
+        ~weak_ptr(){
+            if(_count) assert(_count->nbTotal);
+            release();
+        }
+        weak_ptr& operator=(const weak_ptr& x){
+            if(&x == this) return *this;
+            release();
+            _ptr = x._ptr;
+            _count = x.count;
+            if(_count) _count->nbTotal++;
+            return *this;
+        }
+
+        weak_ptr& operator=(const shared_ptr<T>& x){
+            release();
+            _ptr = x._ptr;
+            _count = x._count;
+            if(_count) _count->nbTotal++;
+            return *this;
+        }
+
+        void swap(weak_ptr& wp){
+            swap(_ptr,wp._ptr);
+            swap(_count,wp._count);
+        }
+
+        void reset(){
+            release();
+            _ptr = nullptr;
+            _count = nullptr;
+        }
+
+        long int use_count() const {
+            if(_count) return _count->nbOwner;
+            else return 0;
+        }
+
+        bool expired() const {
+            if(_count) return _count->nbOwner == 0;
+            else return 0;
+        }
+
+        shared_ptr<T> lock() const{
+            shared_ptr<T> res();
+            if(_count and _count-> nbOwner){
+                res._ptr = _ptr;
+                res._count = _count;
+                _count->nbOwner++;
+                _count->nbTotal++;
+            }
+            return res;
+        }
+
+
+    };
+
+    template<typename T>
+    shared_ptr<T>::shared_ptr(const weak_ptr<T>& wp):
+        __ptr<T>(wp._ptr), _count(wp._count){
+        if(_count){
+            assert(_count->nbOwner >= 0);
+            _count->nbOwner++;
+            _count->nbTotal++;
+        }
+    }
+
+
 
 }
 
