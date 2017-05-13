@@ -1,0 +1,240 @@
+\documentclass[12pt]{report}
+
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}      
+\usepackage[francais]{babel} 
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsopn}
+\usepackage{mathrsfs}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[bottom=2cm,left=2cm,right=2cm,top=2cm]{geometry}
+
+\title{Rapport sur Super OS}
+
+\author{Thibaut Pérami, Théophile Wallez}
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\addcontentsline{toc}{chapter}{\protect\numberline{}Introduction}
+\chapter*{Introduction}
+
+Super OS est système d'exploitation expérimental(i.e où le BSOD (Blue Screen Of
+Death) est une fonctionnalité utilisée fréquemment). Il tourne sur
+l'architecture x86\_64 ou AMD64. Il boot selon la spécification multiboot,
+Il est capable de gérer un unique disque dur avec une table de partition MBR
+(partition étendue non suportée) et le système de fichier ext2. Il gère le
+clavier et la souris par l'interface PS/2 et l'écran par l'interface VBE.
+L'architecture n'est pas très innovante : un énorme noyau monolithique comprenant
+tous les systèmes, y compris le gestionnaire de fenêtre. Nous n'avons
+malheureusement pas eu le temps de développer d'interface réseau ni
+d'architecture multi-coeur.
+
+Le présent rapport ne décrit le système que d'un point de vue global, pour toute
+forme de détails consulter la documentation (\verb$make doc$ à la racine puis
+\verb$index.html$). Le premier chapitre décrit notre interface avec le matériel,
+le second notre interface avec les programmes utilisateur, le troisième le
+logiciel développés pour Super OS et le dernier les problèmes rencontrés pendant
+sa conception.
+
+Le langage utilisé est le \verb$C++$ à part quelques fichiers en assembleur, et
+5 lignes de python (générant de l'assembleur :-) ). Le projet atteint les $12 000$
+lignes de code, (\verb$make count$ pour les statistiques exactes).
+
+Plan de l'archive :
+\begin{itemize}
+\item \verb$src$ : Le noyau lui-même en 64 bits
+\item \verb$src32$ : Dernier \textit{stage} du boot, loader fait maison pour
+  booter notre noyau.
+\item \verb$libc$ : Notre bibliothèque \og standard \fg{} du C (on est assez
+  loin du standard en fait)
+\item \verb$libc++$ : Notre bibliothèque \og standard \fg{} du C++
+\item \verb$doc$ : La documentation (\verb$make doc$ pour générer).
+\item \verb$unitTests$ : Les tests unitaire (\verb$make unittest$ pour lancer)
+\item \verb$user$ : Tout les programmes user-mode
+  \begin{itemize}
+  \item \verb$init$ : Processus init du système, sert de racine à l'arbre des
+    processus.
+  \item \verb$start$ : Fichier de démarrage du runtime C/C++ de l'user-mode.
+  \item \verb$ttsh$ : Notre shell.
+  \end{itemize}
+\end{itemize}
+
+
+\chapter{Hardware}
+
+\section{Boot : convention multiboot}
+
+Nous souhaitions respecter la convention multiboot \cite{multiboot}, pour
+pouvoir utiliser un bootloader existant comme GRUB. Cette specification ne
+traite que de système d'exploitation x86 i.e 32 bits, nous devions donc trouver
+un moyen de faire booter notre 64 bits avec.
+
+Il est vite apparut très dur de maintenir du code 32 bits et du code 64 bits
+dans le même exécutable, nous avons donc décider de séparer. Nous avons donc un
+premier exécutable, le loader en 32 bits qui reçoit le binaire du noyau comme
+module multiboot. Le loader va alors parser le noyau pour en déduire comment il
+doit le mapper dans la mémoire virtuelle puis va le lancer.
+
+Le loader parse également les information envoyer par le boot loader multiboot,
+comme la taille de la RAM, ou les information graphiques, pour vérifier qu'elle
+sont valides et les passer au noyau.
+
+Le détail de la séquence de boot sont dans la page \verb$Booting Sequence$ de la
+documentation.
+
+\section{CPU : modes et droits}
+
+Le processeur \verb$x86_64$ a un certain nombre de mode d'exécution décrit
+section 1.3 de \cite{specAMD} :
+\begin{itemize}
+\item Real Mode : mode au démarrage, code 16-bit, 1 Mo d'espace addressable, pas
+  de mémoire virtuelle.
+\item Protected Mode : mode de la specification multiboot (GRUB nous lance dans
+  ce mode) : code 32 bits, 4 Go d'espace addressable virtuelle et physique
+\item Long Mode, Compatibilité 32 bits : mode dans lequel la majorité du code du
+  loader est exécuté : code 32 bits, 4 Go d'espace addressable virtuel
+\item Long Mode : mode du noyau : code 64 bits, 256 To d'espace addressable
+  virtuel, 64 Po d'espace addressable physique. 
+\end{itemize}
+
+le bootloader se charge d'initialiser le processeur en mode protégé, le loader
+va alors, après un petite phase d'initialisation, passer en mode Compatibilité
+32 bit, où il va s'exécuter. Il vérifie que le Long Mode est bien actif sur le
+processeur courant puis juste avant de lancer le noyau, il passe en
+Long Mode. 
+
+En dehors des modes processeur, le programme courant a un niveau de droit
+appelé CPL. Il va de 0 à 3, 0 étant l'état superuser où l'on a tous les droits
+et 3 étant l'user-mode pour les applications. Super OS n'utilise que les 2
+niveau de droits extrêmes (pas 1 et 2).
+
+\section{RAM : pagination et droits}
+
+\paragraph{Comparaison avec le 32 bits :} L'architecture \verb$x86$ supportait 2
+mode de protection de la mémoire, la segmentation (découper la mémoire en
+segments) et la pagination (avoir un espace mémoire virtuel mapper à volonté
+dans la mémoire physique).
+
+\paragraph{En Long Mode}, la segmentation est désactivée, les segments et registres de
+segmentation ne servent plus que pour gérer les droits.
+En revanche, la pagination est obligatoire, il est impossible de faire tourner
+un code long mode sans pagination, elle doit donc être mise en place dans un
+autre mode : c'est ce que fait le loader.
+
+La pagination permet d'avoir un adressage virtual de 256 To (En réalité dû a une
+simplification d'implémentation, Super OS n'est capable d'adresser qu'un seul
+To) et d'envoyer a volonté n'importe quelle adresse virtuelle sur la zone
+physique de son choix.
+Les détails du fonctionnement sont dans la page \verb$Paging$ de la
+documentation.
+
+\paragraph{Découpage de l'espace virtuel :} Nous avons appliqué un découpage
+très simple : les adresses positives de 0 à 512 Go sont disponible pour chaque
+programme. Les adresses de -512 Go à 0 sont celle du noyau.
+
+Les détails sont dans la page \verb$Virtual mappings$ de la documentation.
+
+\section{HDD : Interface ATA et ext2}
+
+TODO théophile
+
+\section{Input : clavier et souris}
+
+TODO théophile
+
+\section{Output : écran et BSOD}
+
+Pour l'écran nous avons utilisé la specification VBE \cite{specVBE} et son
+interface multiboot \cite{multiboot}.
+Concrètement nous demandons, dans le header multiboot une résolution à GRUB, si
+elle est disponible, il nous fournit un buffer vidéo linéaire mappé dans la
+mémoire physique a cette résolution sinon, il semble expérimentalement se
+rabattre sur du $800 \times 600$.
+
+Le loader est chargé de vérifier que le mode fournit par le bootloader est celui
+demandé par le noyau à savoir : Profondeur 32 bits, Bleu puis vert puis rouge
+puis alpha.
+
+Il nous suffit ainsi de d'écrire pixel par pixel dans ce buffer pour afficher à
+l'écran. malheureusement cette méthode nécessite d'envoyer la totalité du
+contenu de l'écran de la RAM à la VRAM à chaque rendu. Sur un ordinateur moyen,
+cela nous limite à 60 fps si le noyau utilise 100\% du temps CPU pour le rendu
+(et encore on a optimisé à coup d'instructions SSE).
+
+\chapter{Interface logicielle}
+
+\section{Organisation}
+
+Nous gérons un système de processus similaire à Linux, il y a trois niveaux
+\begin{itemize}
+\item Groupe de processus : un groupe à un identifiant \verb$gid$, il contient
+  un certain nombre de processus dont le leader du groupe qui le même \verb$pid$
+  que le \verb$gid$ du groupe. (\verb$pgid$ sous Linux).
+\item Processus : Une application, Un processus dispose d'un identifiant
+  \verb$pid$, d'un espace mémoire dédié, séparé des autres processus, d'une
+  liste de descripteurs de fichiers et d'un certain nombre de threads (au moins
+  un) dont un principal qui a le même \verb$tid$ que le \verb$pid$ de son processus. 
+\item Thread : Un \og fil \fg{} d'exécution, i.e un état du processeur, Un
+  thread partage tout avec les autres threads de son processus sauf les valeurs
+  de ses registres. L'ordre d'exécution de Thread est organisé par le Scheduler. 
+\end{itemize}
+
+De plus les processus forment une hiérarchie, un arbre dont la racine est le
+processus \verb$init$ et les autres processus sont des noeud ou des feuilles.
+
+\section{Appels systèmes}
+
+\paragraph{Lecture/écriture}
+
+Nous supportons actuellement read write  (poll)
+
+\paragraph{Manipulation de processus} fork, wait exit, texit, exec
+
+\paragraph{fichiers} open,close
+
+\paragraph{grpahique} openwin opentwin
+
+\paragraph{communication inter processus :} pipe, dup
+
+
+La specification complète des appels système est dans la documentation de \verb$Syscalls.h$.
+
+\section{Interface de flux et descripteur de fichier}
+
+
+\section{Système de fichier virtuel (VFS)}
+
+TODO théophile
+
+\section{Gestionaire de fenêtre et d'événement}
+
+\section{Attente}
+
+\section{Bibliothèques standard}
+
+\chapter{Software}
+
+\section{Shell}
+
+TODO théophile
+\chapter{Difficultés rencontrées}
+
+
+\bibliographystyle{plain}
+
+\bibliography{report}
+
+
+
+
+
+
+\end{document}
