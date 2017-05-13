@@ -15,21 +15,6 @@ Scheduler::Scheduler() : _current(nullptr), _remainingTime(0),
     Pit::set(0,1000,Pit::SQUAREWAVE); // for now slow interruptions (~ 20 Hz)
     // we will speed up later when it's stable.
 }
-static u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
-    schedul.exit(rc);
-}
-static u64 systexit(u64 rc,u64,u64,u64,u64,u64){
-    schedul.texit(rc);
-}
-static u64 sysfork(u64,u64,u64,u64,u64,u64){
-    return schedul.fork();
-}
-static u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
-    return schedul.clone(rip,rsp);
-}
-
-
-
 
 void Scheduler::init(Thread* initThread){
     assert(initThread->getTid() == 1);
@@ -46,10 +31,6 @@ void Scheduler::init(Thread* initThread){
     _tids[1] = false;
 
     //declare scheduler syscalls :
-    handlers[SYSEXIT] = sysexit;
-    handlers[SYSTEXIT] = systexit;
-    handlers[SYSFORK] = sysfork;
-    handlers[SYSCLONE] = sysclone;
 
 }
 

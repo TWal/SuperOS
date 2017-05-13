@@ -3,6 +3,11 @@
 
 #include"../utility.h"
 
+/**
+   @file This file define the syscall API and handlers registering
+*/
+
+
 /// Numbers of different syscalls allowed.
 #define SYSCALLNUM 256
 

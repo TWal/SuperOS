@@ -4,6 +4,7 @@
 #include "../utility.h"
 #include "../Interrupts/Interrupt.h"
 #include "Process.h"
+#include "Thread.h"
 #include <map>
 #include <deque>
 
