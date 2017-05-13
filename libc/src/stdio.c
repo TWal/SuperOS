@@ -227,3 +227,15 @@ void printf(const char*format,...){
     vfprintf(stdout,format, ap);
     va_end(ap);
 }
+
+size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
+    size_t res = 0;
+    size_t toRead = size*count;
+    size_t cur;
+    while(toRead > 0 && (cur = read(stream->fd, buf, toRead)) != 0) {
+        res += cur;
+        toRead -= cur;
+    }
+    return res/size;
+}
+

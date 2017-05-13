@@ -34,7 +34,7 @@ extern "C" {
     void printf(const char* format, ...);
 
 
-    //size_t fread (void* buf, size_t size, size_t count, FILE* stream);
+    size_t fread(void* buf, size_t size, size_t count, FILE* stream);
 
 
 #ifdef __cplusplus
