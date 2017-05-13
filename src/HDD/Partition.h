@@ -36,10 +36,10 @@ class Partition : public HDDBytes {
 public:
     explicit Partition (HDD*HDD,PartitionTableEntry descriptor);
     virtual size_t getSize() const;
-    virtual void writelba (u32 LBA , const void* data, u32 nbsector);
-    virtual void readlba (u32 LBA, void* data, u32 nbsector) const;
-    virtual void writeaddr (u64 addr , const void* data, size_t size);
-    virtual void readaddr (u64 addr, void* data, size_t size) const;
+    virtual void writelba(u32 LBA, const void* data, u32 nbsector);
+    virtual void readlba(u32 LBA, void* data, u32 nbsector) const;
+    virtual void writeaddr(u64 addr , const void* data, size_t size);
+    virtual void readaddr(u64 addr, void* data, size_t size) const;
 };
 
 } //end of namespace HDD
