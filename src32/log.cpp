@@ -200,6 +200,7 @@ const char* txtMods[LAST_LOGMOD] = {
 
 
 void vlog(LogLevel lvl, LogModule mod, const char* format, va_list ap){
+#ifndef UNITTEST
     if(logLvls[mod] >= lvl){
         printf(true, "%s%s ",txtMods[mod],txtLvls[lvl]);
         vprintf(true,format,ap);
@@ -210,5 +211,10 @@ void vlog(LogLevel lvl, LogModule mod, const char* format, va_list ap){
         vprintf(false,format,ap);
         printf(false, "\n\x1b[m");
     }
-
+#else
+    (void)lvl;
+    (void)mod;
+    (void)format;
+    (void)ap;
+#endif
 }

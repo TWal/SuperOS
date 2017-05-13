@@ -17,6 +17,7 @@
 #include "IO/Serial.h"
 #include "Interrupts/TaskSegment.h"
 #include "User/Syscall.h"
+#include "User/Syscalls.h"
 #include "Processes/Scheduler.h"
 #include "Bitset.h"
 #include "User/Context.h"
@@ -219,10 +220,16 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     info(Init,"Setup user mode");
     //User Mode initialization
     debug(Init,"Setup Syscalls");
-    syscallInit(); // intialize syscall API
+    syscallInit(); // Initialize syscall API
+    syscallFill(); // Registers all syscalls.
     debug(Init,"Setup TSS");
     tss.load(); // load TSS for enabling interrupts from usermode
     tss.RSP[0] = nullptr; // the kernel stack really start from 0.
+
+#ifdef UNITTEST // use stderr for unittest
+    unittest();
+    stop;
+#endif
 
     Font::defInit(fontPtr);
 
@@ -265,15 +272,11 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
 
 
-#ifdef UNITTEST
-    unittest();
-    stop;
-#endif
 
     info("64 bits kernel booted!!");
     Workspace::draw();
 
-#define BLA CL_TEST
+#define BLA USER_TEST
 #define EMUL // comment for LORDI version
 #if BLA == TMP_TEST
 
@@ -290,7 +293,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 
     while(true){
         kloop();
-        debug("Kbd %x",inb(0x60));
     }
 
 #elif BLA == CL_TEST
@@ -332,8 +334,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #endif
 
     HDD::Ext2::FS* fs = new HDD::Ext2::FS(pa1);
-
-    ProcessInit();
 
     pageLog = true;
 

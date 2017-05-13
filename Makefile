@@ -282,8 +282,11 @@ unittest:
 
 buildunit: $(OBJ) $(SRCDIR)/link.ld libk.a libc++.a
 	@$(CXX) $(CXXFLAGS) -DUNITTEST -c $(SRCDIR)/kmain.cpp -o $(OUTDIR)/kmain.cpp.o
+	@$(CXX) $(CXX32FLAGS) -DUNITTEST -c $(SRC32DIR)/log.cpp -o $(OUT32DIR)/log.cpp.o
 	@echo Linking kernel for unit test
 	@g++ $(LD64FLAGS) $(OBJ) $(OUTDIR)/unittest.o -o kernel.elf $(LIBS64) -Xlinker --print-map > ld_mapping_full
+	@echo Linking loader for unit test
+	@g++ $(LD32FLAGS) $(OBJ32) -o loader.elf $(LIBS32) -Xlinker --print-map > ld_mapping_loader_full
 	@cat ld_mapping_full | sed -e '1,/text/d' -e '/rodata/,$$d' > ld_mapping
 	@echo ----------------------unittest kernel built.------------------------------
 	@echo

@@ -24,46 +24,46 @@ enum LogModule{Generic, Init, PhyMem, Pagingl, Segment, Inter, Screenl, Kbd, Mou
 
 constexpr LogLevel serLvls[LAST_LOGMOD] =
 {
-    Debug, // Generic
-    Debug, // Init
-    Debug, // PhyMem
-    Info, // Pagingl
-    Debug, // Segment
-    Debug, // Inter
-    Debug, // Screenl
-    Info,// Kbd
-    Debug, // Mousel
-    Debug, // Syscalls
-    Info, // Schedul
-    Info, // Proc
-    Debug, // Graphics
-    Debug, // Hdd
-    Debug, // Ext2
-    Debug, // VFS
-    Debug, // RamFS
-    Debug, // CmdLine
+    Debug,  // Generic
+    Debug,  // Init
+    Info,   // PhyMem
+    Info,   // Pagingl
+    Debug,  // Segment
+    Debug,  // Inter
+    Debug,  // Screenl
+    Info,   // Kbd
+    Debug,  // Mousel
+    Debug,  // Syscalls
+    Info,   // Schedul
+    Info,   // Proc
+    Debug,  // Graphics
+    Debug,  // Hdd
+    Debug,  // Ext2
+    Debug,  // VFS
+    Debug,  // RamFS
+    Debug,  // CmdLine
 };
 
 constexpr LogLevel logLvls[LAST_LOGMOD] =
 {
-    Debug, // Generic
-    Info,  // Init
-    Info, // PhyMem
-    Info, // Pagingl
-    Debug, // Segment
-    Debug, // Inter
-    Debug, // Screenl
-    Info, // Kbd
-    Debug, // Mousel
-    Debug, // Syscalls
-    Warning, // Schedul
-    Info, // Proc
-    Debug, // Graphics
-    Debug, // Hdd
-    Debug, // Ext2
-    Debug, // VFS
-    Debug, // RamFS
-    Debug, // CmdLine
+    Debug,  // Generic
+    Info,   // Init
+    Info,   // PhyMem
+    Info,   // Pagingl
+    Debug,  // Segment
+    Debug,  // Inter
+    Debug,  // Screenl
+    Info,   // Kbd
+    Debug,  // Mousel
+    Debug,  // Syscalls
+    Warning,// Schedul
+    Info,   // Proc
+    Debug,  // Graphics
+    Debug,  // Hdd
+    Debug,  // Ext2
+    Debug,  // VFS
+    Debug,  // RamFS
+    Debug,  // CmdLine
 };
 
 void vlog(LogLevel lvl, LogModule mod, const char* format, va_list ap);

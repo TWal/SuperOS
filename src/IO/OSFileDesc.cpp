@@ -36,6 +36,7 @@ size_t read(int fd, void* buf, size_t count){
 size_t write(int fd, const void* buf, size_t count){
     if(!init){
         if(fd == 3){
+            if (unitTest) return count; // silently ignore on unit test;
             const char* buf2 = (const char*)buf;
             for(size_t i = 0 ; i < count ; ++i){
                 ser.write(buf2[i]);
@@ -46,8 +47,15 @@ size_t write(int fd, const void* buf, size_t count){
             }
             return count;
         }
-        if(fd == 2 or fd == 1){
+        if(fd == 2){
             if (unitTest) return count; // silently ignore on unit test;
+            const char* buf2 = (const char*)buf;
+            for(size_t i = 0 ; i < count ; ++i){
+                ser.write(buf2[i]);
+            }
+            return count;
+        }
+        if(fd == 1 and unitTest){
             const char* buf2 = (const char*)buf;
             for(size_t i = 0 ; i < count ; ++i){
                 ser.write(buf2[i]);
