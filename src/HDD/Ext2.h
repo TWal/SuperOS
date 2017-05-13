@@ -186,8 +186,8 @@ class FS : public FileSystem {
         Partition* _part;
         SuperBlock _sb;
         BlockGroupDescriptor* _bgd;
-        uint _blockSize;
-        uint _nbBgd;
+        u64 _blockSize;
+        u64 _nbBgd;
 };
 
 class Inode {
