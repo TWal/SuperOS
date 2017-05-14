@@ -103,6 +103,8 @@ class CharacterDevice : public ::HDD::CharacterDevice, public File {
         ::HDD::CharacterDevice* _impl;
 };
 
+extern FS* vfs;
+
 
 } //end of namespace VFS
 

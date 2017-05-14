@@ -359,10 +359,11 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
 #endif
 
     HDD::Ext2::FS* fs = new HDD::Ext2::FS(pa1);
+    HDD::VFS::vfs = new HDD::VFS::FS(fs);
 
     pageLog = true;
 
-    HDD::File* initf = (*(fs->getRoot()))["init"];
+    HDD::File* initf = (*(HDD::VFS::vfs->getRoot()))["init"];
     assert(initf);
     assert(initf->getType() == HDD::FileType::RegularFile);
     HDD::RegularFile* init = static_cast<HDD::RegularFile*>(initf);
@@ -377,12 +378,13 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     printf("Init process %p\n",initp);
     initp->_fds.push_back(FileDescriptor());
     initp->_fds.push_back(*fd);
+    initp->_wd = HDD::VFS::vfs->getRoot();
     //initp->_fds.push_back(*fd2);
     delete fd;
     //delete fd2;
     schedul.init(initt);
     cl.init();
-    cl.pwd = fs->getRoot();
+    cl.pwd = HDD::VFS::vfs->getRoot();
     //while(true){
     //     kloop();
     //}

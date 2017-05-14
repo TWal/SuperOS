@@ -85,6 +85,8 @@ public :
     UserMemory _usermem;
     /// The list of file descriptors of the process.
     std::vector<FileDescriptor> _fds;
+    /// Current directory of that process
+    HDD::Directory* _wd;
 
     /// Only init will be built by this constructor.
     Process(u32 pid,ProcessGroup* pg,

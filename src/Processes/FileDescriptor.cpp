@@ -29,7 +29,8 @@ FileDescriptor::~FileDescriptor(){
 }
 
 FileDescriptor::FileDescriptor(const FileDescriptor& other):
-    _owners(other._owners), _str(other._str), _type(other._type){
+    _owners(other._owners), _str(other._str), _type(other._type),
+    _mask(other._mask){
     if(_owners)(*_owners)++;
 
     if(_type == GWINDOW or _type == TWINDOW) _win = other._win;

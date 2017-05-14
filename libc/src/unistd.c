@@ -62,6 +62,21 @@ size_t write(int fd, const void* buf, size_t count){
     return res;
 }
 
+int open(const char* path, int flags){
+    int res;
+    asm volatile(
+        "mov $2, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path), "S"(flags)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
 int close(int fd){
     int res;
     asm volatile(

@@ -155,7 +155,7 @@ Thread* Process::loadFromBytes(Bytes* file){
 */
 Process::Process(u32 pid, ProcessGroup* pg, std::vector<FileDescriptor> fds) :
     _pid(pid), _gid(pg->getGid()), _parent(nullptr), _terminated(false), _mainTerminated(false),
-    _returnCode(0), _fds(fds){
+    _returnCode(0), _fds(fds), _wd(nullptr){
     schedul.addP(_pid,this);
     pg->addProcess(this);
     info(Proc,"Creating Process %p with pid %d",this,pid);
@@ -168,7 +168,7 @@ Process::Process(Process& other, Thread* toth, u16 pid):
     _usermem = other._usermem;
     _heap = other._heap;
     // Creating the new thread and coping the context of the calling thread
-    // the new process has only one thread : the copy of the thread that called fork
+    // The new process has only one thread : the copy of the thread that called fork
     Thread* tcopy = new Thread(pid,0,this);
     tcopy->context = toth->context;
 

@@ -36,21 +36,11 @@ void thread(){
 
 int main(){
     printf("[Init] Init start\n");
-    int nfd = dup(1);
-    printf("nfd : %d",nfd);
+    int fd = open("testbis",O_WRONLY | O_CREAT);
+    printf("fd : %d", fd);
+    FILE* f= (FILE*)&fd;
+    fprintf(f,"caca prout\n %d\n", 42);
 
-    FILE* f = (FILE*)&nfd;
-    fprintf(f,"hey\n");
-
-    int i = 42;
-    dup2(1,42);
-
-    FILE* f2 = (FILE*)&i;
-    fprintf(f2, "copy by dup2\n");
-
-    close(nfd);
-    printf("rc : %d",fprintf(f,"hey\n"));
-    printf("errno %d",errno);
     /*void* test = malloc(1024);
 
     pid_t t = clone(thread,(char*)test +1024);

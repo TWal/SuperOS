@@ -1,7 +1,7 @@
 #include "BytesStream.h"
 
 BytesStream::BytesStream(Bytes * data): _data(data),_addr(0){
-    assert(data->getSize() > 0);
+    //assert(data->getSize() > 0);
 }
 
 size_t BytesStream::read(void* buf,size_t count){
@@ -16,7 +16,10 @@ bool BytesStream::eof(){
 }
 
 size_t BytesStream::write(const void * buf,size_t count){
-    size_t toWrite = max((size_t)0,min(count,_data->getSize()-_addr));
+    if(count > 2048) count = 2048;
+    size_t toWrite;
+    if(_data->appendable()) toWrite = count;
+    else toWrite = max((size_t)0,min(count,_data->getSize()-_addr));
     _data->writeaddr(_addr,buf,toWrite);
     _addr+= toWrite;
     return toWrite;

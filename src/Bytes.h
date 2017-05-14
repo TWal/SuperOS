@@ -15,6 +15,8 @@ public:
     virtual void readaddr(u64 addr, void* data, size_t size) const = 0;
     /// Get the size of this sequence. 0 means "unknown"
     virtual size_t getSize() const = 0; // 0 mean unknown or too big
+    /// return true if you can write out of bound.
+    virtual bool appendable() {return false;}
 };
 
 /**

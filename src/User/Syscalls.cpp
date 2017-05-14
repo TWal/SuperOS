@@ -1,11 +1,18 @@
 #include "Syscalls.h"
 #include "Syscall.h"
+#include "SyscallUtils.h"
 #include "../Processes/Scheduler.h"
+#include "../HDD/VFS.h"
+#include "../Streams/BytesStream.h"
 #include <errno.h>
+
+using namespace std;
+
 
 void syscallFill(){
     handlers[SYSREAD] = sysread;
     handlers[SYSWRITE] = syswrite;
+    handlers[SYSOPEN] = sysopen;
     handlers[SYSCLOSE] = sysclose;
     handlers[SYSBRK] = sysbrk;
     handlers[SYSDUP] = sysdup;
@@ -21,7 +28,7 @@ u64 sread(Thread*t, uint fd, void* buf, u64 count){
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
-    if(!pro->_fds[fd]->check(Stream::READABLE)) return -EBADF;
+    if(!pro->_fds[fd].check(Stream::READABLE)) return -EBADF;
     return pro->_fds[fd]->read((void*)buf,count); // UserMem must still be active
 }
 
@@ -39,7 +46,7 @@ u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
-    if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
+    if(!pro->_fds[fd].check(Stream::WRITABLE)) return -EBADF;
     return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
 }
 
@@ -53,10 +60,46 @@ u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     return tmp;
 }
 
-enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 4, O_CREAT = 8, O_TRUNC = 16, O_APPEND = 32};
+enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
-    const char* path = reinterpret_cast<const char*>(upath);
-    
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    string s = reinterpret_cast<const char*>(upath);
+    if(s.empty()) return -EACCESS;
+    HDD::File* f;
+    HDD::Directory* d;
+    if(s[0] == '/'){
+        assert(HDD::VFS::vfs);
+        d = HDD::VFS::vfs->getRoot();
+    }
+    else{
+        assert(pro->_wd);
+        d = pro->_wd;
+    }
+
+    f = d->resolvePath(s);
+    if(!f){
+        if(flags & O_CREAT){
+            auto p = splitFileName(s);
+            f = d->resolvePath(p.first);
+            if(f->getType() != HDD::FileType::Directory){
+                return -EACCESS;
+            }
+            d = static_cast<HDD::Directory*>(f);
+            d->addEntry(p.second,0,0, S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP
+                        | S_IRUSR | S_IWUSR | S_IFREG);
+            f = (*d)[p.second];
+            assert(f);
+        }
+        else return - EACCESS;
+    }
+    u32 newfd = pro->getFreeFD();
+    if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
+    pro->_fds[newfd] = FileDescriptor(file2Stream(f));
+    pro->_fds[newfd]._mask = 0;
+    if(flags & O_RDONLY) pro->_fds[newfd]._mask |= Stream::READABLE | Stream::WAITABLE;
+    if(flags & O_WRONLY) pro->_fds[newfd]._mask |= Stream::WRITABLE | Stream::APPENDABLE;
+    return newfd;
 }
 
 u64 sysclose(u64 fd, u64,u64,u64,u64,u64){

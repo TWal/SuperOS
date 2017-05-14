@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-    enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 4, O_CREAT = 8, O_TRUNC = 16, O_APPEND = 32};
+    enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
 
     typedef unsigned short pid_t;
 

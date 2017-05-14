@@ -260,6 +260,7 @@ size_t CharacterDevice::seek(i64 count, mod mode) {
 }
 
 
+FS* vfs;
 } //end of namespace VFS
 
 } //end of namespace HDD

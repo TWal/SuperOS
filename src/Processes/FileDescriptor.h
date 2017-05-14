@@ -31,6 +31,16 @@ private:
     void free();
     void drop();
 public :
+    u64 _mask = -1;
+    /// get the functionalities of this FileDescriptor.
+    virtual u64 getMask() const{
+        if(_str) return _mask & _str->getMask();
+        else return 0;
+    }
+    /// Check for a specific functionality in the stream
+    inline bool check(u8 val) const {
+        return getMask() & val;
+    }
     /// Create an empty file descriptor
     FileDescriptor();
     /**

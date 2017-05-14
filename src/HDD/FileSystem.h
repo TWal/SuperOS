@@ -115,6 +115,8 @@ class RegularFile : public File, public HDDBytes {
         virtual FileType getType() const;
         /// Resize the file
         virtual void resize(size_t size) = 0;
+        /// A regular file is appendable.
+        bool appendable(){return true;}
 };
 
 /**
