@@ -97,6 +97,7 @@ enum class FileType {
 */
 class File {
     public:
+        virtual ~File(){}
         /// Returns the type of the file
         virtual FileType getType() const = 0;
 

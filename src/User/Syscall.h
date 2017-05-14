@@ -5,6 +5,9 @@
 
 /**
    @file This file define the syscall API and handlers registering
+
+   It also defines all syscall numbers.
+   All syscalls that have an equivalent in linux have the same number.
 */
 
 
@@ -21,8 +24,23 @@
 #define SYSLSTAT 6
 #define SYSPOLL 7 // not sure if we implement this
 
+#define SYSSEEK 8
+#define SYSTELL 9
+#define SYSBRK 12
 
-#define SYSBRK 12 // not sure if we implement this
+#define SYSPIPE 22
+
+#define SYSOPENWIN 24
+#define SYSOPENTWIN 25
+#define SYSRESIZEWIN 26
+
+#define SYSDUP 32
+#define SYSDUP2 33
+
+#define SYSGETGID 36
+#define SYSGETTID 37
+#define SYSGETPPID 38
+#define SYSGETPID 39
 
 #define SYSTEST 42
 
@@ -32,6 +50,25 @@
 #define SYSEXEC 59 ///< launch another program.
 #define SYSTEXIT 60
 #define SYSWAIT 61
+#define SYSKILL 62
+
+
+#define SYSOPENDIR 72
+#define SYSREADDIR 73
+#define SYSSEEKDIR 74
+#define SYSTELLDIR 75
+#define SYSGETCWD 79
+
+#define SYSCHDIR 80
+#define SYSFCHDIR 81
+#define SYSRENAME 82
+#define SYSMKDIR 83
+#define SYSRMDIR 84
+#define SYSLINK 86
+#define SYSUNLINK 87
+
+#define SYSFUTEX 202
+
 
 void syscallInit();
 

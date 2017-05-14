@@ -5,13 +5,27 @@ Syscalls
     - poll
     - open
     - close
-    - openWin
-    - openTWin
+    - seek
+    - tell
+    - openwin
+    - opentwin
     - futex
     - pipe
     - dup(2)
     - resizeWin
     - fstat
+    - getpid
+    - getppid
+    - gettid
+    - getgid
+    - chdir
+    - mkdir
+    - rmdir
+    - opendir
+    - readdir
+    - seekdir
+    - telldir
+    - getfreefd
 
 
 MT-safe libc
@@ -23,7 +37,7 @@ Smart bsod.
 Fix on hardware
     - keyboard Alt-Gr -- removed
     - *HDD on big partitions
-    - Segment 138 when rolling your head on keyboard.
+    - Segment 13b when rolling your head on keyboard.
 
 BONUS:
     - signals

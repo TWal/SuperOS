@@ -63,7 +63,10 @@ void Mouse::handleByte(u8 b) {
         case 0:
             //Dirty hack: on qemu, there is a single interrupt
             //that "shifts" everything. This condition may detect this.
-            if((b & (1<<3)) == 0) break;
+            if((b & (1<<3)) == 0){
+                warning(Mousel,"Invalid packet %x",b);
+                break;
+            }
             _byte[0] = b;
             _cycle += 1;
             break;

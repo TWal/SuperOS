@@ -27,6 +27,18 @@ u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64);
  */
 u64 sysbrk(u64 addr,u64,u64,u64,u64,u64);
 
+
+/**
+   @brief Syscall 32, dup : Duplicate a file descriptor;
+*/
+u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64);
+
+/**
+   @brief Syscall 33, dup2 : Duplicate a file descriptor;
+*/
+u64 sysdup2(u64 oldfd,u64 newfd,u64,u64,u64,u64);
+
+
 /**
    @brief Syscall 56, clone : create a new thread in the current process.
  */
@@ -51,5 +63,7 @@ u64 systexit(u64 rc,u64,u64,u64,u64,u64);
    @brief Syscall 61, wait : wait for a child process to die.
  */
 u64 syswait(u64 pid,u64 status,u64,u64,u64,u64);
+
+
 
 #endif

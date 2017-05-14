@@ -28,6 +28,8 @@ namespace video{
     public:
         /// Create window
         Window(Vec2u offset, Vec2u size);
+        /// Delete window
+        virtual ~Window(){}
         /// Draw a line around the window to represent the focus
         void drawEdge(const Color& color);
         /**

@@ -36,7 +36,18 @@ void thread(){
 
 int main(){
     printf("[Init] Init start\n");
-    void* test = malloc(1024);
+    int nfd = dup(1);
+    printf("nfd : %d",nfd);
+
+    FILE* f = (FILE*)&nfd;
+    fprintf(f,"hey");
+
+    int i = 42;
+    dup2(1,42);
+
+    FILE* f2 = (FILE*)&i;
+    fprintf(f2, "copy by dup2");
+    /*void* test = malloc(1024);
 
     pid_t t = clone(thread,(char*)test +1024);
     printf("[init] Created thread %d\n",t);
@@ -69,7 +80,11 @@ int main(){
 
     while(1);
 
-    _texit(42);
+    _texit(42);*/
+
+
+    printf("[Init] Init end\n");
+    while(1);
 
     return factorial(5);
 }

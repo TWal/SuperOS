@@ -125,6 +125,7 @@ public :
     /// Add a child
     void addChild(Process* pro);
     void orphan(); ///< Call to orphan a process (become init child).
+    u32 getFreeFD(); ///< Return a free file descriptor
 };
 
 

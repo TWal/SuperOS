@@ -7,6 +7,8 @@ void syscallFill(){
     handlers[SYSREAD] = sysread;
     handlers[SYSWRITE] = syswrite;
     handlers[SYSBRK] = sysbrk;
+    handlers[SYSDUP] = sysdup;
+    handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
     handlers[SYSFORK] = sysfork;
     handlers[SYSEXIT] = sysexit;
@@ -60,6 +62,24 @@ u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
 }
 
 
+u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    u32 newfd = pro->getFreeFD();
+    if(pro->_fds.size() <= oldfd) return - EBADF;
+    if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
+    pro->_fds[newfd] = pro->_fds[oldfd];
+    return newfd;
+}
+
+u64 sysdup2(u64 oldfd, u64 newfd, u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(pro->_fds.size() <= oldfd) return - EBADF;
+    if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
+    pro->_fds[newfd] = pro->_fds[oldfd];
+    return newfd;
+}
 
 u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
     return schedul.clone(rip,rsp);

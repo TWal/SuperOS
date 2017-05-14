@@ -245,3 +245,7 @@ void Process::orphan(){
     _parent = init;
     init->addChild(this);
 }
+
+u32 Process::getFreeFD(){
+    return _fds.size();
+}

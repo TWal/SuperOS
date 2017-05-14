@@ -62,6 +62,38 @@ size_t write(int fd, const void* buf, size_t count){
     return res;
 }
 
+int dup(int oldfd){
+    int res;
+    asm volatile(
+        "mov $32, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(oldfd)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int dup2(int oldfd, int newfd){
+    int res;
+    asm volatile(
+        "mov $33, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(oldfd), "S"(newfd)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
 pid_t waitpid(pid_t p, int* status){
     int res;
     asm volatile(
