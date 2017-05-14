@@ -11,7 +11,7 @@ Syscalls
     - opentwin
     - futex
     - pipe
-    - dup(2)
+    - *dup(2)
     - resizeWin
     - fstat
     - getpid

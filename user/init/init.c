@@ -40,13 +40,17 @@ int main(){
     printf("nfd : %d",nfd);
 
     FILE* f = (FILE*)&nfd;
-    fprintf(f,"hey");
+    fprintf(f,"hey\n");
 
     int i = 42;
     dup2(1,42);
 
     FILE* f2 = (FILE*)&i;
-    fprintf(f2, "copy by dup2");
+    fprintf(f2, "copy by dup2\n");
+
+    close(nfd);
+    printf("rc : %d",fprintf(f,"hey\n"));
+    printf("errno %d",errno);
     /*void* test = malloc(1024);
 
     pid_t t = clone(thread,(char*)test +1024);

@@ -7,10 +7,15 @@
 extern "C" {
 #endif
 
+    enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 4, O_CREAT = 8, O_TRUNC = 16, O_APPEND = 32};
+
     typedef unsigned short pid_t;
 
     size_t read(int fd, void* buf, size_t count);
     size_t write(int fd, const void* buf, size_t count);
+
+    int open(const char* path, int flags);
+    int close(int fd);
 
     int dup(int oldfd);
     int dup2(int oldfd, int newfd);

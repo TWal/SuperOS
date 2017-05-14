@@ -30,8 +30,8 @@ extern "C" {
     // gets is deprecated(C++) / out of standard (C).
     int puts(const char* str);
     int vfprintf (FILE* file, const char * format, va_list ap);
-    void fprintf(FILE* file, const char* format, ...);
-    void printf(const char* format, ...);
+    int fprintf(FILE* file, const char* format, ...);
+    int printf(const char* format, ...);
 
 
     size_t fread(void* buf, size_t size, size_t count, FILE* stream);

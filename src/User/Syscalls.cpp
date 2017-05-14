@@ -6,6 +6,7 @@
 void syscallFill(){
     handlers[SYSREAD] = sysread;
     handlers[SYSWRITE] = syswrite;
+    handlers[SYSCLOSE] = sysclose;
     handlers[SYSBRK] = sysbrk;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
@@ -16,15 +17,15 @@ void syscallFill(){
     handlers[SYSWAIT] = syswait;
 }
 
-u64 sread(Thread*t,uint fd,void* buf,u64 count){
+u64 sread(Thread*t, uint fd, void* buf, u64 count){
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
-    if(pro->_fds[fd].empty()) return -EBADF;
+    if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd]->check(Stream::READABLE)) return -EBADF;
     return pro->_fds[fd]->read((void*)buf,count); // UserMem must still be active
 }
 
-u64 sysread(u64 fd,u64 buf,u64 count,u64,u64,u64){
+u64 sysread(u64 fd, u64 buf, u64 count, u64,u64,u64){
     Thread* t = schedul.enterSys();
     //fprintf(stderr,"sysread by %d on %lld to %p with size %lld\n",
     //       t->getTid(),fd,buf,count);
@@ -34,15 +35,15 @@ u64 sysread(u64 fd,u64 buf,u64 count,u64,u64,u64){
     return tmp;
 }
 
-u64 swrite(Thread*t,uint fd,const void* buf,u64 count){
+u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
-    if(pro->_fds[fd].empty()) return -EBADF;
+    if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
     return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
 }
 
-u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
+u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     Thread* t = schedul.enterSys();
     //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
     //        t->getTid(),fd,buf,count);
@@ -51,6 +52,22 @@ u64 syswrite(u64 fd,u64 buf,u64 count,u64,u64,u64){
     //       t->getTid(),fd,buf,count,tmp);
     return tmp;
 }
+
+enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 4, O_CREAT = 8, O_TRUNC = 16, O_APPEND = 32};
+u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
+    const char* path = reinterpret_cast<const char*>(upath);
+    
+}
+
+u64 sysclose(u64 fd, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(pro->_fds.size() <= fd) return - EBADF;
+    if(pro->_fds[fd].empty()) return - EBADF;
+    pro->_fds[fd] = FileDescriptor();
+    return 0;
+}
+
 
 u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();

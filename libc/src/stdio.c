@@ -214,18 +214,20 @@ int vfprintf (FILE* file, const char * s, va_list ap){
 }
 
 // vsprintf
-void fprintf(FILE* file, const char* format, ...){
+int fprintf(FILE* file, const char* format, ...){
     va_list ap;
     va_start(ap, format);
-    vfprintf(file,format, ap);
+    int i = vfprintf(file,format, ap);
     va_end(ap);
+    return i;
 }
 
-void printf(const char*format,...){
+int printf(const char*format,...){
     va_list ap;
     va_start(ap, format);
-    vfprintf(stdout,format, ap);
+    int i = vfprintf(stdout,format, ap);
     va_end(ap);
+    return i;
 }
 
 size_t fread(void* buf, size_t size, size_t count, FILE* stream) {

@@ -62,6 +62,21 @@ size_t write(int fd, const void* buf, size_t count){
     return res;
 }
 
+int close(int fd){
+    int res;
+    asm volatile(
+        "mov $3, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
 int dup(int oldfd){
     int res;
     asm volatile(
