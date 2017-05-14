@@ -38,6 +38,7 @@ InterruptTable::InterruptTable(){
 }
 
 void InterruptTable::init(){
+    assert(this == &idt);
     for(u16 i = 0 ; i < 256 ; ++i){
         IDT[i].setAddr(reinterpret_cast<void*>(intIDT[i]));
         intIDT[i] = nullptr;
@@ -65,15 +66,23 @@ void InterruptTable::addInt(u8 i,interFuncER f){
     params[i].hasErrorCode = true;
     IDT[i].present = true;
 }
+
 void InterruptTable::addIntAsm(u8 i,void* f){
     params[i].isAssembly = true;
     IDT[i].present = true;
     IDT[i].setAddr(f);
 }
 
+void InterruptTable::setTrapGate(u8 i){
+    IDT[i].isTrap = true;
+}
+void InterruptTable::setInterruptGate(u8 i){
+    IDT[i].isTrap = false;
+}
+
 void InterruptTable::allPresent(){
     for(u16 i = 0 ; i < 256 ; ++i){
-        IDT[i].present =true;
+        IDT[i].present = true;
     }
 }
 

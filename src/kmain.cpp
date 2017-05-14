@@ -190,7 +190,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     gdt.init();
     info(Init,"Setup interrupts");
     idt.init();
-    idt.addInt(0, div0); // adding various interruption handlers
+    idt.addInt(0, div0); // adding various exception handlers
     idt.addInt(6, invalidOpcode);
     idt.addInt(8, doublefault);
     idt.addInt(10, invalidtss);

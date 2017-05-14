@@ -63,6 +63,7 @@ void syscallInit(){
     handlers[SYSTEST] = systest;
 
     idt.addInt(0x80,syscallInt);
+    idt.setTrapGate(0x80);
 }
 
 /// Save current syscall context in Context::lastContext.

@@ -21,6 +21,7 @@ void Scheduler::init(Thread* initThread){
 
     //activate timer interrupts
     idt.addInt(0x20,::timerHandler);
+    idt.setTrapGate(0x20);
     pic.activate(Pic::TIMER);
 
     //activate tid bitset;
