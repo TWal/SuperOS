@@ -124,6 +124,8 @@ class Directory : public File {
         virtual FileType getType() const;
         ///Get a file in the directory. Returns nullptr when it does not exists
         virtual File* operator[](const std::string& name) = 0;
+        ///Get the file at `path`
+        File* resolvePath(const std::string& path);
 
         virtual void* open() = 0; ///< Like opendir
         virtual dirent* read(void* d) = 0; ///< Like readdir

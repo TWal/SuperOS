@@ -1,4 +1,5 @@
 #include "PipeStream.h"
+#include <errno.h>
 
 
 /*  ____  _            ____  _

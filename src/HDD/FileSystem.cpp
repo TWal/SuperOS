@@ -45,5 +45,17 @@ bool Directory::isEmpty() {
     return res;
 }
 
+File* Directory::resolvePath(const std::string& path) {
+    std::vector<std::string> names = split(path, '/', false);
+    File* cur = this;
+    for(const std::string& name : names) {
+        if(cur == nullptr) return nullptr;
+        if(cur->getType() != FileType::Directory) return nullptr;
+        Directory* d = static_cast<Directory*>(cur);
+        cur = (*d)[name];
+    }
+    return cur;
+}
+
 } //end of namespace HDD
 

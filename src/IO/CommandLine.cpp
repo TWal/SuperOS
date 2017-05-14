@@ -44,7 +44,7 @@ void CommandLine::init(table_type table){
             return;
         }
         if(args.empty()) return;
-        HDD::File* f = (*cl->pwd)[args[0]];
+        HDD::File* f = cl->pwd->resolvePath(args[0]);
         if(f == nullptr) {
             printf("%s doesn't exist in current directory\n",args[0].c_str());
             return;
