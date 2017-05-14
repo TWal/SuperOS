@@ -1,8 +1,8 @@
 \documentclass[12pt]{report}
 
-\usepackage[utf8]{inputenc} 
-\usepackage[T1]{fontenc}      
-\usepackage[francais]{babel} 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -144,11 +144,20 @@ Les détails sont dans la page \verb$Virtual mappings$ de la documentation.
 
 \section{HDD : Interface ATA et ext2}
 
-TODO théophile
+ATA : TODO thibaut
+
+Nous avons commencé par faire un driver FAT en lecture seule, en se disant que c'est un système de fichier simple, et donc que ça serait relativement agréable à coder.
+Grave erreur.
+Nous avons donc décidé de nous tourner vers un système de fichier qui nous agresse moins intellectuellement : l'ext2.
+
+Nous gérons donc la lecture et l'écriture de fichiers et dossiers. Nous ne gérons pas les liens symboliques.
+Nous ne gérons pas non plus les différentes dates associées à chaque fichiers, puisque nous ne gérons pas le décodage de l'horloge CMOS.
+
+Nous avons fait des fonctions pour lire et écrire le contenu des inodes, qui sont identiques à celles pour lire et écrire dans des fichiers, et qui sont utilisées pour lire le contenu des dossiers.
 
 \section{Input : clavier et souris}
 
-TODO théophile
+Nous gérons le clavier et la souris via l'interface PS/2
 
 \section{Output : écran et BSOD}
 
@@ -225,7 +234,54 @@ TODO théophile
 \section{Shell}
 
 TODO théophile
+
 \chapter{Difficultés rencontrées}
+
+\section{GCC et ses optimisations du futur}
+
+gcc qui utilise les variables passées en argument pour des variables temporaires alors que c'est les registres à remettre à la fin de l'interruption (même si c'est volatile const etc)
+
+gcc qui optimise le code sans prendre en compte les interruptions et qui fait bugger le clavier
+
+\section{Stack overflows}
+
+Stack overflow qui écrase le code du kernel
+
+Stack overflow qui triple-fault
+
+\section{Integer overflows}
+
+Bug de \%32 sur le LBA
+
+Partition::getSize qui renvoie un size\_t mais qui l'obtient en faisant des opérations 32-bit
+
+Ext2::blockSize en u32
+
+\section{Petits oublis qui n'ont pas l'air important mais en fait si}
+
+synchronisation du disque dur tous les 512 octets
+
+invlpg
+
+\section{Le monde en dehors de l'émulateur}
+
+Sur un vrai PC c'était super lent car on avait le writethrough
+
+Le driver PS/2 <-> usb fait n'importe quoi sur un certain PC
+
+\section{Autre}
+
+incohérence des spécifications pour la communication avec le disque dur
+
+dynamic\_cast qui marche sur une classe déclarée dans une fonction mais pas dans un header (wtf gcc)
+
+fsck qui fait son sherlock holmes et qui détruit tout ce que t'as fait en sens inverse
+
+Le linker 64-bit met tout le code dans le fichier après 2Mo alors que la convention multiboot a besoin d'un truc précis
+
+Mettre du code 32 bit dans un code 64 bit
+
+Dans un vector, les objets sont pas forcément construits et ça fait n'importe quoi
 
 
 \bibliographystyle{plain}
