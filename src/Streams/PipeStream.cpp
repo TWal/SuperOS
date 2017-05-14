@@ -42,6 +42,12 @@ size_t PipeStream::write(const void* buf, size_t count) {
     for(size_t i = 0; i < count; ++i) {
         _deque.push_front(cbuf[i]);
     }
+    if(_out){
+        _out->free();
+    }
+    else{
+        return - EPIPE;
+    }
     return count;
 }
 
@@ -93,14 +99,17 @@ size_t PipeStreamIn::write(const void* buf, size_t count) {
 */
 
 PipeStreamOut::PipeStreamOut(PipeStream* ps) :
-    _ps(ps) {}
+    _ps(ps) {
+    ps->_out = this;
+}
 
 PipeStreamOut::~PipeStreamOut() {
     _ps->decrRef();
+    _ps->_out = nullptr;
 }
 
 u64 PipeStreamOut::getMask() const {
-    return READABLE;
+    return READABLE | WAITABLE;
 }
 
 size_t PipeStreamOut::read(void* buf, size_t count) {

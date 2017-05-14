@@ -15,7 +15,7 @@ class Stream : public Waitable{
 public:
     Stream() :Waitable(){};
     enum{ // Functionality
-        READABLE = 1, WRITABLE = 2, SEEKABLE = 4, APPENDABLE = 8
+        READABLE = 1, WRITABLE = 2, SEEKABLE = 4, APPENDABLE = 8, WAITABLE = 16,
     };
     /// get the functionalities of this Stream.
     virtual u64 getMask() const = 0;
@@ -30,7 +30,8 @@ public:
        @brief Read as mush character as possible right now.
 
        If return value is 0, it does not mean @ref eof. It can be just that there is
-       nothing to read right now.
+       nothing to read right now. If this is the case, (read return 0 and eof return
+       false), the flags WAITABLE must be set. (sysread will make an assert)
 
        A object of class Waiting can be hooked to the stream with
        value @ref WAITREAD to wait for something to read.

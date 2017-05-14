@@ -5,7 +5,10 @@
 #include <deque>
 #include "Stream.h"
 
+class PipeStreamOut;
+
 class PipeStream : public Stream {
+    friend PipeStreamOut;
     public:
         PipeStream();
         virtual ~PipeStream();
@@ -18,8 +21,9 @@ class PipeStream : public Stream {
 
     private:
         std::deque<char> _deque;
+        PipeStreamOut* _out;
         bool _eof;
-        int _nbRef;
+        u8 _nbRef;
 };
 
 class PipeStreamIn : public Stream {
