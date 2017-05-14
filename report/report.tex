@@ -237,51 +237,75 @@ TODO théophile
 
 \chapter{Difficultés rencontrées}
 
-\section{GCC et ses optimisations du futur}
+\section*{GCC et ses optimisations du futur}
 
+Quand on était en 32-bit, lors d'un interruption, on mettait sur pile les registres à sauvegarder, puis on appellait une fonction qui prenait en argument une structure contenant les valeurs des différents registres.
+Comme en C une telle structure est passée par copie, gcc a jugé qu'il pouvait la modifier pour gagner de la place sur la pile.
+C'est gênant car après on dépile ces registres pour reprendre le cours de l'exécution après l'interruption.
+On a essayé diverses combinaisons de \verb$volatile$ et \verb$const$ mais ça n'a rien changé.
+Finalement, on a empilé \verb$rsp$ pour passer une référence en argument, comme ça gcc ne peut pas modifier nos registres
 gcc qui utilise les variables passées en argument pour des variables temporaires alors que c'est les registres à remettre à la fin de l'interruption (même si c'est volatile const etc)
 
-gcc qui optimise le code sans prendre en compte les interruptions et qui fait bugger le clavier
+Dans le code du clavier, on a une queue qui contient les différents scancodes qui arrivent du clavier. Dans la fonction \verb$poll$ qui attends une touche, on avait le comportement suivant :
+\begin{itemize}
+    \item Tant que la queue est vide, attendre une interruption (\verb$asm volatile("hlt");$)
+    \item Retirer le premier élément de la file (via un appel de fonction)
+\end{itemize}
 
-\section{Stack overflows}
+Pour retirer le premier élément de la file, on a un \verb$assert$ qui vérifie que la file n'est pas vide.
+Comme gcc ne s'attends pas à ce qu'une interruption puisse changer la mémoire actuelle, il a optimisé le code en :
+\begin{itemize}
+    \item Si la queue est vide, faire une boucle infinie de \verb$hlt$
+    \item Sinon, on retire le premier élément de la file, en inlinant la fonction en enlevant l'assert (qui est inutile puisque la file n'est pas vide)
+\end{itemize}
+Notre solution a été de compiler cette portion du code en \verb$-O0$ mais avec plus de recul, on aurait du utiliser \verb$asm volatile("hlt" : : : "memory")$
 
-Stack overflow qui écrase le code du kernel
+\section*{Stack overflows}
 
-Stack overflow qui triple-fault
+Au début, on avait notre pile juste au dessus du noyau. Un jour, on a eu un bug qui a fait un récursion infinie, et donc la pile a commencé à écrire sur les données et le code du noyau.
 
-\section{Integer overflows}
+Ensuite, on a alloué proprement la pile dans la mémoire virtuelle, avec rien en dessous. Quand on faisait une récursion infinie, au bout d'un moment ça lançait une page fault. Donc ça poussait des informations sur la pile. Donc ça faisait un page-fault. Donc ça faisait une triple-fault, l'ordinateur redémarre.
 
-Bug de \%32 sur le LBA
+\section*{Integer overflows}
 
-Partition::getSize qui renvoie un size\_t mais qui l'obtient en faisant des opérations 32-bit
+On a eu plusieurs bugs dans le disque dur, où à des moments on utilisait des entiers 32-bit et pas 64-bits.
+Plus précisément, on multipliait des entiers 32-bits et ça ne faisait pas des entiers 64 bits.
+On a eu ce bug dans les cas suivants :
 
-Ext2::blockSize en u32
+\begin{itemize}
+    \item Bas niveau, quand on prenait un LBA qu'on multipliait par 512
+    \item \verb$Partition::getSize$ qui renvoie un \verb$size_t$ mais qui l'obtient en faisant un entier 32-bit fois 512
+    \item la variable \verb$blockSize$ de l'ext2 était en 32-bit, et les numéros de block sont en 32-bits
+\end{itemize}
 
-\section{Petits oublis qui n'ont pas l'air important mais en fait si}
+\section*{Petits oublis qui n'ont pas l'air important mais en fait si}
 
-synchronisation du disque dur tous les 512 octets
+Il faut synchroniser le disque dur tous les 512 octets
 
-invlpg
+Quand on modifie le paging, il faut faire \verb$invlpg$ pour invalider le cache sinon ça fait n'importe quoi
 
-\section{Le monde en dehors de l'émulateur}
+\section*{Le monde en dehors de l'émulateur}
 
-Sur un vrai PC c'était super lent car on avait le writethrough
+Sur un vrai PC on avait des gros problème de lenteur car on avait activé le writethrough par défaut et donc ça écrivait tout le temps en RAM (sans passer par le cache)
 
 Le driver PS/2 <-> usb fait n'importe quoi sur un certain PC
 
-\section{Autre}
+\section*{Le code 64-bit}
 
-incohérence des spécifications pour la communication avec le disque dur
+C'est difficile de mettre du code 32 bit dans un code 64 bit, et le linker 64-bit met tout le code dans le fichier après 2Mo alors que la convention multiboot a besoin d'un truc précis.
+On a résolu ce problème en faisant un loader maison.
 
-dynamic\_cast qui marche sur une classe déclarée dans une fonction mais pas dans un header (wtf gcc)
+\section*{Autre}
 
-fsck qui fait son sherlock holmes et qui détruit tout ce que t'as fait en sens inverse
+Dans un vector, les objets sont pas forcément construits et on a eu plein de bugs à cause de ça.
+Par la suite on a mis en place de tests unitaires.
 
-Le linker 64-bit met tout le code dans le fichier après 2Mo alors que la convention multiboot a besoin d'un truc précis
+Les spécifications pour la communication avec le disque dur étaient incohérentes
 
-Mettre du code 32 bit dans un code 64 bit
+\verb$dynamic_cast$ ne marchait pas tout le temps, et on ne comprenait pas quand. On a construit un héritage diamant classique de test sur lequel il ne marchait pas, et en bougeant les structures à l'intérieur de kmain ça s'est mis à marcher...
+La solution a été d'enlever tous les héritages en diamant qu'on avait pour pouvoir utiliser \verb$static_cast$
 
-Dans un vector, les objets sont pas forcément construits et ça fait n'importe quoi
+Lorsqu'on faisait l'écriture sur le disque dur, on testait avec \verb$fsck$ si on avait encore un système de fichiers valide. Pour la suppression, il fallait effacer toute trace du fichier sinon \verb$fsck$ faisait petit à petit toutes les étapes inverses de la suppression.
 
 
 \bibliographystyle{plain}
