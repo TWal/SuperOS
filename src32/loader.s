@@ -97,6 +97,8 @@ startKernel64:
     movq 4(%rsp),%rax
     movl 12(%rsp),%edi
     movl 12(%rsp),%esp          # TODO This is stupid.
+    and $0xfffffffffffffff0, %rsp
+    sub $8,%rsp
     jmp *%rax # launching kernel
 
 

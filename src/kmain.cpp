@@ -86,7 +86,9 @@ void doublefault(const InterruptParamsErr& par){
 
 /// General protection fault exception handler
 void gpfault(const InterruptParamsErr& par){
-    bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
+    printf("General Protection at %p with code %x\n", par.rip, par.errorCode);
+    Workspace::draw();
+    //bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
@@ -97,6 +99,26 @@ void gpfault(const InterruptParamsErr& par){
 */
 void pagefault(const InterruptParamsErr& par){
     bsod("Page fault at %p with code %x accessing %p\n", par.rip, par.errorCode, getCR2());
+    breakpoint;
+    while(true) asm volatile("cli;hlt");
+}
+
+void invalidtss(const InterruptParamsErr& par){
+    bsod("invalid tss at %p with code %x\n", par.rip, par.errorCode);
+    breakpoint;
+    while(true) asm volatile("cli;hlt");
+}
+
+void segNotPresent(const InterruptParamsErr& par){
+    printf("Segment not present at %p with code %x\n", par.rip, par.errorCode);
+    printf("saved cs %x, saved ss %x\n", par.cs, par.oldss);
+    Workspace::draw();
+    breakpoint;
+    while(true) asm volatile("cli;hlt");
+}
+
+void stackSegFault(const InterruptParamsErr& par){
+    bsod("Stack segment fault at %p with code %x\n", par.rip, par.errorCode);
     breakpoint;
     while(true) asm volatile("cli;hlt");
 }
@@ -171,6 +193,9 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     idt.addInt(0, div0); // adding various interruption handlers
     idt.addInt(6, invalidOpcode);
     idt.addInt(8, doublefault);
+    idt.addInt(10, invalidtss);
+    idt.addInt(11, segNotPresent);
+    idt.addInt(12, stackSegFault);
     idt.addInt(13, gpfault);
     idt.addInt(14, pagefault);
     info(Init,"Enabling interrupts");

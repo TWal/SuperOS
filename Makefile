@@ -388,6 +388,7 @@ clean: cleanunit
 	rm -f init
 	rm -f diskout.img
 	rm -f index.html
+	make clean -C rapport
 
 
 mrproper: clean
@@ -403,7 +404,7 @@ dasml:
 	objdump -D -C loader.elf > disassemblyl
 
 count:
-	cloc libc libc++ src src32 unitTests user -lang-no-ext="C/C++ Header"
+	cloc libc libc++ src src32 unitTests user/start user/init user/ttsh/src -lang-no-ext="C/C++ Header"
 
 dofsck:
 	sudo fsck.$(FSTYPE) $(FSCKARGS) $(LOOPDEV)p1
@@ -414,6 +415,9 @@ fsck: load dofsck unload
 doc:
 	doxygen Doxyfile
 	ln -sf doc/html/index.html index.html
+
+report:
+	make -C rapport
 
 include $(DEPF)
 

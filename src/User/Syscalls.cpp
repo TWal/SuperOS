@@ -18,8 +18,8 @@ u64 sread(Thread*t,uint fd,void* buf,u64 count){
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
     if(pro->_fds[fd].empty()) return -EBADF;
-    if(!pro->_fds[fd]->check(Stream::WRITABLE)) return -EBADF;
-    return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
+    if(!pro->_fds[fd]->check(Stream::READABLE)) return -EBADF;
+    return pro->_fds[fd]->read((void*)buf,count); // UserMem must still be active
 }
 
 u64 sysread(u64 fd,u64 buf,u64 count,u64,u64,u64){

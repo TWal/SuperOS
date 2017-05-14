@@ -22,7 +22,8 @@ Smart bsod.
 
 Fix on hardware
     - keyboard Alt-Gr -- removed
-    - HDD on big partitions
+    - *HDD on big partitions
+    - Segment 138 when rolling your head on keyboard.
 
 BONUS:
     - signals

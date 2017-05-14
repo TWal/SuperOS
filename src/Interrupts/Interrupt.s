@@ -31,8 +31,13 @@ geneInt: # by default interruption on user stack.
     push %r15
     push $0                     #for mmx saving if needed
     mov %rsp,%rdi
+    andq $0xfffffffffffffff0, %rsp
+    push %rdi
+    sub $8,%rsp
     movabs $intIDT, %rbp
     call *(%rbp,%rbx,8)         #%rbx is callee-saved
+    add $8,%rsp
+    pop %rsp
     add $8,%rsp
     pop %r15
     pop %r14

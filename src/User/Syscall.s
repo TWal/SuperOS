@@ -25,13 +25,14 @@ syscall:
     push %r14
     push %r15
     push $0                     # pointer for saving x87/SSE/MMX
+    push $0                     # 16-bytes aligned stack for x64 ABI
     call syssave
     mov handlers,%rbx
     mov $-1,%rcx
     testq $-1,(%rbx,%rax,8)     # test if the pointer is activated (non zero)
     cmovzq %rcx,%rax              # if not call handler -1
     call *(%rbx,%rax,8)
-    add $8,%rsp
+    add $0x10,%rsp
     pop %r15
     pop %r14
     pop %r13

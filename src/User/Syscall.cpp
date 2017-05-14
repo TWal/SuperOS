@@ -18,7 +18,7 @@ syscallHandler * const handlers = systable +1; // handlers[-1] is thus valid
 
 /// Handler for syscall -1.
 void syserror(){
-    printf("Current program has made an invalid syscall\n");
+    bsod("Current program has made an invalid syscall\n");
     // call exit(1) , do not return.
     stop;
 }

@@ -195,7 +195,7 @@ Process::~Process(){
         p->orphan();
     }
     schedul.getG(_gid)->remProcess(this);
-    _parent->_sons.erase(this);
+    _parent->_sons.erase(this); // TODO Does the parent does it already ?
 }
 
 void Process::terminate(u64 returnCode){

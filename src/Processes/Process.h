@@ -133,13 +133,6 @@ public :
 
 
 
-/**
-   @brief Initialize process system
-
-   Currently just setup system call like read, write, brk , ...
-*/
-void ProcessInit();
-
 
 /**
    @page proc Process System

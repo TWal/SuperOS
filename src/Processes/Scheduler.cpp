@@ -43,6 +43,7 @@ void Scheduler::init(Thread* initThread){
     for(auto tid : _threadFIFO){
         debug(Schedul,"%d ",tid);
     }//printf("\n");
+
     if(_runTryNum >= _threadFIFO.size()){
         // If all processes are waiting
         debug(Schedul,"Idle\n");
