@@ -210,7 +210,8 @@ void Process::terminate(u64 returnCode){
         info(Proc,"init died with code %lld",returnCode);
         kend(); // shutdown.
     }
-    free(); // free the waiting ressources.
+    assert(_parent);
+    _parent->free(); // free the parent process in case it is waiting.
     /*for(auto fd : _fds){
         fd->drop();
         }*/

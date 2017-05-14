@@ -53,12 +53,8 @@ u64 Thread::waitp(u64* status){
             return res;
         }
     }
-    set<Waitable*> s;
-    for(auto pro : _process->_sons){
-        s.insert(pro);
-    }
     u16 tid = _tid;
-    wait(s,[status,tid](Waiting* th,Waitable*){
+    wait({_process},[status,tid](Waiting* th,Waitable*){
             debug(Proc,"Checker for waitp in %d",tid);
             th->accept();
             static_cast<Thread*>(th)->getProcess()->prepare();
@@ -81,11 +77,10 @@ u64 Thread::waitp(Process* pro,u64* status){
     }
     else{
         // we switch to waiting mode
-        wait({pro},[status](Waiting* th,Waitable* pro){
+        wait({_process},[status,pro](Waiting* th,Waitable*){
                 th->accept();
                 static_cast<Thread*>(th)->getProcess()->prepare();
-                static_cast<Thread*>(th)->waitp(
-                    static_cast<Process*>(pro),status);
+                static_cast<Thread*>(th)->waitp(pro,status);
                     });
 
         // we are no longer runnable

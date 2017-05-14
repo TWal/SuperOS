@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include "../log.h"
 
 class Thread;
 class Waiting;
@@ -20,7 +21,7 @@ class Waiting;
 class Waitable{
     friend Waiting;
     std::set<Waiting*> _waitings;
-protected:
+public:
     /**
        @brief The deriving class must call this when something happen.
 
@@ -28,7 +29,6 @@ protected:
        or not.
     */
     void free();
-public:
     /// Create new Waitable object with nb reason to wait.
     explicit Waitable() : _waitings(){};
     ~Waitable(){
@@ -73,7 +73,7 @@ public:
         _checker = checker;
         _waiting = std::move(waiting);
         for(auto w : _waiting){
-            printf("Registering Waiting %p to Waitable %p",this,w);
+            debug(Proc,"Registering Waiting %p to Waitable %p",this,w);
             w->_waitings.insert(this);
         }
     }
@@ -81,7 +81,7 @@ public:
     /// Check if we are still waiting.
     inline bool OK(){
         if(!_waited) return _waiting.empty();
-        printf("Non trivial OK on %p\n",this);
+        debug(Proc,"Non trivial OK on %p",this);
         auto tmp = _waited;
         _waited = nullptr;
         _checker(this,tmp);
@@ -101,7 +101,7 @@ public:
 
 
 inline void Waitable::free(){
-    printf("waitable::Free : %p with %llu waiters\n",this,_waitings.size());
+    debug(Proc,"waitable::Free : %p with %llu waiters\n",this,_waitings.size());
     for(auto w : _waitings){
         w->_waited = this;
     }
