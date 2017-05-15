@@ -7,7 +7,7 @@
 #include "../Streams/Stream.h"
 #include "../HDD/FileSystem.h"
 
-Stream* file2Stream(HDD::File* f);
+std::unique_ptr<Stream> file2Stream(std::unique_ptr<HDD::File>&& f);
 std::pair<std::string,std::string> splitFileName(std::string s);
 
 #endif

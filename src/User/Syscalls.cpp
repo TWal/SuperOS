@@ -101,17 +101,19 @@ u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     if(!pro->_usermem.in((void*)upath)) return -EFAULT;
     string s = reinterpret_cast<const char*>(upath);
     if(s.empty()) return -EACCESS;
-    HDD::File* f;
-    HDD::Directory* d;
+    std::unique_ptr<HDD::File> f;
+    std::unique_ptr<HDD::Directory> d;
     if(s[0] == '/'){
         assert(HDD::VFS::vfs);
         d = HDD::VFS::vfs->getRoot();
     }
     else{
         assert(pro->_wd);
-        d = pro->_wd;
+        d = std::unique_ptr<HDD::Directory>(pro->_wd.get());
+        d.dontDelete();
     }
 
+    //if the first character is `/`, resolvePath ignores it
     f = d->resolvePath(s);
     if(!f){
         if(flags & O_CREAT){
@@ -120,7 +122,7 @@ u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
             if(f->getType() != HDD::FileType::Directory){
                 return -EACCESS;
             }
-            d = static_cast<HDD::Directory*>(f);
+            d = std::lifted_static_cast<HDD::Directory>(std::move(f));
             d->addEntry(p.second,0,0, S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP
                         | S_IRUSR | S_IWUSR | S_IFREG);
             f = (*d)[p.second];
@@ -131,7 +133,7 @@ u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
 
     u32 newfd = pro->getFreeFD();
     if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
-    pro->_fds[newfd] = FileDescriptor(file2Stream(f));
+    pro->_fds[newfd] = FileDescriptor(file2Stream(std::move(f)));
     pro->_fds[newfd]._mask = 0;
     if(flags & O_RDONLY) pro->_fds[newfd]._mask |= Stream::READABLE | Stream::WAITABLE;
     if(flags & O_WRONLY) pro->_fds[newfd]._mask |= Stream::WRITABLE | Stream::APPENDABLE;
@@ -169,8 +171,8 @@ u64 syspipe(u64 fd2, u64,u64,u64,u64,u64){
     res[1] = pro->getFreeFD();
     if(pro->_fds.size() <= res[1]) pro->_fds.resize(res[1]+1);
     PipeStream* ps = new PipeStream();
-    pro->_fds[res[0]] = FileDescriptor(new PipeStreamOut(ps));
-    pro->_fds[res[1]] = FileDescriptor(new PipeStreamIn(ps));
+    pro->_fds[res[0]] = FileDescriptor(std::unique_ptr<Stream>(new PipeStreamOut(ps)));
+    pro->_fds[res[1]] = FileDescriptor(std::unique_ptr<Stream>(new PipeStreamIn(ps)));
     return 0;
 }
 
@@ -211,15 +213,16 @@ u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64){
     if(!pro->_usermem.in((void*)path)) return -EFAULT;
     info(Syscalls,"Exec in %d to %s", t->getTid(),(char*)path);
     string s = reinterpret_cast<const char*>(path);
-    HDD::File* f;
-    HDD::Directory* d;
+    std::unique_ptr<HDD::File> f;
+    std::unique_ptr<HDD::Directory> d;
     if(s[0] == '/'){
         assert(HDD::VFS::vfs);
         d = HDD::VFS::vfs->getRoot();
     }
     else{
         assert(pro->_wd);
-        d = pro->_wd;
+        d = std::unique_ptr<HDD::Directory>(pro->_wd.get());
+        d.dontDelete();
     }
 
     f = d->resolvePath(s);
@@ -241,7 +244,7 @@ u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64){
     // all is OK, ready to exec
     schedul.stopCurent();
     pro->clear();
-    Thread* nt = pro->loadFromBytes(static_cast<HDD::RegularFile*>(f));
+    Thread* nt = pro->loadFromBytes(static_cast<HDD::RegularFile*>(f.get()));
     pro->prepare();
     std::vector<void*> argvSave2;
     for(const auto& s : argvSave){

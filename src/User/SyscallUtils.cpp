@@ -3,17 +3,17 @@
 
 using namespace std;
 
-Stream* file2Stream(HDD::File* f)
+std::unique_ptr<Stream> file2Stream(std::unique_ptr<HDD::File>&& f)
 {
     switch(f->getType()){
         case HDD::FileType::Directory:
             return nullptr;
         case HDD::FileType::RegularFile:
-            return new BytesStream(static_cast<HDD::RegularFile*>(f));
+            return std::unique_ptr<Stream>(new BytesStream(std::lifted_static_cast<Bytes>(std::lifted_static_cast<HDD::RegularFile>(std::move(f)))));
         case HDD::FileType::BlockDevice:
-            return new BytesStream(static_cast<HDD::BlockDevice*>(f));
+            return std::unique_ptr<Stream>(new BytesStream(std::lifted_static_cast<Bytes>(std::lifted_static_cast<HDD::BlockDevice>(std::move(f)))));
         case HDD::FileType::CharacterDevice:
-            return static_cast<HDD::CharacterDevice*>(f);
+            return std::lifted_static_cast<Stream>(std::lifted_static_cast<HDD::CharacterDevice>(std::move(f)));
     }
     return nullptr;
 }

@@ -22,11 +22,9 @@ public:
     enum FDtype{EMPTY, STREAM, DIRECTORY, GWINDOW, TWINDOW};
 private:
     u64* _owners;
-    Stream* _str;
-    union{
-        HDD::Directory* _dir;
-        video::Window* _win;
-    };
+    std::unique_ptr<Stream>* _str;
+    std::unique_ptr<HDD::Directory>* _dir;
+    video::Window* _win;
     FDtype _type;
     void free();
     void drop();
@@ -34,7 +32,7 @@ public :
     u64 _mask = -1;
     /// get the functionalities of this FileDescriptor.
     u64 getMask() const{
-        if(_str) return _mask & _str->getMask();
+        if(_str) return _mask & (*_str)->getMask();
         else return 0;
     }
     /// Check for a specific functionality in the stream
@@ -48,14 +46,14 @@ public :
 
        Take ownership of the pointer str.
      */
-    FileDescriptor(Stream* str);
+    FileDescriptor(std::unique_ptr<Stream>&& str);
 
     /**
        @brief Create a file descriptor on a directory.
 
        Take ownership of the pointer dir.
     */
-    FileDescriptor(HDD::Directory* dir);
+    FileDescriptor(std::unique_ptr<HDD::Directory>&& dir);
 
     /**
        @brief Create a file descriptor on a graphical window.
@@ -85,16 +83,16 @@ public :
     bool hasStream(){
         return _type == STREAM or _type == TWINDOW or _type == GWINDOW;
     }
-    Stream* get(){ return _str;}
+    Stream* get(){ return _str->get();}
     // Act on underlying stream, crash if there is no underlying stream.
     Stream* operator->(){
         assert(_str && "File Descriptor on non-Stream");
-        return _str;
+        return _str->get();
     }
 
     /// Get pointer to the contained directory or nullptr if there is no contained directory
-    HDD::Directory * getDir(){
-        if(_type == DIRECTORY) return _dir;
+    HDD::Directory* getDir(){
+        if(_type == DIRECTORY) return _dir->get();
         else return nullptr;
     }
 

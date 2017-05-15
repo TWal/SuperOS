@@ -4,23 +4,25 @@
 FileDescriptor::FileDescriptor() : _owners(nullptr),_str(nullptr),_type(EMPTY){
 }
 
-FileDescriptor::FileDescriptor(Stream* str)
-    : _owners(new u64(0)), _str(str), _type(STREAM){
+FileDescriptor::FileDescriptor(std::unique_ptr<Stream>&& str)
+    : _owners(new u64(0)), _str(new std::unique_ptr<Stream>(std::move(str))), _type(STREAM){
     *_owners = 1;
 }
 
-FileDescriptor::FileDescriptor(HDD::Directory* dir)
-    : _owners(new u64(0)), _dir(dir), _type(DIRECTORY){
+FileDescriptor::FileDescriptor(std::unique_ptr<HDD::Directory>&& dir)
+    : _owners(new u64(0)), _dir(new std::unique_ptr<HDD::Directory>(std::move(dir))), _type(DIRECTORY){
     *_owners = 1 ;
 }
 
 FileDescriptor::FileDescriptor(video::GraphWindow* win)
     :_owners(new u64(0)), _win(win), _type(GWINDOW){
     *_owners = 1;
-    _str = new BytesStream(win);
+    std::unique_ptr<Bytes> winBytes(win);
+    winBytes.dontDelete();
+    _str = new std::unique_ptr<Stream>(new BytesStream(std::move(winBytes)));
 }
 FileDescriptor::FileDescriptor(video::TextWindow* win)
-    :_owners(new u64(0)), _str(win), _win(win), _type(TWINDOW){
+    :_owners(new u64(0)), _str(new std::unique_ptr<Stream>(win)), _win(win), _type(TWINDOW){
     *_owners = 1;
 }
 

@@ -377,19 +377,19 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
         frhello->writeaddr(6, worldString, 6);
         frhello->writeaddr(0, helloString, 6);
 
-        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*fs->getRoot())["tmp"]);
+        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*HDD::VFS::vfs->getRoot())["tmp"]);
         assert(d.get() != nullptr);
         assert(d->getType() == HDD::FileType::Directory);
-        fs->mount(std::move(d), fs3);
+        HDD::VFS::vfs->mount(std::move(d), fs3);
     }
 
     HDD::DevFS* fs4 = new HDD::DevFS;
     {
-        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*fs->getRoot())["dev"]);
+        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*HDD::VFS::vfs->getRoot())["dev"]);
         assert(d.get() != nullptr);
         assert(d->getType() == HDD::FileType::Directory);
         fs4->addHardDrive("sda", first);
-        fs->mount(std::move(d), fs4);
+        HDD::VFS::vfs->mount(std::move(d), fs4);
     }
 
 

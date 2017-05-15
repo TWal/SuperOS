@@ -104,9 +104,10 @@ namespace std {
 
         unique_ptr& operator=(const unique_ptr&) = delete;
 
-        operator bool(){ return _ptr != nullptr;}
+        operator bool() const { return _ptr != nullptr;}
 
         pointer release(){
+            assert(_canDelete);
             pointer p = _ptr;
             _ptr = nullptr;
             return p;
@@ -140,9 +141,9 @@ namespace std {
 
 //TODO: something better
 template<typename U, typename V>
-static std::unique_ptr<U> lifted_static_cast(std::unique_ptr<V> p) {
+static std::unique_ptr<U> lifted_static_cast(std::unique_ptr<V>&& p) {
     bool b = p.canDelete();
-    V* ptr = p.release();
+    V* ptr = b ? p.release() : p.get();
     std::unique_ptr<U> res(static_cast<U*>(ptr));
     if(!b) {
         res.dontDelete();

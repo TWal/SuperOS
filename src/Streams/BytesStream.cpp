@@ -1,7 +1,6 @@
 #include "BytesStream.h"
 
-BytesStream::BytesStream(Bytes * data): _data(data),_addr(0){
-    //assert(data->getSize() > 0);
+BytesStream::BytesStream(std::unique_ptr<Bytes> data): _data(std::move(data)),_addr(0){
 }
 
 size_t BytesStream::read(void* buf,size_t count){
