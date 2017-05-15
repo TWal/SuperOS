@@ -4,6 +4,7 @@
 #include "IO/FrameBuffer.h"
 #include "Interrupts/Interrupt.h"
 #include "Graphics/Screen.h"
+#include "IO/OSFileDesc.h"
 #else
 #include "../src/utility.h"
 #include "../src/IO/FrameBuffer.h"
@@ -20,14 +21,17 @@ u8 inb(u16 port) {
     asm volatile("inb %1; movb %%al, %0" : "=r"(res) : "d"(port) : "%al");
     return res;
 }
+
 void outw(u16 port, u16 data){
     asm volatile("outw %0, %1" : : "a"(data), "d"(port));
 }
+
 u16 inw(u16 port){
     u16 res;
     asm volatile("inw %1; movw %%ax, %0" : "=r"(res) : "d"(port) : "%ax");
     return res;
 }
+
 void wrmsr(u32 num,u64 value){
     asm volatile(
         "wrmsr" :
@@ -36,6 +40,7 @@ void wrmsr(u32 num,u64 value){
         //"%rdx"
         );
 }
+
 u64 rdmsr(u32 num){
     u32 resh,resl;
     asm volatile(
@@ -48,30 +53,72 @@ u64 rdmsr(u32 num){
 
 
 
-u64 rdmsr(u32 num);
-
 #ifdef SUP_OS_KERNEL
-static void drawText(const char* s, video::Vec2u pos, const video::Color& fg, const video::Color& bg) {
+static video::Vec2u drawText(const char* s, size_t count, video::Vec2u pos, const video::Color& fg, const video::Color& bg, uint minX, uint maxX) {
     video::Vec2u size = video::screen.getSize();
-    while(*s) {
-        video::screen.putChar(*s, pos.x, pos.y, *video::Font::def, fg, bg);
+    for(size_t i = 0; i < count; ++i) {
+        if(pos.y >= size.y) {
+            return pos;
+        }
+        if(s[i] == '\n') {
+            pos.x = minX;
+            pos.y += 16;
+            continue;
+        }
+        video::screen.putChar(s[i], pos.x, pos.y, *video::Font::def, fg, bg);
         pos.x += 8;
-        if(pos.x + 8 >= size.x) {
-            pos.x = 0;
+        if(pos.x + 8 >= maxX) {
+            pos.x = minX;
             pos.y += 16;
         }
-        if(pos.y >= size.y) {
-            return;
-        }
-        ++s;
     }
+
+    return pos;
+}
+
+class BsodStream : public Stream {
+    public:
+        BsodStream(uint minX, uint maxX, uint startY, video::Color fg, video::Color bg) :
+            _pos(minX, startY), _minX(minX), _maxX(maxX), _fg(fg), _bg(bg) {}
+
+        u64 getMask() const {
+            return Stream::WRITABLE | Stream::APPENDABLE;
+        }
+
+        size_t write(const void* buf,size_t count) {
+            _pos = drawText((char*)buf, count, _pos, _fg, _bg, _minX, _maxX);
+            OSStreams[2]->write(buf, count);
+        }
+
+    private:
+        video::Vec2u _pos;
+        uint _minX;
+        uint _maxX;
+        video::Color _fg;
+        video::Color _bg;
+};
+
+void drawRectangle(uint thickness, const video::Vec2u& upleft, const video::Vec2u& downright, const video::Color& color) {
+    for(uint x = upleft.x; x <= downright.x; ++x) {
+        for(uint y = 0; y < thickness; ++y) {
+            video::screen.set(x, upleft.y+y, color);
+            video::screen.set(x, downright.y-y, color);
+        }
+    }
+    for(uint y = upleft.y; y <= downright.y; ++y) {
+        for(uint x = 0; x < thickness; ++x) {
+            video::screen.set(upleft.x + x, y, color);
+            video::screen.set(downright.x - x, y, color);
+        }
+    }
+
 }
 
 static video::Color blueline[2000];
 [[noreturn]]void vbsod(const char* s, va_list ap) {
     cli;
-    vfprintf(stderr,s,ap);
     if(!video::screen.isOK()) stop;
+    const uint THICKNESS = 10;
     video::Color bg({142, 0, 0});
     video::Color fg({200, 200, 200});
     for(int i = 0; i < 2000; ++i) {
@@ -79,30 +126,35 @@ static video::Color blueline[2000];
     }
 
     video::Vec2u size = video::screen.getSize();
-    for(uint y = 0; y < size.y; ++y) {
-        video::screen.writeLine(y, 0, size.x, blueline);
+    video::Vec2u start = {3*THICKNESS, 3*THICKNESS};
+    video::Vec2u trueSize = size;
+    size -= video::Vec2u(6*THICKNESS, 6*THICKNESS);
+
+    for(uint y = 0; y < trueSize.y; ++y) {
+        video::screen.writeLine(y, 0, trueSize.x, blueline);
     }
 
     const char* textbsod = "The Blue Screen Of Death";
     const char* texttm = "(tm)";
-    const char* texterror = "Me haz an error!!!";
     const char* textlost = "(btw, you lost)";
 
     video::Vec2u bsodpos = {size.x/2 - 8*uint(strlen(textbsod)/2), size.y/8};
-    drawText(textbsod, bsodpos, fg, bg);
+    drawText(textbsod, 24, start+bsodpos, fg, bg, start.x, start.x+size.x);
 
     video::Vec2u tmpos = {bsodpos.x + 8*(uint)strlen(textbsod), bsodpos.y-8};
-    drawText(texttm, tmpos, fg, bg);
+    drawText(texttm, 4, start+tmpos, fg, bg, start.x, start.x+size.x);
 
-    video::Vec2u lostpos = {size.x - 8*(uint)strlen(textlost) - 1, size.y-16 - 1};
-    drawText(textlost, lostpos, fg, bg);
+    video::Vec2u lostpos = {size.x - 8*(uint)strlen(textlost) - 1 - 10, size.y-16 - 1 - 10};
+    drawText(textlost, 15, start+lostpos, fg, bg, start.x, start.x+size.x);
 
-    video::Vec2u errorpos = {size.x/20, 2*size.y/8};
-    drawText(texterror, errorpos, fg, bg);
+    BsodStream bs(start.x + size.x/20, start.x + size.x - (size.x/20), start.y + size.y/4, fg, bg);
+    OSStreams[1] = &bs;
+    printf("Me haz an error!!!\n");
+    vfprintf(stdout, s, ap);
 
-    video::Vec2u spos = {errorpos.x, errorpos.y + 16};
-    drawText(s, spos, fg, bg);
-
+    drawRectangle(THICKNESS, {0, 0}, {trueSize.x-1, trueSize.y-1}, video::Color({64, 20, 5}));
+    drawRectangle(THICKNESS, {THICKNESS, THICKNESS}, {trueSize.x-THICKNESS-1, trueSize.y-THICKNESS-1}, video::Color({255, 255, 255}));
+    drawRectangle(THICKNESS, {2*THICKNESS, 2*THICKNESS}, {trueSize.x-2*THICKNESS-1, trueSize.y-2*THICKNESS-1}, video::Color({32, 25, 236}));
     video::screen.send();
 
     while(true) asm volatile("hlt");
