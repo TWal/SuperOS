@@ -1,13 +1,12 @@
 
 #ifdef SUP_OS_KERNEL
 #include "utility.h"
-#include "IO/FrameBuffer.h"
 #include "Interrupts/Interrupt.h"
 #include "Graphics/Screen.h"
 #include "IO/OSFileDesc.h"
 #else
 #include "../src/utility.h"
-#include "../src/IO/FrameBuffer.h"
+#include "log.h"
 #endif
 
 using namespace std;
@@ -245,7 +244,7 @@ std::string concat(std::vector<std::string> strs,char separator){
 #endif
 
 void pbool(bool b,const char* s){
-    if(b)kprintf("%s : OK\n",s);
-    else kprintf("%s : Not OK\n",s);
+    if(b)printf("%s : OK\n",s);
+    else printf("%s : Not OK\n",s);
 }
 

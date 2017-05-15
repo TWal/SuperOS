@@ -1,5 +1,4 @@
 #include "Graphics.h"
-#include "../src/IO/FrameBuffer.h"
 #include "log.h"
 
 void copy(char* a, char* b, u8 size){
@@ -10,13 +9,13 @@ void copy(char* a, char* b, u8 size){
 
 
 void fail(ModeInfoBlock* mib, ErrNum errNum){
-    kprintf("Entering fail\n");
+    error("Entering fail\n");
     u8 bytesPerp = mib->bpp / 8;
     char* FB = (char*)mib->physbase;
     u32 red = ((1 << mib->red_mask) -1) << mib->red_position;
     u32 green = ((1 << mib->green_mask) -1) << mib->green_position;
     u32 blue = ((1 << mib->blue_mask) -1) << mib->blue_position;
-    kprintf("blue %d, %d, %x\n",mib->blue_mask,mib->blue_position,blue);
+    //debug("blue %d, %d, %x\n",mib->blue_mask,mib->blue_position,blue);
     u32 white = red | green | blue;
     for(int i = 0 ; i < mib->Yres ; ++i){
         for(int j = 0 ; j < mib->Xres ; ++j){

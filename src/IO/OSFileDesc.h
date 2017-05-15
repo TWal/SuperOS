@@ -31,8 +31,6 @@ extern std::vector<Stream*> OSStreams;
 
    From now all input-output pass through @ref Stream "Streams" in @ref OSStreams.
 
-   @todo handle graphical Output
-
  */
 void IOinit(Stream * str);
 
@@ -45,13 +43,6 @@ extern "C" size_t read(int fd, void* buf, size_t count);
 extern "C" size_t write(int fd, const void* buf, size_t count);
 
 
-
-
-class FBStream : public Stream{
-public:
-    u64 getMask() const {return Stream::WRITABLE;}
-    size_t write(const void* buf,size_t count);
-};
 
 class SerialStream : public Stream{
 public:

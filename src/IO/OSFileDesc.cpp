@@ -1,5 +1,4 @@
 #include "OSFileDesc.h"
-#include "FrameBuffer.h"
 #include "Serial.h"
 #include "../Streams/OutMixStream.h"
 #include "../Memory/Paging.h"
@@ -78,14 +77,6 @@ size_t write(int fd, const void* buf, size_t count){
 }
 
 std::vector<Stream*> OSStreams;
-
-size_t FBStream::write(const void* buf,size_t count){
-    const char* buf2 = (const char*)buf;
-    for(size_t i = 0 ; i < count ; ++i){
-        fb.putc(buf2[i]);
-    }
-    return count;
-}
 
 
 size_t SerialStream::write(const void* buf,size_t count){

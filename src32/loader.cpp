@@ -3,7 +3,6 @@
 #include "KArgs.h"
 #include "../src/Memory/Paging.h"
 #include "Segmentation.h"
-#include "../src/IO/FrameBuffer.h"
 #include "../src/User/Elf64.h"
 #include "../src/IO/Serial.h"
 #include "Graphics.h"

@@ -1,5 +1,4 @@
 #include "../src/Memory/Paging.h"
-#include "../src/IO/FrameBuffer.h"
 
 const uint MAX_INIT_PAGE = 4;
 
