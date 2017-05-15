@@ -45,7 +45,7 @@ logiciel développés pour Super OS et le dernier les problèmes rencontrés pen
 sa conception.
 
 Le langage utilisé est le \verb$C++$ à part quelques fichiers en assembleur, et
-5 lignes de python (générant de l'assembleur :-) ). Le projet atteint les $12 000$
+5 lignes de python (générant de l'assembleur :-) ). Le projet atteint les $13 000$
 lignes de code, (\verb$make count$ pour les statistiques exactes).
 
 Plan de l'archive :
@@ -144,9 +144,12 @@ Les détails sont dans la page \verb$Virtual mappings$ de la documentation.
 
 \section{HDD : Interface ATA et ext2}
 
-ATA : TODO thibaut
+\paragraph{Disque Dur :} Nous utilisons l'interface ATA PIO cf \cite{ATAosdev}.
+Nous utilisons Seulement 2 commandes : Read LBA et write LBA sur 48 bits.
+La plupart des BIOS ont une option pour émuler un driver ATA PIO sur un
+disque dur SATA, donc malgré la lenteur, cela ne pose pas de problème.
 
-Nous avons commencé par faire un driver FAT en lecture seule, en se disant que c'est un système de fichier simple, et donc que ça serait relativement agréable à coder.
+\paragraph{Système de fichier :} Nous avons commencé par faire un driver FAT en lecture seule, en se disant que c'est un système de fichier simple, et donc que ça serait relativement agréable à coder.
 Grave erreur.
 Nous avons donc décidé de nous tourner vers un système de fichier qui nous agresse moins intellectuellement : l'ext2.
 
@@ -201,22 +204,39 @@ processus \verb$init$ et les autres processus sont des noeud ou des feuilles.
 
 \section{Appels systèmes}
 
+La plupart de nos appel système son similaire à Linux, les différences sont précisée.
+
 \paragraph{Lecture/écriture}
 
 Nous supportons actuellement read write  (poll)
 
-\paragraph{Manipulation de processus} fork, wait exit, texit, exec
+\paragraph{Manipulation de processus} Nous supportons fork, wait, exit (exit\_group sous Linux),
+texit (exit sous Linux), exec (execve sous Linux). Nous supportons également une
+version \textit{extrement} allégée de clone pour la création de Thread.
 
-\paragraph{fichiers} open,close
+\paragraph{fichiers} nous supportons open, close et seek selon la spécification Linux.
 
 \paragraph{grpahique} openwin opentwin
 
-\paragraph{communication inter processus :} pipe, dup
+\paragraph{communication inter processus :} nous supportons actuellement pipe,
+dup et dup2 
 
 
 La specification complète des appels système est dans la documentation de \verb$Syscalls.h$.
 
 \section{Interface de flux et descripteur de fichier}
+
+\paragraph{Flux :} Nous utilisons une classe virtuelle pure \verb$Stream$ qui représente n'importe
+quel flux. Il possède certaine capacité décrite par un masque et tout objet du
+projet qui a besoin d'être un flux pour un programme utilisateur passe par cette
+interface. La documentation de cette classe apportera plus de détail.
+
+\paragraph{Descripteur de fichier :} Un descripteur de ficher peut dans Super
+OS, être soit un flux, soit un dossier, soit un fenêtre (qui a également une
+interface de flux). Les appels système testent ce qu'est chaque appel système
+avant d'effectuer l'opération correspondante.
+
+
 
 
 \section{Système de fichier virtuel (VFS)}
@@ -225,15 +245,60 @@ TODO théophile
 
 \section{Gestionaire de fenêtre et d'événement}
 
+\paragraph{Fenêtres :} Le gestionnaire de fenêtre est codé en dur dans le noyau pour des raison de
+simplicité.
+Il est composé de 3 Types d'éléments :
+\begin{itemize}
+\item L'écran : (classe \verb$Screen$) Qui gère le buffer VBE, le buffer
+  interne pour le double buffering et les fonction de transfert rapide entre les
+  2.
+\item Les Workspaces : Les workspaces représentent un écran virtuel, on peut
+  passer de l'un à l'autre avec des raccourci clavier (Ctrl + Fi pour le numéro
+  i).
+\item Les fenêtres : Les fenêtre appartiennent à un unique workspace, elle ont
+  une position et une taille, il y en a de 2 types
+  \begin{itemize}
+    \item Les fenêtres graphiques : elles fournissent une API graphique bas
+      niveau (événement atomique, dessin au pixel)
+    \item Les fenêtre textes : En Bref, un émulateur de terminal en Kernel space.
+  \end{itemize}
+\end{itemize}
+
+\paragraph{Événements :} Les événements sont émis par le clavier et la souris,
+il sont envoyé au workspace actif puis à la fenêtre correspondante puis au
+programme correspondant (On n'a pas eu le temps d'implémenter la dernière étape
+encore, ça sera fait pour jeudi).
+
+À chaque étape, les événements peuvent être interceptés, pour effectuer une
+action, genre changer de workspace, passer une fenêtre dans un autre workspace, etc.
+
 \section{Attente}
+
+L'attente des Threads (wait, read bloquant, ...) est géré par le couple de
+classes Waiting, Waitable. Lorsqu'un Thread doit attendre, On le met en mode
+attente, lorsque l'événement attendu se produit, on passe en mode fin d'attente
+et lorsque le Scheduler teste si le thread est entrain d'attendre, et si oui,
+s'il doit arrêter d'attendre. 
+
 
 \section{Bibliothèques standard}
 
+\paragraph{libc :} On a réalisé rapidement les fonctions d'affichage (printf,
+putchar, ...) de gestion de la mémoire (malloc, free).
+Puis les wrappers des appels systèmes : open close
+
+\paragraph{libc++ :} Nous avons développé les conteneurs de la bibliothèque
+standard du C++ au fur et à mesure de nos besoins (Les conteneurs associatifs
+ont été implémenté comme des vecteur triés).
+
+\paragraph{Multi-threading :} Bien que le noyau autorise le multi-threading,
+aucun système de contrôle (mutex, ...) n'a encore été mis en place. (peut-être pour jeudi).
+
 \chapter{Software}
 
-\section{Shell}
-
-TODO théophile
+\section{Shell} On un shell fonctionel sous Linux dans \verb$user/ttsh$, on pas
+eu le temps de porter tout les appels système et bibliothèque et de le porter,
+ça sera fait pour jeudi.
 
 \chapter{Difficultés rencontrées}
 
