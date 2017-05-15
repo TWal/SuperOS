@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+    typedef long long int off_t;
+
     enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
 
     typedef unsigned short pid_t;
@@ -16,6 +18,17 @@ extern "C" {
 
     int open(const char* path, int flags);
     int close(int fd);
+
+    enum{POLLIN, POLLERR, POLLEOF, POLLNVAL};
+    typedef struct {
+        int fd;
+        int ret;
+    } pollfd;
+
+    int poll(pollfd* fds, int nfds);
+
+    enum{SEEK_SET, SEEK_CUR, SEEK_END};
+    off_t seek(int fd, off_t offset, int whence);
 
     int pipe(int* fd2);
 

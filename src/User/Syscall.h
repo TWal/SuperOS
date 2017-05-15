@@ -22,10 +22,9 @@
 #define SYSSTAT 4
 #define SYSFSTAT 5
 #define SYSLSTAT 6
-#define SYSPOLL 7 // not sure if we implement this
+#define SYSPOLL 7
 
 #define SYSSEEK 8
-#define SYSTELL 9
 #define SYSBRK 12
 
 #define SYSPIPE 22

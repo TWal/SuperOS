@@ -5,8 +5,7 @@ Syscalls
     - poll
     - *open
     - *close
-    - seek
-    - tell
+    - *seek
     - openwin
     - opentwin
     - futex

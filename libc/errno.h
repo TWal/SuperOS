@@ -16,6 +16,7 @@ extern int errno;
 #define EFAULT 5 ///< user give a pointer to kernel space
 #define ENOMEM 6 ///< when no more heap memory is available
 #define EBLOCK 7 ///< Internal error code, normally should not arrive to user mode
+#define EINVAL 8 ///< Invalid value (parameter)
 
 
 #endif

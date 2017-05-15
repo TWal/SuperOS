@@ -83,6 +83,8 @@ public:
     enum class mod{BEG,CUR,END};
     /// Set the curent position if fd is @ref SEEKABLE.
     virtual size_t seek(i64 count, mod mode){(void)mode; (void)count;return -1;};
+    /// Get Stream size if @ref SEEKABLE.
+    virtual size_t end() const {return check(SEEKABLE)? 0 : -1;};
 };
 
 #endif

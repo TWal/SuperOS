@@ -37,6 +37,35 @@ u64 sysopen(u64 path, u64 flags, u64,u64,u64,u64);
 */
 u64 sysclose(u64 fd, u64,u64,u64,u64,u64);
 
+
+/**
+   @brief Syscall 7, poll : poll a set of file descriptor.
+
+   @todo implement it.
+*/
+u64 syspoll(u64 pollfd, u64 nbfds, u64,u64,u64,u64);
+
+/**
+   @brief Syscall 8, seek : Change pos in a file descriptor.
+   @param fd The file descriptor of which change the offset.
+   @param offset The offset to add to the position given by mode.
+   @param whence The starting position, it can be :
+       - SEEK_SET : From the beginning of the file.
+       - SEEK_CUR : From the current position.
+       - SEEK_END : From the end position
+
+   Some @ref SEEKABLE devices are not seekable beyond the end
+   (i.e @ref Stream::APPENDABLE)
+   (window, block devices, file open in read only mode).
+   A seek beyond the end will fail with EINVAL for those file.
+
+   @return The positions seeked on success.
+   @retval EBADF : The descriptor is invalid or is not seekable (pipe, directory, ...)
+   @retval EINVAL : whence is not valid. new offset is negative or beyond
+   end of non @ref APPENDABLE device.
+*/
+u64 sysseek(u64 fd, u64 offset, u64 whence ,u64,u64,u64);
+
 /**
    @brief Syscall 12, brk : move the position of user's brk.
  */

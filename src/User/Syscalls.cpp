@@ -6,6 +6,7 @@
 #include "../Streams/BytesStream.h"
 #include <errno.h>
 #include "../Streams/PipeStream.h"
+#include <unistd.h>
 
 using namespace std;
 
@@ -15,6 +16,7 @@ void syscallFill(){
     handlers[SYSWRITE] = syswrite;
     handlers[SYSOPEN] = sysopen;
     handlers[SYSCLOSE] = sysclose;
+    handlers[SYSSEEK] = sysseek;
     handlers[SYSBRK] = sysbrk;
     handlers[SYSPIPE] = syspipe;
     handlers[SYSDUP] = sysdup;
@@ -54,7 +56,7 @@ u64 sysread(u64 fd, u64 buf, u64 count, u64,u64,u64){
     if(res == size_t(-EBLOCK)){
         auto pro = t->getProcess();
         FileDescriptor& desc = pro->_fds[fd];
-        t->wait({desc.get()},[&desc,fd,buf,count](Waiting* th, Waitable* st){
+        t->wait({desc.get()},[&desc,fd,buf,count](Waiting* th, Waitable*){
                 Thread* t = static_cast<Thread*>(th);
                 t->getProcess()->prepare();
                 size_t res = nbread(t,fd,(void*)buf,count);
@@ -94,7 +96,7 @@ u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     return tmp;
 }
 
-enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
+//enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
@@ -134,7 +136,7 @@ u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     u32 newfd = pro->getFreeFD();
     if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
     pro->_fds[newfd] = FileDescriptor(file2Stream(std::move(f)));
-    pro->_fds[newfd]._mask = 0;
+    pro->_fds[newfd]._mask = Stream::SEEKABLE;
     if(flags & O_RDONLY) pro->_fds[newfd]._mask |= Stream::READABLE | Stream::WAITABLE;
     if(flags & O_WRONLY) pro->_fds[newfd]._mask |= Stream::WRITABLE | Stream::APPENDABLE;
     return newfd;
@@ -149,6 +151,49 @@ u64 sysclose(u64 fd, u64,u64,u64,u64,u64){
     return 0;
 }
 
+/*// non-blocking poll
+u64 nbpoll(Thread* t, pollfd* pollfds, u64 nbfds){
+    auto pro = t->getProcess();
+    u64 nbRet = 0;
+    for(u64 i = 0 ; i < nbfds ; ++i){
+        if(pro->_fds.size() <= pollfds[i].fd){
+            ++nbRet;
+            pollfds[i].ret = POLLNVAL;
+        }
+        
+    }
+}
+
+u64 syspoll(u64 pollfds, u64 nbfds,u64,u64,u64,u64){
+    
+}*/
+
+u64 sysseek(u64 fd, u64 offset, u64 mode ,u64,u64,u64){
+    debug(Syscalls,"Seek %llu to %lld from %lld", fd, offset, mode);
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(pro->_fds.size() <= fd) return -EBADF;
+    FileDescriptor& desc = pro->_fds[fd];
+    if(!desc.hasStream()) return -EBADF;
+    if(!desc.check(Stream::SEEKABLE)) return -EBADF;
+    i64 size = desc->end();
+    i64 cur = desc->tell();
+    i64 origin;
+    if(mode == SEEK_SET){
+        origin = 0;
+    }
+    else if(mode == SEEK_CUR){
+        origin = cur;
+    }
+    else if(mode == SEEK_END){
+        origin = size;
+    }
+    origin += offset;
+    if(origin < 0) return -EINVAL;
+    if(origin > size and !desc.check(Stream::APPENDABLE)) return -EINVAL;
+    desc->seek(origin,Stream::mod::BEG);
+    return origin;
+}
 
 u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();

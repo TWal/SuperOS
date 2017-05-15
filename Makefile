@@ -388,7 +388,7 @@ clean: cleanunit
 	rm -f init
 	rm -f diskout.img
 	rm -f index.html
-	make clean -C rapport
+	make clean -C report
 
 
 mrproper: clean
@@ -417,7 +417,7 @@ doc:
 	ln -sf doc/html/index.html index.html
 
 report:
-	make -C rapport
+	make -C report
 
 include $(DEPF)
 

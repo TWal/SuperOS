@@ -93,6 +93,39 @@ int close(int fd){
     }
     return res;
 }
+
+int poll(pollfd* fds, int nfds){
+    int res;
+    asm volatile(
+        "mov $22, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fds), "S"(nfds)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+off_t seek(int fd, off_t offset, int whence){
+    int res;
+    asm volatile(
+        "mov $8, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd), "S"(offset), "d"(whence) // rdi then rsi then rdx
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
 int pipe(int* fd2){
     int res;
     asm volatile(

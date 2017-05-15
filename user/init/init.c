@@ -36,35 +36,26 @@ void thread(){
 
 int main(){
     printf("[Init] Init start\n");
-    int fds [2];
-    int i = pipe(fds);
-    if(i == -1) return 0;
-
-
-    int pid = fork();
-    if(!pid){
-        for(volatile int i = 0 ; i < 100000000 ; ++i);
-        printf("sending to pipe");
-        close(fds[0]);
-        FILE* out = fdopen(fds[1],"");
-        fprintf(out,"Yolo %d\n", 42);
-        close(fds[1]);
-        printf("sended to pipe\n");
-        for(volatile int i = 0 ; i < 1000000000 ; ++i);
-        printf("end of snd\n");
-        return 42;
+    int fd = open("testfile",O_RDWR | O_CREAT);
+    if(fd == -1){
+        printf ("open failed %d %d",fd,errno);
     }
-    //for(volatile int i = 0 ; i < 1000000000 ; ++i);
-    close(fds[1]);
-    FILE* in = fdopen(fds[0],"");
+    FILE* f = fdopen(fd,"rw");
+
+    fprintf(f,"hello %d\n",42);
+    errno = 0;
+    int i = seek(fd,0,SEEK_CUR);
+    printf("errno %d",errno);
+    printf("size %d\n",i);
+
+    seek(fd,0,SEEK_SET);
     int c;
-    while((c = fgetc(in)) != EOF){
+    while((c = fgetc(f)) != EOF){
         putchar(c);
     }
-    close(fds[0]);
-    printf("before wait\n");
-    wait(NULL);
-    printf("after wait\n");
+
+
+
 
     //   int pid = fork();
 
