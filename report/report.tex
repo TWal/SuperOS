@@ -212,14 +212,18 @@ Nous supportons actuellement read write  (poll)
 
 \paragraph{Manipulation de processus} Nous supportons fork, wait, exit (exit\_group sous Linux),
 texit (exit sous Linux), exec (execve sous Linux). Nous supportons également une
-version \textit{extrement} allégée de clone pour la création de Thread.
+version \textit{extrêmement} allégée de clone pour la création de Thread.
 
 \paragraph{fichiers} nous supportons open, close et seek selon la spécification Linux.
 
-\paragraph{grpahique} openwin opentwin
+\paragraph{Graphique} L'interface graphique usermode n'a pas pu être réalisé
+dans les temps, elle sera prête pour jeudi.
 
 \paragraph{communication inter processus :} nous supportons actuellement pipe,
 dup et dup2 
+
+\paragraph{Dossier} L'interface dossier usermode n'a pas pu être réalisé
+dans les temps, elle sera prête pour jeudi.
 
 
 La specification complète des appels système est dans la documentation de \verb$Syscalls.h$.

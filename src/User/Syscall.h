@@ -138,6 +138,12 @@ extern "C" syscallHandler * const handlers;
    All registers are preserved except rax (for return value).
 
    This version is theoretically slightly slower than the other.
+
+   @section sys_list Syscall list
+
+   The list of the currently supported System calls can be found here :
+   @ref Syscalls.h
+
  */
 
 
