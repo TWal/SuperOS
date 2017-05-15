@@ -231,22 +231,22 @@ inline int getPTindex(u64 addr){
 
 #ifdef SUP_OS_KERNEL
 /// Kernel function, Get the PML4 index corresponding to this virtual address, see @ref page_page.
-inline int getPML4index(void* addr){
+inline int getPML4index(const void* addr){
     return ((uptr)addr >> (12+9+9+9)) & ((1 << 9)-1);
 }
 
 /// Kernel function, Get the PDP index corresponding to this virtual address, see @ref page_page.
-inline int getPDPindex(void* addr){
+inline int getPDPindex(const void* addr){
     return ((uptr)addr >> (12+9+9)) & ((1 << 9)-1);
 }
 
 /// Kernel function, Get the PD index corresponding to this virtual address, see @ref page_page.
-inline int getPDindex(void* addr){
+inline int getPDindex(const void* addr){
     return ((uptr)addr >> (12+9)) & ((1 << 9)-1);
 }
 
 /// Kernel function, Get the PT index corresponding to this virtual address, see @ref page_page.
-inline int getPTindex(void* addr){
+inline int getPTindex(const void* addr){
     return ((uptr)addr >> 12) & ((1 << 9)-1);
 }
 
@@ -399,6 +399,9 @@ private:
     uptr getPTphyu(void* addr); // unsafe version
     uptr getPTphy(void* addr); // safe version
     uptr getphyu(void* addr); // unsafe version
+    void printPDs(uptr PDP);
+    void printPTs(uptr PD);
+    void printPages(uptr PT);
 
     /**
        @brief Globally flush the TLB.

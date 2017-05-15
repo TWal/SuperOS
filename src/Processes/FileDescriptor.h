@@ -33,7 +33,7 @@ private:
 public :
     u64 _mask = -1;
     /// get the functionalities of this FileDescriptor.
-    virtual u64 getMask() const{
+    u64 getMask() const{
         if(_str) return _mask & _str->getMask();
         else return 0;
     }

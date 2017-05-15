@@ -1,5 +1,6 @@
 #include "Paging.h"
 #include "PhysicalMemoryAllocator.h"
+#include "PageHeap.h"
 #include <new>
 #include <stdio.h>
 #include "../log.h"
@@ -189,14 +190,17 @@ void Paging::actTmpPT (uptr PTphyAddr){
 void Paging::freeTmpPDP (){
     // fprintf(stderr,"DeActivating TmpPDP\n");
     pagePT[TMPPDPOFF].present = false;
+    invlpg(tmpPDP);
 }
 void Paging::freeTmpPD (){
     // fprintf(stderr,"DeActivating TmpPD\n");
     pagePT[TMPPDOFF].present = false;
+    invlpg(tmpPD);
 }
 void Paging::freeTmpPT (){
     //fprintf(stderr,"DeActivating TmpPT\n");
     pagePT[TMPPTOFF].present = false;
+    invlpg(tmpPT);
 }
 
 
@@ -230,13 +234,15 @@ uptr Paging::getPDphy(void* addr){ // safe version
 
     uptr PD = tmpPDP[getPDPindex(addr)].getAddr();
     //printf("Accessing PDP at %d %p\n",getPDPindex(addr),PD);
-    if(PD){
+    if(tmpPDP[getPDPindex(addr)].present){
+        assert(PD);
         freeTmpPDP();
         return PD;
     }
     PD = physmemalloc.alloc();
     actTmpPD(PD);
     new(tmpPD) PageEntry[512];
+    assert(!tmpPD[2].present)
     freeTmpPD();
     tmpPDP[getPDPindex(addr)].activeAddr(PD);
     freeTmpPDP();
@@ -254,8 +260,8 @@ uptr Paging::getPTphy(void* addr){ // safe version
     actTmpPD(PD);
 
     auto PT = tmpPD[getPDindex(addr)].getAddr();
-    //printf("Accessing PD at %d %p\n",getPDindex(addr),PD);
-    if(PT){
+    if(tmpPD[getPDindex(addr)].present){
+        assert(PT);
         freeTmpPD();
         return PT;
     }
@@ -282,7 +288,7 @@ uptr Paging::getphyu(void* addr){ // unsafe version
 
 
 void Paging::createMapping(uptr phy,void* virt,bool wt){
-    if(pageLog) debug(Pagingl,"mapping %p to %p",virt,phy);
+    //if(pageLog) fprintf(stderr,"mapping %p to %p\n",virt,phy);
     if(phy & ((1<< 12 )-1)) {
         bsod("Create mapping : physical address is not page-aligned : %p",phy);
     }
@@ -293,10 +299,11 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
         bsod("Create mapping : physical address is too large (more than 52 bits)",phy);
     }
     uptr PT = getPTphy(virt);
-    //printf("PT address get %p\n",PT);
     actTmpPT(PT);
     if(tmpPT[getPTindex(virt)].present){
-        bsod("The virtual page %p was already mapped to %p",virt,tmpPT[getPTindex(virt)].getAddr());
+        uptr paddr = tmpPT[getPTindex(virt)].getAddr();
+        freeTmpPT();
+        bsod("The virtual page %p was already mapped to %p",virt,paddr);
     }
     tmpPT[getPTindex(virt)].activeAddr(phy);
     tmpPT[getPTindex(virt)].writeThrough = wt;
@@ -406,4 +413,54 @@ void Paging::switchUser(uptr usPDP){
 
 Paging paging;
 
+void Paging::printPages(uptr PT){
+    PageEntry* tPT = pageHeap.alloc<PageEntry>(PT);
+    for(int i = 0 ; i < 512 ; ++i){
+        if(tPT[i].present){
+            if(tPT[i].getAddr() == 0)
+                bsod("Entry %d in PT %p was present but set to 0",i,PT);
+            info(Pagingl, "\t\t\t\tPage : %d : %p",i,tPT[i].getAddr());
+        }
+    }
+    pageHeap.free(tPT);
+}
 
+void Paging::printPTs(uptr PD){
+    PageEntry* tPD = pageHeap.alloc<PageEntry>(PD);
+    for(int i = 0 ; i < 512 ; ++i){
+        if(tPD[i].present){
+            if(tPD[i].getAddr() == 0)
+                bsod("Entry %d in PD %p was present but set to 0",i,PD);
+            if(tPD[i].isSizeMega){
+                info(Pagingl, "\t\t\tPT : %d : %p, 2M page",i,tPD[i].getAddr());
+            }
+            else{
+                info(Pagingl, "\t\t\tPT : %d : %p",i,tPD[i].getAddr());
+                printPages(tPD[i].getAddr());
+            }
+        }
+    }
+    pageHeap.free(tPD);
+}
+
+void Paging::printPDs(uptr PDP){
+    PageEntry* tPDP = pageHeap.alloc<PageEntry>(PDP);
+    for(int i = 0 ; i < 512 ; ++i){
+        if(tPDP[i].present){
+            if(tPDP[i].getAddr() == 0)
+                bsod("Entry %d in PDP %p was present but set to 0",i,PDP);
+            info(Pagingl, "\t\tPD : %d : %p", i, tPDP[i].getAddr());
+            printPTs(tPDP[i].getAddr());
+        }
+    }
+    pageHeap.free(tPDP);
+}
+
+void Paging::print(){
+    if(serLvls[Pagingl] < Info) return;
+    info(Pagingl,"PML4 : %p",pagePT[0].getAddr());
+    info(Pagingl,"\tUserPDP : %p",PML4[0].getAddr());
+    printPDs(PML4[0].getAddr());
+    info(Pagingl,"\tKernelPDP : %p",PML4[511].getAddr());
+    printPDs(PML4[511].getAddr());
+}

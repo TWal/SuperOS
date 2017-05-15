@@ -38,6 +38,8 @@ public :
     u64 waitp(u64* status);
     /// Execute the wait system call on the given child process.
     u64 waitp(Process* pro, u64* status);
+    /// push the data on the stack of the thread (process memory must be activated);
+    void* push(const void*data, size_t size);
 };
 
 

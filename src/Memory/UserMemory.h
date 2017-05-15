@@ -94,6 +94,7 @@ public :
      */
     UserMemory& operator=(const UserMemory& other);
     void DumpTree() const ; ///< Print the mappings of this objects.
+    bool in(const void* addr) const; // check if this address is a valid address
 
 };
 

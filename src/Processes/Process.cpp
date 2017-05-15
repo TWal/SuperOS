@@ -46,6 +46,8 @@ Thread* Process::loadFromBytes(Bytes* file){
     std::vector<uptr> allocPages;
     //paging.switchUser(_userPDP);
     _usermem.activate();
+    debug(Proc,"The usermem on entry in loadFromBytes :");
+    _usermem.DumpTree();
 
     // get last addr used;
     void* lastUsedAddr = 0;
@@ -89,13 +91,13 @@ Thread* Process::loadFromBytes(Bytes* file){
             assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
 
             size_t offset = ph.offset;
-            debug(Proc,"Offset in file is %llu",offset);
+            debug(Proc,"Offset in file is %llx",offset);
             if(offset % 0x1000 == 0){
                 // the mapping is 4K aligned : better case
                 size_t po = offset / 0x1000;
                 size_t nbfPages = (ph.filesz + 0x1000-1) / 0x1000;
                 size_t nbvPages = (ph.memsz + 0x1000-1) / 0x1000;
-                debug(Proc,"file pages : %llu ans virtual pages %llu",nbfPages,nbvPages);
+                debug(Proc,"file pages : %llu and virtual pages %llu",nbfPages,nbvPages);
                 //mapping page by page
                 for(size_t i = 0 ; i < nbvPages ; ++i){
                     if(i>= nbfPages){
@@ -124,6 +126,15 @@ Thread* Process::loadFromBytes(Bytes* file){
     }
     //printf("loading stack");
     //WAIT(1000000000000);
+
+    //freeing temporary ressources :
+    paging.freeMapping(loadedProcess,toLoad);
+    for(size_t i = 0 ; i < allocPages.size(); ++i){
+        if(allocPages[i]){
+            physmemalloc.free(allocPages[i]);
+        }
+    }
+
 
     // allocating stack
     for(size_t i = 1 ; i <= FIXED_SIZE_STACK ; ++i){
@@ -216,6 +227,15 @@ void Process::terminate(u64 returnCode){
         fd->drop();
         }*/
     // this process is now a zombie
+}
+
+void Process::clear(){
+    _usermem.clear();
+    for(auto th : _threads){
+        delete th;
+    }
+    _threads.clear();
+    // memory ans thread cleared, ready to call to exec
 }
 
 

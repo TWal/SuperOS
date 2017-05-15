@@ -4,13 +4,15 @@ Heap::Heap() : _virtAddrStart(nullptr),_Brk(0){
 }
 
 void* Heap::init(void* startAddr){
-    return _virtAddrStart = (char*)(((uptr)startAddr + 0x1000 -1) / 0x1000 * 0x1000);
-    //printf("Heap base : %p\n",_virtAddrStart);
+    _Brk = 0;
+    _virtAddrStart = (char*)(((uptr)startAddr + 0x1000 -1) / 0x1000 * 0x1000);
+    //fprintf(stderr,"Heap base : %p, %p\n",startAddr,_virtAddrStart);
+    return _virtAddrStart;
 }
 
 iptr Heap::brk(void*addr){
     if(!addr) return (iptr)_virtAddrStart;
-    //printf("brk recieved address %p and virt : %p \n",addr,_virtAddrStart);
+    //fprintf(stderr,"brk recieved address %p and virt : %p \n",addr,_virtAddrStart);
     assert((char*)addr >= _virtAddrStart);
     uptr dist = (char*)addr - _virtAddrStart;
     if(dist > _Brk){ // if we should allocate new page

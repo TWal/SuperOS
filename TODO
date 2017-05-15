@@ -1,10 +1,10 @@
 *Protective Paging (access rights).
 *2MB paging.
 Syscalls
-    - exec
+    - *exec
     - poll
-    - open
-    - close
+    - *open
+    - *close
     - seek
     - tell
     - openwin
@@ -25,14 +25,14 @@ Syscalls
     - readdir
     - seekdir
     - telldir
-    - getfreefd
+    - kill
 
 
 MT-safe libc
 Shell
 Pipes
-Smart-pointer
-Smart bsod.
+*Smart-pointer
+*Smart bsod.
 
 Fix on hardware
     - keyboard Alt-Gr -- removed

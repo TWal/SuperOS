@@ -3,6 +3,7 @@
 #include "Thread.h"
 #include "Scheduler.h"
 #include "Waiting.h"
+#include <string.h>
 
 
 using namespace std;
@@ -88,4 +89,11 @@ u64 Thread::waitp(Process* pro,u64* status){
         // restart the scheduler
         schedul.run();
     }
+}
+
+void* Thread::push(const void* data, size_t size){
+    context.rsp -= size;
+    assert(_process->_usermem.in((void*)context.rsp));
+    memcpy((void*)context.rsp,data,size);
+    return (void*)context.rsp;
 }

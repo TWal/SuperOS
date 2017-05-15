@@ -1,6 +1,7 @@
 #include"../stdlib.h"
 #include"malloc.h"
 #include "../stdio.h"
+#include <errno.h>
 
 
 
@@ -20,9 +21,12 @@ int brk(void* addr){
         : "D"(addr)
         : "%rcx", "%r11"
         );
-        return res;
+    if(res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
 }
- 
 #endif
 
 void* sbrk(intptr_t offset){
@@ -30,16 +34,11 @@ void* sbrk(intptr_t offset){
 #ifdef SUP_OS_KERNEL
         Brk = getBrk();
 #else
-
-        asm volatile(
-            "mov $12,%%eax;"
-            "xor %%rdi, %%rdi;"
-            "xchg %%bx,%%bx;"
-            "syscall"
-            : "=a"(Brk)
-            : : "%rcx", "%r11"
-            );
-        
+        intptr_t res = brk(nullptr);
+        if(res == -1){
+            errno = ENOMEM;
+        }
+        Brk = (void*)res;
 #endif
     }
     char * before = (char*)Brk;

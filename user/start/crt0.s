@@ -2,10 +2,13 @@
 _start:
     ## startfile for Super OS usermode
     xchg %bx,%bx
-
+    push %rdi
+    push %rsi
     call __cinit                  # given by libc
     call __cppinit                # c++ constructors
-    call main                   # TODO : send argv and argc
+    pop %rsi
+    pop %rdi
+    call main
     mov %rax,%rdi
     mov $58,%rax                # exit code
     syscall                     # exit

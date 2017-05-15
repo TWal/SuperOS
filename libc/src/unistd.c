@@ -77,6 +77,7 @@ int open(const char* path, int flags){
     }
     return res;
 }
+
 int close(int fd){
     int res;
     asm volatile(
@@ -92,6 +93,22 @@ int close(int fd){
     }
     return res;
 }
+int pipe(int* fd2){
+    int res;
+    asm volatile(
+        "mov $22, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd2)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
 int dup(int oldfd){
     int res;
     asm volatile(
@@ -115,6 +132,21 @@ int dup2(int oldfd, int newfd){
         "syscall"
         : "=a"(res)
         : "D"(oldfd), "S"(newfd)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+int exec(char* path, char** argv){
+    int res;
+    asm volatile(
+        "mov $59, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path), "S"(argv)
         :
         );
     if (res < 0){

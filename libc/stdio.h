@@ -33,6 +33,11 @@ extern "C" {
     int fprintf(FILE* file, const char* format, ...);
     int printf(const char* format, ...);
 
+    // file manipulation
+    FILE* fdopen(int fd, const char* mode);
+
+
+
 
     size_t fread(void* buf, size_t size, size_t count, FILE* stream);
 

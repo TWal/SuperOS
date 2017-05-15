@@ -2,6 +2,7 @@
 #include "../Interrupts/Pic.h"
 #include "../Interrupts/Pit.h"
 #include <stdio.h>
+#include <errno.h>
 #include "../User/Syscall.h"
 #include "../Memory/Paging.h"
 #include "../Memory/PhysicalMemoryAllocator.h"
@@ -155,10 +156,11 @@ u16 Scheduler::fork(){
 
 
 u16 Scheduler::clone(u64 rip, u64 stack){
-    assert(stack && (i64)rip > 0);
     Thread* old = enterSys();
     info(Schedul,"Clone on instruction %p to instruction %p \n",_current->context.rip,rip);
     Process* pro = old->getProcess();
+    if(!pro->_usermem.in((void*)rip)) return -EFAULT;
+    if(!pro->_usermem.in((void*)(stack-1))) return -EFAULT;
     u16 newTid = getFreshTid();
 
     // creating a new thread with all his register UB except rip and rsp.

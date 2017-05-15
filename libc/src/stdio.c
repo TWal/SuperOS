@@ -4,6 +4,7 @@
 #include "../string.h"
 
 int errno;
+int* __errno_location = &errno;
 
 struct FILE{
     int fd;
@@ -239,5 +240,11 @@ size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
         toRead -= cur;
     }
     return res/size;
+}
+
+FILE* fdopen(int fd, const char* mode){
+    FILE* f = malloc(sizeof(FILE));
+    f->fd = fd;
+    return f;
 }
 

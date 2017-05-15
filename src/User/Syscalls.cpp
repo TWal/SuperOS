@@ -5,6 +5,7 @@
 #include "../HDD/VFS.h"
 #include "../Streams/BytesStream.h"
 #include <errno.h>
+#include "../Streams/PipeStream.h"
 
 using namespace std;
 
@@ -20,12 +21,14 @@ void syscallFill(){
     handlers[SYSCLONE] = sysclone;
     handlers[SYSFORK] = sysfork;
     handlers[SYSEXIT] = sysexit;
+    handlers[SYSEXEC] = sysexec;
     handlers[SYSTEXIT] = systexit;
     handlers[SYSWAIT] = syswait;
 }
 
 u64 sread(Thread*t, uint fd, void* buf, u64 count){
     auto pro = t->getProcess();
+    if(!pro->_usermem.in(buf)) return -EFAULT;
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd].check(Stream::READABLE)) return -EBADF;
@@ -44,6 +47,7 @@ u64 sysread(u64 fd, u64 buf, u64 count, u64,u64,u64){
 
 u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
     auto pro = t->getProcess();
+    if(!pro->_usermem.in(buf)) return -EFAULT;
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd].check(Stream::WRITABLE)) return -EBADF;
@@ -64,6 +68,7 @@ enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND 
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)upath)) return -EFAULT;
     string s = reinterpret_cast<const char*>(upath);
     if(s.empty()) return -EACCESS;
     HDD::File* f;
@@ -93,6 +98,7 @@ u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
         }
         else return - EACCESS;
     }
+
     u32 newfd = pro->getFreeFD();
     if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
     pro->_fds[newfd] = FileDescriptor(file2Stream(f));
@@ -114,13 +120,29 @@ u64 sysclose(u64 fd, u64,u64,u64,u64,u64){
 
 u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
-    fprintf(stderr,"sysbrk by %d with 0x%p\n",t->getTid(),addr);
-    assert((i64)addr >= 0);
+    debug(Syscalls,"sysbrk by %d with 0x%p\n",t->getTid(),addr);
+    if((i64)addr < 0x200000 and addr != 0) return - EFAULT;
     auto tmp = t->getProcess()->_heap.brk((void*)addr);
-    fprintf(stderr,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
+    debug(Syscalls,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
+    t->getProcess()->_usermem.DumpTree();
+    if(addr !=0) assert(t->getProcess()->_usermem.in((void*)(addr-1)));
     return tmp;
 }
 
+u64 syspipe(u64 fd2, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)fd2)) return -EFAULT;
+    int* res = (int*)fd2;
+    res[0] = pro->getFreeFD();
+    if(pro->_fds.size() <= res[0]) pro->_fds.resize(res[0]+1);
+    res[1] = pro->getFreeFD();
+    if(pro->_fds.size() <= res[1]) pro->_fds.resize(res[1]+1);
+    PipeStream* ps = new PipeStream();
+    pro->_fds[res[0]] = FileDescriptor(new PipeStreamOut(ps));
+    pro->_fds[res[1]] = FileDescriptor(new PipeStreamIn(ps));
+    return 0;
+}
 
 u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
@@ -151,6 +173,59 @@ u64 sysfork(u64,u64,u64,u64,u64,u64){
 
 u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
     schedul.exit(rc);
+}
+
+u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+    info(Syscalls,"Exec in %d to %s", t->getTid(),(char*)path);
+    string s = reinterpret_cast<const char*>(path);
+    HDD::File* f;
+    HDD::Directory* d;
+    if(s[0] == '/'){
+        assert(HDD::VFS::vfs);
+        d = HDD::VFS::vfs->getRoot();
+    }
+    else{
+        assert(pro->_wd);
+        d = pro->_wd;
+    }
+
+    f = d->resolvePath(s);
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::RegularFile) return -EACCESS;
+    // The file is OK, now computing argc;
+    char** targv = (char**)argv;
+    debug(Syscalls, "argv = %p",targv);
+    //pro->_usermem.DumpTree();
+    if(!pro->_usermem.in(targv)) return - EFAULT;
+    int argc = 0;
+    std::vector<std::string> argvSave;
+    while(targv[argc]){
+        if(!pro->_usermem.in(targv[argc])) return -EFAULT;
+        debug(Syscalls,"argument %d is %s",argc,targv[argc]);
+        argvSave.push_back(targv[argc]); // TODO correct security failure.
+        ++argc;
+    }
+    // all is OK, ready to exec
+    schedul.stopCurent();
+    pro->clear();
+    Thread* nt = pro->loadFromBytes(static_cast<HDD::RegularFile*>(f));
+    pro->prepare();
+    std::vector<void*> argvSave2;
+    for(const auto& s : argvSave){
+        argvSave2.push_back(nt->push(s.data(),s.size()+1));
+    }
+    void * p = nullptr;
+    nt->push(&p,8);
+    for(int i = argvSave2.size()-1 ; i >= 0 ; --i){
+        nt->push(&argvSave2[i],8);
+    }
+    nt->context.rdi = argc;
+    nt->context.rsi = nt->context.rsp;
+
+    schedul.run();
 }
 
 u64 systexit(u64 rc,u64,u64,u64,u64,u64){

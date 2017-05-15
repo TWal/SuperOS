@@ -17,6 +17,8 @@ extern "C" {
     int open(const char* path, int flags);
     int close(int fd);
 
+    int pipe(int* fd2);
+
     int dup(int oldfd);
     int dup2(int oldfd, int newfd);
 
@@ -24,6 +26,8 @@ extern "C" {
     pid_t clone(void(*func)(void),void* stackEnd);
     pid_t waitpid(pid_t p, int* status);
     pid_t wait(int* status);
+
+    int exec(char* path, char** argv);
 
     void _exit(int status);
     void _texit(int status);

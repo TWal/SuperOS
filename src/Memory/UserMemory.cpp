@@ -35,7 +35,9 @@ void UserMemory::freePages(uptr PT){
 void UserMemory::freePTs(uptr PD, bool start){
     paging.actTmpPD(PD);
     for(int i = start ? 1 : 0 ; i < 512 ; ++i){
-        if(Paging::tmpPD[i].getAddr() and Paging::tmpPD[i].present){
+        if(Paging::tmpPD[i].present){
+            if(Paging::tmpPD[i].getAddr() == 0)
+                bsod("Entry %d in PD %p was present but set to 0",i,PD);
             freePages(Paging::tmpPD[i].getAddr());
             physmemalloc.free(Paging::tmpPD[i].getAddr());
             if(start){
@@ -52,7 +54,9 @@ void UserMemory::freePDs(uptr PDP){
     freePTs(Paging::tmpPDP[0].getAddr(),true);
     for(int i = 1 ; i < 512 ; ++i){
         uptr PD;
-        if( (PD = Paging::tmpPDP[i].getAddr()) and Paging::tmpPDP[i].present ){
+        if( Paging::tmpPDP[i].present ){
+            PD = Paging::tmpPDP[i].getAddr();
+            assert(PD);
             freePTs(PD,false);
             physmemalloc.free(PD);
             Paging::tmpPDP[i].present = false;
@@ -176,7 +180,9 @@ UserMemory& UserMemory::operator=(const UserMemory& other){
 void UserMemory::printPages(uptr PT){
     PageEntry* tPT = pageHeap.alloc<PageEntry>(PT);
     for(int i = 0 ; i < 512 ; ++i){
-        if(tPT[i].getAddr() and tPT[i].present){
+        if(tPT[i].present){
+            if(tPT[i].getAddr() == 0)
+                bsod("Entry %d in PT %p was present but set to 0",i,PT);
             debug(Proc, "\t\t\tPage : %d : %p",i,tPT[i].getAddr());
         }
     }
@@ -186,7 +192,9 @@ void UserMemory::printPages(uptr PT){
 void UserMemory::printPTs(uptr PD,bool start){
     PageEntry* tPD = pageHeap.alloc<PageEntry>(PD);
     for(int i = start ? 1 : 0 ; i < 512 ; ++i){
-        if(tPD[i].getAddr() and tPD[i].present){
+        if(tPD[i].present){
+            if(tPD[i].getAddr() == 0)
+                bsod("Entry %d in PD %p was present but set to 0",i,PD);
             debug(Proc, "\t\tPT : %d : %p",i,tPD[i].getAddr());
             printPages(tPD[i].getAddr());
         }
@@ -196,7 +204,9 @@ void UserMemory::printPTs(uptr PD,bool start){
 void UserMemory::printPDs(uptr PDP){
     PageEntry* tPDP = pageHeap.alloc<PageEntry>(PDP);
     for(int i = 0 ; i < 512 ; ++i){
-        if(tPDP[i].getAddr() and tPDP[i].present){
+        if(tPDP[i].present){
+            if(tPDP[i].getAddr() == 0)
+                bsod("Entry %d in PDP %p was present but set to 0",i,PDP);
             debug(Proc, "\tPD : %d : %p", i, tPDP[i].getAddr());
             if(!i)debug(Proc, "\t\tstandard physical mapping PT");
             printPTs(tPDP[i].getAddr(),!i);
@@ -211,3 +221,26 @@ void UserMemory::DumpTree() const {
     printPDs(_PDP);
 }
 
+
+bool UserMemory::in(const void* addr) const{
+    bool res = false;
+    PageEntry *tPDP, *tPD;
+    PageTable* tPT;
+    if(getPML4index(addr)) return false;
+    tPDP = pageHeap.alloc<PageEntry>(_PDP);
+    if(!tPDP[getPDPindex(addr)].present) goto PDPfail;
+    tPD = pageHeap.alloc<PageEntry>(tPDP[getPDPindex(addr)].getAddr());
+    if(!tPD[getPDindex(addr)].present) goto PDfail;
+    tPT = pageHeap.alloc<PageTable>(tPD[getPDindex(addr)].getAddr());
+    if(!tPT[getPTindex(addr)].present) goto PTfail;
+
+    res = true;
+PTfail:
+    pageHeap.free(tPT);
+PDfail:
+    pageHeap.free(tPD);
+PDPfail:
+    pageHeap.free(tPDP);
+    return res;
+
+}

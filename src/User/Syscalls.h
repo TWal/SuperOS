@@ -7,6 +7,11 @@
    @brief This file contains all syscalls in order
 
    The real implementation may be elsewhere
+
+   In the documentation, a return value of ESOMETHING is be understood as
+   following:
+   The system call will return the opposite of the error code,
+   Then the C handler will return -1 and set errno to this value.
  */
 
 /// Register all syscalls in the handlers table.
@@ -37,6 +42,14 @@ u64 sysclose(u64 fd, u64,u64,u64,u64,u64);
  */
 u64 sysbrk(u64 addr, u64,u64,u64,u64,u64);
 
+/**
+   @brief Syscall 22, pipe : Create an anonymous pipe.
+   @param fd2 (int*) : Table of integer of size 2 : the read end will be in
+   fd2[0] and the write end will be in fd[1].
+   @retval 0 success
+   @retval EFAULT The pointer fd2 is not valid.
+*/
+u64 syspipe(u64 fd2, u64,u64,u64,u64,u64);
 
 /**
    @brief Syscall 32, dup : Duplicate a file descriptor;
@@ -63,6 +76,11 @@ u64 sysfork(u64,u64,u64,u64,u64,u64);
    @brief Syscall 58, exit : exit the current process with code rc
  */
 u64 sysexit(u64 rc, u64,u64,u64,u64,u64);
+
+/**
+   @brief Syscall 57, exec : replace current process by a new one.
+ */
+u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64);
 
 /**
    @brief Syscall 60, texit : exit the current thread with code rc

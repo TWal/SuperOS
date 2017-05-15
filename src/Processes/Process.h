@@ -13,7 +13,7 @@
 #include "../User/Context.h"
 #include "Waiting.h"
 
-#define FIXED_SIZE_STACK 1
+#define FIXED_SIZE_STACK 2
 
 class Thread;
 class Process;
