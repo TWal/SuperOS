@@ -16,6 +16,7 @@ void syscallFill(){
     handlers[SYSOPEN] = sysopen;
     handlers[SYSCLOSE] = sysclose;
     handlers[SYSBRK] = sysbrk;
+    handlers[SYSPIPE] = syspipe;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -26,23 +27,52 @@ void syscallFill(){
     handlers[SYSWAIT] = syswait;
 }
 
-u64 sread(Thread*t, uint fd, void* buf, u64 count){
+//non blocking read
+static u64 nbread(Thread*t, uint fd, void* buf, u64 count){
     auto pro = t->getProcess();
     if(!pro->_usermem.in(buf)) return -EFAULT;
     if(pro->_fds.size() <= fd) return -EBADF;
-    if(!pro->_fds[fd].hasStream()) return -EBADF;
-    if(!pro->_fds[fd].check(Stream::READABLE)) return -EBADF;
-    return pro->_fds[fd]->read((void*)buf,count); // UserMem must still be active
+    FileDescriptor& desc = pro->_fds[fd];
+    if(!desc.hasStream()) return -EBADF;
+    if(!desc.check(Stream::READABLE)) return -EBADF;
+    size_t res = desc->read(buf,count); // UserMem must still be active
+    if(res == 0){
+        if(desc->eof()) return 0;
+        else{
+            assert(desc.check(Stream::WAITABLE));
+            return -EBLOCK;
+        }
+    }
+    return res;
 }
 
 u64 sysread(u64 fd, u64 buf, u64 count, u64,u64,u64){
     Thread* t = schedul.enterSys();
     //fprintf(stderr,"sysread by %d on %lld to %p with size %lld\n",
     //       t->getTid(),fd,buf,count);
-    auto tmp = sread(t,fd,(void*)buf,count);
+    auto res = nbread(t,fd,(void*)buf,count);
+    if(res == size_t(-EBLOCK)){
+        auto pro = t->getProcess();
+        FileDescriptor& desc = pro->_fds[fd];
+        t->wait({desc.get()},[&desc,fd,buf,count](Waiting* th, Waitable* st){
+                Thread* t = static_cast<Thread*>(th);
+                t->getProcess()->prepare();
+                size_t res = nbread(t,fd,(void*)buf,count);
+                if(res == size_t(-EBLOCK)){
+                    t->refuse();
+                }
+                else{
+                    t->accept();
+                    t->context.rax = res;
+                }
+            });
+        schedul.stopCurent();
+        schedul.run();
+
+    }
     //fprintf(stderr,"sysread by %d on %lld to %p with size %lld returning %lld\n",
     //       t->getTid(),fd,buf,count,tmp);
-    return tmp;
+    return res;
 }
 
 u64 swrite(Thread*t, uint fd, const void* buf, u64 count){

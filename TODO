@@ -10,7 +10,7 @@ Syscalls
     - openwin
     - opentwin
     - futex
-    - pipe
+    - *pipe
     - *dup(2)
     - resizeWin
     - fstat
@@ -30,7 +30,7 @@ Syscalls
 
 MT-safe libc
 Shell
-Pipes
+*Pipes
 *Smart-pointer
 *Smart bsod.
 

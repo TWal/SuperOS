@@ -37,18 +37,34 @@ void thread(){
 int main(){
     printf("[Init] Init start\n");
     int fds [2];
-    //int i = pipe(fds);
-    //if(i == -1) return 0;
+    int i = pipe(fds);
+    if(i == -1) return 0;
 
-    /*FILE* out = fdopen(fds[1],"");
+
+    int pid = fork();
+    if(!pid){
+        for(volatile int i = 0 ; i < 100000000 ; ++i);
+        printf("sending to pipe");
+        close(fds[0]);
+        FILE* out = fdopen(fds[1],"");
+        fprintf(out,"Yolo %d\n", 42);
+        close(fds[1]);
+        printf("sended to pipe\n");
+        for(volatile int i = 0 ; i < 1000000000 ; ++i);
+        printf("end of snd\n");
+        return 42;
+    }
+    //for(volatile int i = 0 ; i < 1000000000 ; ++i);
+    close(fds[1]);
     FILE* in = fdopen(fds[0],"");
     int c;
-    fprintf(out,"Yolo %d\n", 42);
     while((c = fgetc(in)) != EOF){
         putchar(c);
-        }*/
-
-    
+    }
+    close(fds[0]);
+    printf("before wait\n");
+    wait(NULL);
+    printf("after wait\n");
 
     //   int pid = fork();
 

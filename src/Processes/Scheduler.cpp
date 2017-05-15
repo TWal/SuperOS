@@ -38,6 +38,7 @@ void Scheduler::init(Thread* initThread){
 
 [[noreturn]] void Scheduler::run(){
     assert(!_current);
+    assert(!Context::lastContext);
     assert(_threadFIFO.size() > 0 && "Empty Scheduler");
 
 
@@ -55,7 +56,7 @@ void Scheduler::init(Thread* initThread){
         // passive sleep : processor stopped until next interruption.
         // TODO interrupts may return from this
         while(true) asm volatile("xor %rsp,%rsp; sti; hlt");
-        error(Schedul," After while (true) hlt : Should never happen");
+        bsod(" After while (true) hlt : Should never happen");
     }
 
     // pop the next candidate's TID
@@ -63,21 +64,20 @@ void Scheduler::init(Thread* initThread){
     _threadFIFO.pop_front();
     auto it  = _threads.find(nextTid);
     // if it has been deleted continue
-    if(it == _threads.end()) run();
-
-    _current = it->second;
-
-    // If this thread is waiting something
-    if(!_current->OK()){
-        _threadFIFO.push_back(nextTid);
-        _current = nullptr;
-        ++_runTryNum;
+    if(it == _threads.end()){
         run();
     }
 
+    // OK must return
+    if(!it->second->OK()){
+        _threadFIFO.push_back(nextTid);
+        run();
+    }
+
+    _current = it->second;
     // All is right, this thread can run
     _remainingTime = processQuantum; // by default program runs for processQuantum ticks
-    _runTryNum = 0; // OK we have found it
+    _runTryNum = 0; // we have found it
     _current->run();
 
 }
@@ -92,6 +92,7 @@ void Scheduler::init(Thread* initThread){
     Process* pro = _current->getProcess();
     u16 tid = _current->getTid();
     _current = nullptr;
+    Context::lastContext = nullptr;
     info(Schedul,"Process %d died because thread %d exited with %lld\n",
          pro->getPid(),tid,returnCode);
     pro->terminate(returnCode); // call kend if it is init.
@@ -104,6 +105,7 @@ void Scheduler::init(Thread* initThread){
     Thread* th = _current;
     u16 tid = _current->getTid();
     _current = nullptr;
+    Context::lastContext = nullptr;
     info(Schedul,"Thread %d died with %lld\n",tid,returnCode);
     th->terminate(returnCode);
 

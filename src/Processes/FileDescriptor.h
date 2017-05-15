@@ -85,6 +85,7 @@ public :
     bool hasStream(){
         return _type == STREAM or _type == TWINDOW or _type == GWINDOW;
     }
+    Stream* get(){ return _str;}
     // Act on underlying stream, crash if there is no underlying stream.
     Stream* operator->(){
         assert(_str && "File Descriptor on non-Stream");

@@ -49,7 +49,7 @@ void FileDescriptor::drop(){
 }
 
 void FileDescriptor::free(){
-    assert(_owners && _owners == 0);
+    assert(_owners and *_owners == 0);
     delete _owners;
     delete _str;
     switch(_type){

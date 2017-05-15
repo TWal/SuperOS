@@ -15,6 +15,7 @@ PipeStream::PipeStream() :
 }
 
 PipeStream::~PipeStream() {
+    debug("PipeStream deletion");
 }
 
 u64 PipeStream::getMask() const {
@@ -41,7 +42,7 @@ bool PipeStream::eof() const {
 size_t PipeStream::write(const void* buf, size_t count) {
     const char* cbuf = (const char*)buf;
     for(size_t i = 0; i < count; ++i) {
-        _deque.push_front(cbuf[i]);
+        _deque.push_back(cbuf[i]);
     }
     if(_out){
         _out->free();
