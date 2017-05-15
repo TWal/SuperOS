@@ -313,6 +313,7 @@ u64 systexit(u64 rc,u64,u64,u64,u64,u64){
 
 u64 syswait(u64 pid,u64 status,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
+    if(status and !t->getProcess()->_usermem.in((void*)status)) return -EFAULT;
     //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
     //        t->getTid(),fd,buf,count);
     if(pid == 0){

@@ -5,7 +5,7 @@
 #include "../Bytes.h"
 #include "Stream.h"
 
-class BytesStream : public Stream { // TODO test this
+class BytesStream : public Stream {
     std::unique_ptr<Bytes> _data;
     u64 _addr;
 public:

@@ -47,7 +47,6 @@ u64 Thread::nbwaitp(u64* status){
     for(auto pro : _process->_sons){
         if(pro->_terminated){
             u64 res = pro->getPid();
-            // TODO check valid address
             if(status) *status = pro->_returnCode;
             delete pro;
             return res;

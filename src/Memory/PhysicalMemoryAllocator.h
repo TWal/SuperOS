@@ -39,8 +39,6 @@ public:
     /// Free a 2M physical page.
     void free2M(uptr page);
 
-    /// debug @todo delete this
-    void printfirst(int i) ; // print i*64 first bits
     /// Returns the number of 4K pages used for the bitset.
     size_t getPageSize(){return ((_bitset.size()+7) / 8 + 0x1000 -1) / 0x1000;}
 

@@ -141,7 +141,6 @@ Thread* Process::loadFromBytes(Bytes* file){
         uptr block = physmemalloc.alloc();
         paging.createMapping(block,(char*)stackStart - i * 0x1000);
     }
-    //TODO preparing Heap
     debug(Proc,"Initializing heap with %p",lastUsedAddr);
     _heap.init(lastUsedAddr);
 

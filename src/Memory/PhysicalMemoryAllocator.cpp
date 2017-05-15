@@ -42,13 +42,6 @@ void PhysicalMemoryAllocator::unset(uptr addr){
     _bitset.unset(((u64)addr - 0x100000)/ 0x1000);
 }
 
-void PhysicalMemoryAllocator::printfirst(int nb){
-    for(int j = 0 ; j < nb ; ++j){
-        printf("%d",(int)_bitset[j]);
-    }
-    printf("\n");
-}
-
 uptr PhysicalMemoryAllocator::alloc() {
     size_t bsf = _bitset.bsf();
     assert(bsf != (size_t)-1 && "Kernel is out of physical memory");

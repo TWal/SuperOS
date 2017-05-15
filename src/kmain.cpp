@@ -586,8 +586,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
    No large code in this function should run at each call. it is better to just make a
    condition check and maybe do something if the condition is met
 
-   @todo Do something in kloop like event handling
-
  */
 
 void kloop(){

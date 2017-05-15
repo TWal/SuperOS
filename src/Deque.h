@@ -3,8 +3,13 @@
 
 #include "utility.h"
 
+
+/**
+   @brief Low-level deque for POD manipulation in interrupts
+   (we can't use malloc in interrupts).
+ */
 template<typename T, uint N>
-class Deque { //TODO rewrite it with constructor friendly implementation.
+class Deque {
     public:
         Deque() :_begin(0), _end(0), _size(0) { }
 

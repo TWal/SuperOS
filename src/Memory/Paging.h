@@ -379,8 +379,6 @@ public:
 
     /**
        @brief Prints current mappings
-
-       @todo Implement it.
     */
     void print();
 
