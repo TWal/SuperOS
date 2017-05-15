@@ -246,6 +246,7 @@ Inode::Inode(FS* fs, u32 inode, InodeData data) :
     _fs(fs), _inode(inode), _data(data) {}
 
 void Inode::i_readaddr(u64 addr, void* data, size_t size) const {
+    readData();
     ReadRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -298,6 +299,7 @@ void Inode::readrec(ReadRecArgs& args, int level, u32 blockId) const {
 }
 
 void Inode::i_writeaddr(u64 addr, const void* data, size_t size) {
+    readData();
     WriteRecArgs args;
     args.addr = addr;
     args.data = (u8*)data;
@@ -405,6 +407,7 @@ bool Inode::writerec(WriteRecArgs& args, int level, u32* blockId) {
 }
 
 void Inode::i_resize(size_t size) {
+    readData();
     if(size < _data.getSize()) {
         ResizeRecArgs args;
         args.sizeAfter = size;
@@ -483,11 +486,13 @@ bool Inode::resizerec(ResizeRecArgs& args, int level, u32 blockId) {
 }
 
 void Inode::link() {
+    readData();
     _data.links_count += 1;
-    _fs->writeInodeData(_inode, &_data);
+    writeData();
 }
 
 void Inode::unlink() {
+    readData();
     if(_data.links_count == 1) {
         i_resize(0);
         _fs->freeInode(_inode, S_ISDIR(_data.mode));
@@ -495,10 +500,11 @@ void Inode::unlink() {
     } else {
         _data.links_count -= 1;
     }
-    _fs->writeInodeData(_inode, &_data);
+    writeData();
 }
 
 void Inode::i_getStats(stat* buf) const {
+    readData();
     buf->st_ino = _inode;
     buf->st_mode = _data.mode;
     buf->st_nlink = _data.links_count;
@@ -515,7 +521,17 @@ void Inode::i_getStats(stat* buf) const {
 }
 
 size_t Inode::i_getSize() const {
+    readData();
     return _data.getSize();
+}
+
+void Inode::writeData() {
+    _fs->writeInodeData(_inode, &_data);
+}
+
+void Inode::readData() const {
+    //Here, "const" means "won't write on the hard drive"
+    _fs->getInodeData(_inode, (InodeData*)&_data);
 }
 
 

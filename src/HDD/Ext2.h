@@ -208,6 +208,10 @@ class Inode {
         void link();
         /// decrement the link count of the inode, delete it if the link count becomes zero
         void unlink();
+        /// write @ref _data on the disk
+        void writeData();
+        /// read @ref _data from the disk
+        void readData() const;
 
     protected:
         FS* _fs;
