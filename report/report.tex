@@ -179,7 +179,7 @@ Il nous suffit ainsi de d'écrire pixel par pixel dans ce buffer pour afficher �
 l'écran. malheureusement cette méthode nécessite d'envoyer la totalité du
 contenu de l'écran de la RAM à la VRAM à chaque rendu. Sur un ordinateur moyen,
 cela nous limite à 60 fps si le noyau utilise 100\% du temps CPU pour le rendu
-(et encore on a optimisé à coup d'instructions SSE).
+(et encore on a optimisé à coup d'instructions SSE non temporelles).
 
 \chapter{Interface logicielle}
 
@@ -243,9 +243,23 @@ avant d'effectuer l'opération correspondante.
 
 
 
-\section{Système de fichier virtuel (VFS)}
+\section{Système de fichier}
 
-TODO théophile
+\paragraph{VFS} Nous avons un VFS minimaliste qui gère les points de montage.
+
+Pour cela, nous assignons un numéro de device unique à chaque système de fichier (via une variable qu'on incrémente à chaque montage), et nous avons deux \verb$std::map$ qui font la conversion \og dossier où on a monté le système de fichier \fg{} $\longleftrightarrow$ \og dossier racine du système de fichiers monté \fg{}
+
+\paragraph{Ext2} Comme dit dans la partie sur le disque dur, nous gérons l'ext2
+
+\paragraph{RamFS} Nous gérons un système de fichiers en RAM. Il sert à faire \verb$/tmp$ et \verb$/dev$.
+
+\paragraph{Gestion de la mémoire}
+Pour gérer la mémoire dans le système de fichiers, on utilise des \verb$std::unique_ptr$ un peu adaptés.
+En effet, dans l'interface globale, dans la fonction qui récupère un fichier dans un dossier, on veut renvoyer un \verb$File*$.
+Si on regarde le driver ext2, on veut l'encapsuler dans un \verb$std::unique_ptr$ pour libérer la mémoire automatiquement, car on renvoie des pointeurs alloués sur le tas pour l'occasion.
+Mais dans le RamFS, on donne les pointeurs qui sont ceux qu'on gère en interne.
+Nous avons donc rajouté à \verb$std::unique_ptr$ une méthode \verb$dontDelete$ qui fait qu'il ne supprimera pas la variable.
+Ainsi, nous pouvons concilier les deux points de vue dans une même classe.
 
 \section{Gestionaire de fenêtre et d'événement}
 
@@ -331,9 +345,9 @@ Notre solution a été de compiler cette portion du code en \verb$-O0$ mais avec
 
 \section*{Stack overflows}
 
-Au début, on avait notre pile juste au dessus du noyau. Un jour, on a eu un bug qui a fait un récursion infinie, et donc la pile a commencé à écrire sur les données et le code du noyau.
+Au début, on avait notre pile juste au dessus du noyau. Un jour, on a eu un bug qui a fait un récursion infinie, et donc la pile a commencé à écrire sur les données et le code du noyau. L'écran a commencé à clignoter en vert.
 
-Ensuite, on a alloué proprement la pile dans la mémoire virtuelle, avec rien en dessous. Quand on faisait une récursion infinie, au bout d'un moment ça lançait une page fault. Donc ça poussait des informations sur la pile. Donc ça faisait un page-fault. Donc ça faisait une triple-fault, l'ordinateur redémarre.
+Ensuite, on a alloué proprement la pile dans la mémoire virtuelle, avec rien en dessous. Quand on faisait une récursion infinie, au bout d'un moment ça lançait une page fault. Donc ça poussait des informations sur la pile. Donc ça faisait un page-fault. Donc ça faisait une double-fault, qui poussait des informations sur la pile donc faisait une page-fault. Donc ça faisait une triple-fault, l'ordinateur redémarre.
 
 \section*{Integer overflows}
 
@@ -357,7 +371,7 @@ Quand on modifie le paging, il faut faire \verb$invlpg$ pour invalider le cache 
 
 Sur un vrai PC on avait des gros problème de lenteur car on avait activé le writethrough par défaut et donc ça écrivait tout le temps en RAM (sans passer par le cache)
 
-Le driver PS/2 <-> usb fait n'importe quoi sur un certain PC
+Le driver PS/2 $\longleftrightarrow$ usb fait n'importe quoi sur un certain PC
 
 \section*{Le code 64-bit}
 
