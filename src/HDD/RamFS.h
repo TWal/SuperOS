@@ -36,9 +36,13 @@ class File {
     public:
         File(u32 ino, u16 mode, u16 uid, u16 gid);
         virtual ~File();
+        /// internal method for getStats
         void i_getStats(stat* buf) const;
+        /// increment the link count
         void link();
+        /// decrement the link count
         void unlink();
+        ///Internal method for @ref i_getStats
         virtual size_t size() const = 0;
 
     protected:
@@ -111,7 +115,7 @@ class CharacterDevice : public ::HDD::CharacterDevice, public File {
         virtual void getStats(stat* buf) const;
         virtual size_t size() const;
         virtual u64 getMask() const;
-        virtual size_t read(void* buf, size_t count) const;
+        virtual size_t read(void* buf, size_t count);
         virtual bool eof() const;
         virtual size_t write(const void* buf, size_t count);
         virtual size_t tell() const;

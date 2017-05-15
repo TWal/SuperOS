@@ -190,15 +190,23 @@ class FS : public FileSystem {
         u64 _nbBgd;
 };
 
+/// @brief An inode in the Ext2 filesystem
 class Inode {
     public:
         Inode(FS* fs, u32 inode, InodeData data);
+        /// internal readaddr
         void i_readaddr(u64 addr, void* data, size_t size) const;
+        /// internal writeaddr
         void i_writeaddr(u64 addr, const void* data, size_t size);
+        /// internal resize
         void i_resize(size_t size);
+        /// internal getStats
         void i_getStats(stat* buf) const;
+        /// internal getSize
         size_t i_getSize() const;
+        /// increment the link count of the inode
         void link();
+        /// decrement the link count of the inode, delete it if the link count becomes zero
         void unlink();
 
     protected:
@@ -260,7 +268,9 @@ class Directory : public ::HDD::Directory, public Inode {
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
 
+        /// initializes the directory with '.'
         void init();
+        /// remove all the entries in the directory (including '.')
         void deleteDir();
 
     protected:

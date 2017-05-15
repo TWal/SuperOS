@@ -11,6 +11,7 @@ class DevFS : public FileSystem {
     public:
         DevFS();
         virtual std::unique_ptr<::HDD::Directory> getRoot();
+        /// Add a harddrive to /dev (for /dev/sd* or /dev/hd*)
         void addHardDrive(const std::string& name, HDD* hdd);
     protected:
         RamFS::FS _fs;

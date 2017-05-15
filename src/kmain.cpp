@@ -637,7 +637,8 @@ void kloop(){
    @authors Thibaut Pérami, Théophile Wallez
 
    Thanks to:
-       - Luc Chabassier
+       - Luc Chabassier, for correcting small typos
+       - Hadrien Barral, the human fuzzer
 
  */
 

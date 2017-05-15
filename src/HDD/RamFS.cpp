@@ -50,7 +50,7 @@ File::File(u32 ino, u16 mode, u16 uid, u16 gid) :
     _ino(ino), _mode(mode), _nlink(0), _uid(uid), _gid(gid) {}
 
 File::~File() {
-    bsod("BLABLA");
+    bsod("HDD::RamFS::File::~File should never be called");
 }
 
 void File::i_getStats(stat* buf) const {
@@ -270,7 +270,7 @@ u64 CharacterDevice::getMask() const {
     return _impl->getMask();
 }
 
-size_t CharacterDevice::read(void* buf, size_t count) const {
+size_t CharacterDevice::read(void* buf, size_t count) {
     return _impl->read(buf, count);
 }
 

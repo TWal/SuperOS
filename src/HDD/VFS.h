@@ -21,8 +21,12 @@ class FS : public FileSystem {
         void umount(std::unique_ptr<Directory> dir);
 
     private:
+        ///returns the root of the filesystem mounted on the device @ref dev at inode @inode
         Directory* toMounted(u32 inode, u32 dev);
+        ///the reciprocal of @ref toMounted
         Directory* fromMounted(u32 inode, u32 dev);
+        ///encapsulate @ref file in the VFS
+        std::unique_ptr<::HDD::File> convert(std::unique_ptr<::HDD::File>&& file, u32 dev);
         friend class Directory;
         u32 _nextDev;
         FileSystem* _root;

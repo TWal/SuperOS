@@ -137,7 +137,7 @@ class Directory : public File {
         virtual void seek(void* d, long int loc) = 0; ///< Like seekdir
         virtual void close(void* d) = 0; ///< Like closedir
 
-        ///Add an entry in the directory, creating the file/directory
+        ///Add an entry in the directory, creating the file/directory. Returns the file created.
         virtual std::unique_ptr<File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) = 0;
         ///Add an existing entry in the directory (it may be used to create hard links)
         virtual void addEntry(const std::string& name, File* file) = 0;

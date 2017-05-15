@@ -49,6 +49,21 @@ Directory* FS::fromMounted(u32 inode, u32 dev) {
 }
 
 
+std::unique_ptr<::HDD::File> FS::convert(std::unique_ptr<::HDD::File>&& file, u32 dev) {
+    if(file->getType() == FileType::RegularFile) {
+        return std::unique_ptr<::HDD::File>(new RegularFile(this, std::lifted_static_cast<::HDD::RegularFile>(std::move(file)), dev));
+    } else if(file->getType() == FileType::Directory) {
+        return std::unique_ptr<::HDD::File>(new Directory(this, std::lifted_static_cast<::HDD::Directory>(std::move(file)), dev));
+    } else if(file->getType() == FileType::BlockDevice) {
+        return std::unique_ptr<::HDD::File>(new BlockDevice(this, std::lifted_static_cast<::HDD::BlockDevice>(std::move(file)), dev));
+    } else if(file->getType() == FileType::CharacterDevice) {
+        return std::unique_ptr<::HDD::File>(new CharacterDevice(this, std::lifted_static_cast<::HDD::CharacterDevice>(std::move(file)), dev));
+    } else {
+        bsod("HDD::VFS::FS::convert: oh noes! me dunno how 2 handle dat file type");
+    }
+}
+
+
 /*   _____ _ _
     |  ___(_) | ___
     | |_  | | |/ _ \
@@ -131,17 +146,7 @@ std::unique_ptr<::HDD::File> Directory::operator[](const std::string& name) {
         res.dontDelete();
         return res;
     }
-    if(res->getType() == FileType::RegularFile) {
-        return std::unique_ptr<::HDD::File>(new RegularFile(_fs, std::lifted_static_cast<::HDD::RegularFile>(std::move(res)), _dev));
-    } else if(res->getType() == FileType::Directory) {
-        return std::unique_ptr<::HDD::File>(new Directory(_fs, std::lifted_static_cast<::HDD::Directory>(std::move(res)), _dev));
-    } else if(res->getType() == FileType::BlockDevice) {
-        return std::unique_ptr<::HDD::File>(new BlockDevice(_fs, std::lifted_static_cast<::HDD::BlockDevice>(std::move(res)), _dev));
-    } else if(res->getType() == FileType::CharacterDevice) {
-        return std::unique_ptr<::HDD::File>(new CharacterDevice(_fs, std::lifted_static_cast<::HDD::CharacterDevice>(std::move(res)), _dev));
-    } else {
-        bsod("VFS::Directory::get: oh noes! me dunno how 2 handle dat file type");
-    }
+    return _fs->convert(std::move(res), _dev);
 }
 
 void* Directory::open() {
@@ -179,8 +184,7 @@ void Directory::close(void* d) {
 }
 
 std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
-    _impl->addEntry(name, uid, gid, mode);
-    return nullptr; //TODO
+    return _fs->convert(_impl->addEntry(name, uid, gid, mode), _dev);
 }
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
