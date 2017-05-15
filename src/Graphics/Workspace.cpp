@@ -9,10 +9,13 @@ namespace video{
 
     Workspace Workspace::_elems[Workspace::_totalNumber];
     uint Workspace::active = 0;
+    uint Workspace::_currentKeymap = 0;
+
     void Workspace::init(){
         for(uint i = 0 ; i <_totalNumber ; ++i){
             get(i)._number =i;
         }
+        kbd.setKeymap(input::keymaps[_currentKeymap]);
     }
 
     void Workspace::drawMe(){
@@ -45,10 +48,10 @@ namespace video{
 
     void Workspace::handleEventOnMe(input::Event e){
         if(e.type == Event::KEYBOARD){
-            if(e.kcode.state.lAlt and e.kcode.scanCode.code == Keyboard::TAB and !e.kcode.scanCode.release){
+            if((e.kcode.state.lWin or e.kcode.state.rWin) and e.kcode.scanCode.code == Keyboard::TAB and !e.kcode.scanCode.release){
                 cycle();
             }
-            if(e.kcode.state.lWin) {
+            if(e.kcode.state.lWin or e.kcode.state.rWin) {
                 _superState = true;
             } else {
                 _superState = false;
@@ -133,10 +136,27 @@ namespace video{
 
     void Workspace::handleEvent(Event e){
         if(e.type == Event::KEYBOARD){
-            if(e.kcode.state.lCtrl or e.kcode.state.rCtrl){
+            if((e.kcode.state.lWin or e.kcode.state.rWin) and !e.kcode.scanCode.release) {
                 if(e.kcode.scanCode.code >= Keyboard::F1
                 && e.kcode.scanCode.code <= Keyboard::F10 ){
-                    Workspace::active = (e.kcode.scanCode.code - Keyboard::F1 +1) %10;
+                    uint workspaceNum= (e.kcode.scanCode.code - Keyboard::F1 +1) %10;
+                    if(e.kcode.state.lShift or e.kcode.state.rShift) {
+                        Workspace& currentWorkspace = _elems[active];
+                        Workspace& targetWorkspace = _elems[workspaceNum];
+                        if(!currentWorkspace._wins.empty()) {
+                            Window* win = currentWorkspace._wins.front();
+                            currentWorkspace._wins.pop_front();
+                            targetWorkspace._wins.push_front(win);
+                        }
+                    } else {
+                        Workspace::active = workspaceNum;
+                    }
+                    return;
+                }
+                if(e.kcode.scanCode.code == Keyboard::SPACE) {
+                    _currentKeymap = (_currentKeymap+1)%input::NB_KEYMAPS;
+                    kbd.setKeymap(input::keymaps[_currentKeymap]);
+                    return;
                 }
             }
         }

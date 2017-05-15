@@ -23,20 +23,23 @@ namespace input{
     extern const Keymap azertyKeymap;
     extern const Keymap dvorakKeymap;
 
+    const uint NB_KEYMAPS = 3;
+    extern const Keymap* keymaps[NB_KEYMAPS];
+
     class Keyboard {
     public:
         struct State{
             State(){*reinterpret_cast<u8*>(this) = 0;}
-            bool lShift :1;
-            bool rShift :1;
-            bool lCtrl  :1;
-            bool rCtrl  :1;
-            bool lAlt  :1;
-            bool rAlt  :1; // Alt Gr
-            bool lWin : 1;
-            bool rWin : 1;
-            bool capsLock  :1;
-            bool numLock  :1;
+            bool lShift : 1;
+            bool rShift : 1;
+            bool lCtrl  : 1;
+            bool rCtrl  : 1;
+            bool lAlt   : 1;
+            bool rAlt   : 1; // Alt Gr
+            bool lWin   : 1;
+            bool rWin   : 1;
+            bool capsLock : 1;
+            bool numLock : 1;
         }__attribute__((packed));
         static_assert(sizeof(State) == 2,"Wrong Size for Keyboard::State");
 

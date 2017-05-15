@@ -162,4 +162,7 @@ namespace input{
             '0', '.', // last keypad line
         }
     };
+
+    const Keymap* keymaps[NB_KEYMAPS] = {&azertyKeymap, &qwertyKeymap, &dvorakKeymap};
+
 }

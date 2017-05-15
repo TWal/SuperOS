@@ -44,6 +44,7 @@ namespace video{
         Window* _currentWindow = nullptr;
         Vec2i _startMousePos;
         Vec2i _startWindow;
+        static uint _currentKeymap;
 
     public:
         /// Access Workspace number i
