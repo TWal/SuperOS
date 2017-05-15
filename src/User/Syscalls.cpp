@@ -188,6 +188,7 @@ u64 sysseek(u64 fd, u64 offset, u64 mode ,u64,u64,u64){
     else if(mode == SEEK_END){
         origin = size;
     }
+    else return - EINVAL;
     origin += offset;
     if(origin < 0) return -EINVAL;
     if(origin > size and !desc.check(Stream::APPENDABLE)) return -EINVAL;

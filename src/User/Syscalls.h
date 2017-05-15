@@ -52,7 +52,7 @@ u64 syspoll(u64 pollfd, u64 nbfds, u64,u64,u64,u64);
    @param whence The starting position, it can be :
        - SEEK_SET : From the beginning of the file.
        - SEEK_CUR : From the current position.
-       - SEEK_END : From the end position
+       - SEEK_END : From the end position.
 
    Some @ref SEEKABLE devices are not seekable beyond the end
    (i.e @ref Stream::APPENDABLE)
@@ -120,6 +120,15 @@ u64 systexit(u64 rc, u64,u64,u64,u64,u64);
    @brief Syscall 61, wait : wait for a child process to die.
  */
 u64 syswait(u64 pid, u64 status, u64,u64,u64,u64);
+
+/**
+   @brief Syscall 80, chdir : change directory
+   @param path : path to new directory
+   @retval 0 Success;
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed
+*/
+u64 syschdir(u64 path, u64,u64,u64,u64,u64);
 
 
 
