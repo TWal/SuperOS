@@ -3,6 +3,8 @@
 #include "../Graphics/Screen.h"
 #include "../log.h"
 
+namespace input {
+
 Mouse mouse;
 
 MouseEvent::MouseEvent() :
@@ -180,4 +182,6 @@ u8 Mouse::_read() {
     _wait(false);
     return inb(0x60);
 }
+
+} //end of namespace input
 

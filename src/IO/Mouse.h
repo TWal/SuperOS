@@ -4,6 +4,8 @@
 #include "../utility.h"
 #include "../Deque.h"
 
+namespace input {
+
 struct MouseEvent {
     MouseEvent();
     MouseEvent(u16 x_, u16 y_, u8 pressed_, u8 lastPressed_);
@@ -63,6 +65,8 @@ class Mouse {
 };
 
 extern Mouse mouse;
+
+} //end of namespace input
 
 #endif
 
