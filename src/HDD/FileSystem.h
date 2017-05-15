@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include "../Streams/Stream.h"
+#include <memory>
 
 //TODO: move this in libc?
 struct timespec {
@@ -126,9 +127,9 @@ class Directory : public File {
     public:
         virtual FileType getType() const;
         ///Get a file in the directory. Returns nullptr when it does not exists
-        virtual File* operator[](const std::string& name) = 0;
+        virtual std::unique_ptr<File> operator[](const std::string& name) = 0;
         ///Get the file at `path`
-        File* resolvePath(const std::string& path);
+        std::unique_ptr<File> resolvePath(const std::string& path);
 
         virtual void* open() = 0; ///< Like opendir
         virtual dirent* read(void* d) = 0; ///< Like readdir
@@ -137,7 +138,7 @@ class Directory : public File {
         virtual void close(void* d) = 0; ///< Like closedir
 
         ///Add an entry in the directory, creating the file/directory
-        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) = 0;
+        virtual std::unique_ptr<File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) = 0;
         ///Add an existing entry in the directory (it may be used to create hard links)
         virtual void addEntry(const std::string& name, File* file) = 0;
         ///Remove and delete file in a directory
@@ -175,7 +176,7 @@ class CharacterDevice : public File, public Stream {
 */
 class FileSystem {
     public:
-        virtual Directory* getRoot() = 0;
+        virtual std::unique_ptr<Directory> getRoot() = 0;
 };
 
 } //end of namespace HDD

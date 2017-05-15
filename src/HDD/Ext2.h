@@ -152,7 +152,7 @@ class Directory;
 class FS : public FileSystem {
     public:
         explicit FS(Partition* part);
-        virtual ::HDD::Directory* getRoot();
+        virtual std::unique_ptr<::HDD::Directory> getRoot();
         /// Create a fresh new file
         RegularFile* getNewFile(u16 uid, u16 gid, u16 mode);
         /// Create a fresh new directory
@@ -247,14 +247,14 @@ class Directory : public ::HDD::Directory, public Inode {
     public :
         Directory(FS* fs, u32 inode, InodeData data);
         virtual void getStats(stat* buf) const;
-        virtual ::HDD::File* operator[](const std::string& name);
+        virtual std::unique_ptr<::HDD::File> operator[](const std::string& name);
         virtual void* open();
         virtual dirent* read(void* d);
         virtual long int tell(void* d);
         virtual void seek(void* d, long int loc);
         virtual void close(void* d);
 
-        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
+        virtual std::unique_ptr<::HDD::File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
         virtual void addEntry(const std::string& name, ::HDD::File* file);
         virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);

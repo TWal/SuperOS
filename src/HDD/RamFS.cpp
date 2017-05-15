@@ -16,8 +16,10 @@ FS::FS() : _root(nullptr), _nextInode(0) {
     _root->addEntry("..", _root);
 }
 
-::HDD::Directory* FS::FS::getRoot() {
-    return _root;
+std::unique_ptr<::HDD::Directory> FS::FS::getRoot() {
+    std::unique_ptr<::HDD::Directory> res(_root);
+    res.dontDelete();
+    return res;
 }
 
 RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
@@ -46,6 +48,10 @@ CharacterDevice* FS::getNewCharacterDevice(Stream* impl, u16 uid, u16 gid, u16 m
 
 File::File(u32 ino, u16 mode, u16 uid, u16 gid) :
     _ino(ino), _mode(mode), _nlink(0), _uid(uid), _gid(gid) {}
+
+File::~File() {
+    bsod("BLABLA");
+}
 
 void File::i_getStats(stat* buf) const {
     buf->st_ino = _ino;
@@ -122,12 +128,14 @@ void Directory::getStats(stat* buf) const {
     RamFS::File::i_getStats(buf);
 }
 
-::HDD::File* Directory::operator[](const std::string& name) {
+std::unique_ptr<::HDD::File> Directory::operator[](const std::string& name) {
     auto it = _entries.find(name);
     if(it == _entries.end()) {
         return nullptr;
     } else {
-        return it->second;
+        std::unique_ptr<::HDD::File> res(it->second);
+        res.dontDelete();
+        return res;
     }
 }
 
@@ -167,7 +175,7 @@ void Directory::close(void* d) {
     delete (DirIterator*)d;
 }
 
-void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
+std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
     ::HDD::File* f = nullptr;
     if(S_ISREG(mode)) {
         f = _fs->getNewFile(uid, gid, mode);
@@ -177,6 +185,9 @@ void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
         bsod("HDD::RamFS::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
     }
     addEntry(name, f);
+    std::unique_ptr<::HDD::File> res(f);
+    res.dontDelete();
+    return res;
 }
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {

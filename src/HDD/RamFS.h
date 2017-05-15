@@ -17,7 +17,7 @@ class CharacterDevice;
 class FS : public FileSystem {
     public:
         FS();
-        virtual ::HDD::Directory* getRoot();
+        virtual std::unique_ptr<::HDD::Directory> getRoot();
         /// Create a fresh new file
         RegularFile* getNewFile(u16 uid, u16 gid, u16 mode);
         /// Create a fresh new directory
@@ -35,6 +35,7 @@ class FS : public FileSystem {
 class File {
     public:
         File(u32 ino, u16 mode, u16 uid, u16 gid);
+        virtual ~File();
         void i_getStats(stat* buf) const;
         void link();
         void unlink();
@@ -68,7 +69,7 @@ class Directory : public ::HDD::Directory, public File {
     public:
         Directory(FS* fs, u32 ino, u16 mode, u16 uid, u16 gid);
         virtual void getStats(stat* buf) const;
-        virtual ::HDD::File* operator[](const std::string& name);
+        virtual std::unique_ptr<::HDD::File> operator[](const std::string& name);
         virtual size_t size() const;
 
         virtual void* open();
@@ -77,7 +78,7 @@ class Directory : public ::HDD::Directory, public File {
         virtual void seek(void* d, long int loc);
         virtual void close(void* d);
 
-        virtual void addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
+        virtual std::unique_ptr<::HDD::File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
         virtual void addEntry(const std::string& name, ::HDD::File* file);
         virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);

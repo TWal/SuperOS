@@ -43,13 +43,22 @@ namespace std {
     public:
         using element_type = T;
         using pointer = T*;
+        using const_pointer = const T*;
         pointer get(){ return _ptr;}
 
         T& operator* (){
             return *_ptr;
         }
 
+        const T& operator* () const {
+            return *_ptr;
+        }
+
         pointer operator ->(){
+            return _ptr;
+        }
+
+        const_pointer operator ->() const {
             return _ptr;
         }
     };
@@ -67,32 +76,35 @@ namespace std {
         using element_type = T;
         using pointer = T*;
         using __ptr<T>::_ptr;
-        constexpr unique_ptr() : __ptr<T>(){}
-        constexpr unique_ptr(nullptr_t) : __ptr<T>(){}
-        explicit unique_ptr(pointer t) : __ptr<T>(t){}
-        unique_ptr(unique_ptr&& x) : __ptr<T>(x._ptr){
+        constexpr unique_ptr() : __ptr<T>(), _canDelete(true) {}
+        constexpr unique_ptr(nullptr_t) : __ptr<T>(), _canDelete(true) {}
+        explicit unique_ptr(pointer t) : __ptr<T>(t), _canDelete(true) {}
+        unique_ptr(unique_ptr&& x) : __ptr<T>(x._ptr), _canDelete(x._canDelete) {
             x._ptr = nullptr;
         }
         unique_ptr(const unique_ptr&) = delete;
-        ~unique_ptr(){delete _ptr;}
+        ~unique_ptr() {
+            _delete();
+        }
 
         unique_ptr& operator=(unique_ptr&& x){
             if(&x == this) return *this;
-            delete _ptr;
+            _delete();
             _ptr = x._ptr;
+            _canDelete = x._canDelete;
             x._ptr = nullptr;
             return *this;
         }
 
         unique_ptr& operator=(nullptr_t){
-            delete _ptr;
+            _delete();
             _ptr = nullptr;
             return *this;
         }
 
         unique_ptr& operator=(const unique_ptr&) = delete;
 
-        operator bool(){ return _ptr == nullptr;}
+        operator bool(){ return _ptr != nullptr;}
 
         pointer release(){
             pointer p = _ptr;
@@ -101,14 +113,43 @@ namespace std {
         }
 
         void reset(pointer p = pointer()){
-            delete _ptr;
+            _delete();
             _ptr = p;
         }
 
         void swap(unique_ptr& x){
             swap(_ptr,x._ptr);
         }
+
+        void dontDelete() {
+            _canDelete = false;
+        }
+
+        bool canDelete() {
+            return _canDelete;
+        }
+
+    private:
+        bool _canDelete;
+        void _delete() {
+            if(_canDelete) {
+                delete _ptr;
+            }
+        }
     };
+
+//TODO: something better
+template<typename U, typename V>
+static std::unique_ptr<U> lifted_static_cast(std::unique_ptr<V> p) {
+    bool b = p.canDelete();
+    V* ptr = p.release();
+    std::unique_ptr<U> res(static_cast<U*>(ptr));
+    if(!b) {
+        res.dontDelete();
+    }
+    return res;
+}
+
 
     template<typename T>
     class weak_ptr;

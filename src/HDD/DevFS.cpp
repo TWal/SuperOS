@@ -9,13 +9,13 @@ DevFS::DevFS() {
     CharacterDevice* null = _fs.getNewCharacterDevice(new StreamNull, 0, 0, mode);
     CharacterDevice* random = _fs.getNewCharacterDevice(new StreamRandom, 0, 0, mode);
 
-    Directory* d = _fs.getRoot();
+    std::unique_ptr<Directory> d = _fs.getRoot();
     d->addEntry("zero", zero);
     d->addEntry("null", null);
     d->addEntry("random", random);
 }
 
-::HDD::Directory* DevFS::getRoot() {
+std::unique_ptr<::HDD::Directory> DevFS::getRoot() {
     return _fs.getRoot();
 }
 

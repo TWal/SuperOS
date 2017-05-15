@@ -358,18 +358,52 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     HDD::Partition* pa1 = new HDD::Partition(first,*part1);
 #endif
 
-    HDD::Ext2::FS* fs = new HDD::Ext2::FS(pa1);
-    HDD::VFS::vfs = new HDD::VFS::FS(fs);
+    HDD::Ext2::FS* fs1 = new HDD::Ext2::FS(pa1);
+
+    HDD::VFS::vfs = new HDD::VFS::FS(fs1);
 
     pageLog = true;
 
-    HDD::File* initf = (*(HDD::VFS::vfs->getRoot()))["init"];
+
+    HDD::RamFS::FS* fs3 = new HDD::RamFS::FS;
+    {
+        u16 mode = S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+        fs3->getRoot()->addEntry("hello", 0, 0, mode);
+
+        std::unique_ptr<HDD::File> fhello = (*fs3->getRoot())["hello"];
+        HDD::RegularFile* frhello = static_cast<HDD::RegularFile*>(fhello.get());
+        const char* helloString = "Hello ";
+        const char* worldString = "World!";
+        frhello->writeaddr(6, worldString, 6);
+        frhello->writeaddr(0, helloString, 6);
+
+        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*fs->getRoot())["tmp"]);
+        assert(d.get() != nullptr);
+        assert(d->getType() == HDD::FileType::Directory);
+        fs->mount(std::move(d), fs3);
+    }
+
+    HDD::DevFS* fs4 = new HDD::DevFS;
+    {
+        std::unique_ptr<HDD::VFS::Directory> d = std::lifted_static_cast<HDD::VFS::Directory>((*fs->getRoot())["dev"]);
+        assert(d.get() != nullptr);
+        assert(d->getType() == HDD::FileType::Directory);
+        fs4->addHardDrive("sda", first);
+        fs->mount(std::move(d), fs4);
+    }
+
+
+
+    pageLog = true;
+
+    std::unique_ptr<HDD::File> initf = (*(HDD::VFS::vfs->getRoot()))["init"];
     assert(initf);
     assert(initf->getType() == HDD::FileType::RegularFile);
-    HDD::RegularFile* init = static_cast<HDD::RegularFile*>(initf);
+    std::unique_ptr<HDD::RegularFile> init = lifted_static_cast<HDD::RegularFile>(std::move(initf));
+
     ProcessGroup* pg = new ProcessGroup(1);
     Process* initp = new Process(1,pg);
-    Thread* initt = initp->loadFromBytes(init);
+    Thread* initt = initp->loadFromBytes(init.get());
     TextWindow* initLog = new TextWindow({0,0},screen.getSize(),Font::def);
     initLog->show();
     Workspace::get(1).addWin(initLog);

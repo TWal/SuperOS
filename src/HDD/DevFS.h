@@ -10,7 +10,7 @@ namespace HDD {
 class DevFS : public FileSystem {
     public:
         DevFS();
-        virtual ::HDD::Directory* getRoot();
+        virtual std::unique_ptr<::HDD::Directory> getRoot();
         void addHardDrive(const std::string& name, HDD* hdd);
     protected:
         RamFS::FS _fs;

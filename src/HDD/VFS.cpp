@@ -10,20 +10,22 @@ FS::FS(FileSystem* fsroot) :
     _nextDev(1), _root(fsroot) {}
 
 
-::HDD::Directory* FS::getRoot() {
-    return new Directory(this, _root->getRoot(), 0);
+std::unique_ptr<::HDD::Directory> FS::getRoot() {
+    return std::unique_ptr<::HDD::Directory>(new Directory(this, _root->getRoot(), 0));
 }
 
-void FS::mount(Directory* dir, FileSystem* fs) {
+void FS::mount(std::unique_ptr<Directory> dir, FileSystem* fs) {
     stat st;
     dir->getStats(&st);
-    ::HDD::Directory* root = fs->getRoot();
-    _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(this, root, _nextDev)));
-    _reverseMountedDirs.insert(std::make_pair(std::make_pair(_nextDev, root->getInode()), dir));
+    std::unique_ptr<::HDD::Directory> root = fs->getRoot();
+    root.dontDelete();
+    u32 rootInode = root->getInode();
+    _mountedDirs.insert(std::make_pair(std::make_pair(dir->_dev, dir->getInode()), new Directory(this, std::move(root), _nextDev)));
+    _reverseMountedDirs.insert(std::make_pair(std::make_pair(_nextDev, rootInode), dir.release()));
     _nextDev += 1;
 }
 
-void FS::umount(Directory* dir) {
+void FS::umount(std::unique_ptr<Directory> dir) {
     (void) dir;
     bsod("VFS::FS::umount not implemented yet\n");
 }
@@ -55,7 +57,7 @@ Directory* FS::fromMounted(u32 inode, u32 dev) {
 */
 
 File::File(FS* fs, ::HDD::File* impl, u32 dev) :
-    _fs(fs), _impl(impl), _dev(dev) {}
+    _fs(fs), _impl(std::move(impl)), _dev(dev) { }
 
 void File::i_getStats(stat* buf) const {
     _impl->getStats(buf);
@@ -75,8 +77,8 @@ FileType File::i_getType() const {
                |___/
 */
 
-RegularFile::RegularFile(FS* fs, ::HDD::RegularFile* impl, u32 dev) :
-    VFS::File(fs, impl, dev), _impl(impl) {}
+RegularFile::RegularFile(FS* fs, std::unique_ptr<::HDD::RegularFile> impl, u32 dev) :
+    VFS::File(fs, impl.get(), dev), _impl(std::move(impl)) {}
 
 void RegularFile::getStats(stat* buf) const {
     _impl->getStats(buf);
@@ -107,34 +109,36 @@ size_t RegularFile::getSize() const {
                                          |___/
 */
 
-Directory::Directory(FS* fs, ::HDD::Directory* impl, u32 dev) :
-    VFS::File(fs, impl, dev), _impl(impl) {}
+Directory::Directory(FS* fs, std::unique_ptr<::HDD::Directory> impl, u32 dev) :
+    VFS::File(fs, impl.get(), dev), _impl(std::move(impl)) {}
 
 void Directory::getStats(stat* buf) const {
     i_getStats(buf);
 }
 
-::HDD::File* Directory::operator[](const std::string& name) {
+std::unique_ptr<::HDD::File> Directory::operator[](const std::string& name) {
     Directory* d;
     if(std::string("..") == name && (d = _fs->fromMounted(getInode(), _dev)) != nullptr) {
         return (*d)[".."];
     }
 
-    ::HDD::File* res = (*_impl)[name];
-    if(res == nullptr) {
+    std::unique_ptr<::HDD::File> res = (*_impl)[name];
+    if(res.get() == nullptr) {
         return nullptr;
     }
     if((d = _fs->toMounted(res->getInode(), _dev)) != nullptr) {
-        return d;
+        std::unique_ptr<::HDD::File> res(d);
+        res.dontDelete();
+        return res;
     }
     if(res->getType() == FileType::RegularFile) {
-        return new RegularFile(_fs, static_cast<::HDD::RegularFile*>(res), _dev);
+        return std::unique_ptr<::HDD::File>(new RegularFile(_fs, std::lifted_static_cast<::HDD::RegularFile>(std::move(res)), _dev));
     } else if(res->getType() == FileType::Directory) {
-        return new Directory(_fs, static_cast<::HDD::Directory*>(res), _dev);
+        return std::unique_ptr<::HDD::File>(new Directory(_fs, std::lifted_static_cast<::HDD::Directory>(std::move(res)), _dev));
     } else if(res->getType() == FileType::BlockDevice) {
-        return new BlockDevice(_fs, static_cast<::HDD::BlockDevice*>(res), _dev);
+        return std::unique_ptr<::HDD::File>(new BlockDevice(_fs, std::lifted_static_cast<::HDD::BlockDevice>(std::move(res)), _dev));
     } else if(res->getType() == FileType::CharacterDevice) {
-        return new CharacterDevice(_fs, static_cast<::HDD::CharacterDevice*>(res), _dev);
+        return std::unique_ptr<::HDD::File>(new CharacterDevice(_fs, std::lifted_static_cast<::HDD::CharacterDevice>(std::move(res)), _dev));
     } else {
         bsod("VFS::Directory::get: oh noes! me dunno how 2 handle dat file type");
     }
@@ -174,8 +178,9 @@ void Directory::close(void* d) {
     _impl->close(d);
 }
 
-void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
+std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
     _impl->addEntry(name, uid, gid, mode);
+    return nullptr; //TODO
 }
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
@@ -201,8 +206,8 @@ void Directory::removeEntry(const std::string& name) {
    |____/|_|\___/ \___|_|\_\____/ \___| \_/ |_|\___\___|
 */
 
-BlockDevice::BlockDevice(FS* fs, ::HDD::BlockDevice* impl, u32 dev) :
-    VFS::File(fs, impl, dev), _impl(impl) {}
+BlockDevice::BlockDevice(FS* fs, std::unique_ptr<::HDD::BlockDevice> impl, u32 dev) :
+    VFS::File(fs, impl.get(), dev), _impl(std::move(impl)) {}
 
 void BlockDevice::getStats(stat* buf) const {
     i_getStats(buf);
@@ -228,8 +233,8 @@ size_t BlockDevice::getSize() const {
     \____|_| |_|\__,_|_|  \__,_|\___|\__\___|_|  |____/ \___| \_/ |_|\___\___|
 */
 
-CharacterDevice::CharacterDevice(FS* fs, ::HDD::CharacterDevice* impl, u32 dev) :
-    VFS::File(fs, impl, dev), _impl(impl) {}
+CharacterDevice::CharacterDevice(FS* fs, std::unique_ptr<::HDD::CharacterDevice> impl, u32 dev) :
+    VFS::File(fs, impl.get(), dev), _impl(std::move(impl)) {}
 
 void CharacterDevice::getStats(stat* buf) const {
     i_getStats(buf);
@@ -239,7 +244,7 @@ u64 CharacterDevice::getMask() const {
     return _impl->getMask();
 }
 
-size_t CharacterDevice::read(void* buf, size_t count) const {
+size_t CharacterDevice::read(void* buf, size_t count) {
     return _impl->read(buf, count);
 }
 

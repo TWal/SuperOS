@@ -19,7 +19,7 @@ public :
     std::string readCommandText();
     std::vector<std::string> readCommand();
     void add(std::string name,command_func func);
-    HDD::Directory * pwd;
+    std::unique_ptr<HDD::Directory> pwd;
 };
 
 extern CommandLine cl;

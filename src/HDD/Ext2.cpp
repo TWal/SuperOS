@@ -45,10 +45,10 @@ FS::FS(Partition* part) : _part(part) {
     _loadBlockGroupDescriptor();
 }
 
-::HDD::Directory* FS::getRoot() {
+std::unique_ptr<::HDD::Directory> FS::getRoot() {
     InodeData dat;
     getInodeData(2, &dat);
-    return new Directory(this, 2, dat);
+    return std::unique_ptr<::HDD::Directory>(new Directory(this, 2, dat));
 }
 
 RegularFile* FS::getNewFile(u16 uid, u16 gid, u16 mode) {
@@ -566,7 +566,7 @@ void Directory::getStats(stat* buf) const {
     i_getStats(buf);
 }
 
-::HDD::File* Directory::operator[](const std::string& name) {
+std::unique_ptr<::HDD::File> Directory::operator[](const std::string& name) {
     u32 inode = 0;
     void* d = open();
     dirent* dir;
@@ -583,9 +583,9 @@ void Directory::getStats(stat* buf) const {
     InodeData inodedat;
     _fs->getInodeData(inode, &inodedat);
     if(S_ISDIR(inodedat.mode)) {
-        return new Directory(_fs, inode, inodedat);
+        return std::unique_ptr<::HDD::File>(new Directory(_fs, inode, inodedat));
     } else if(S_ISREG(inodedat.mode)) {
-        return new RegularFile(_fs, inode, inodedat);
+        return std::unique_ptr<::HDD::File>(new RegularFile(_fs, inode, inodedat));
     } else {
         return nullptr;
     }
@@ -635,15 +635,17 @@ static DirectoryFileType inodeToDirType(u16 mode) {
     return FT_UNKNOWN;
 }
 
-void Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
+std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 uid, u16 gid, u16 mode) {
     if(S_ISREG(mode)) {
         RegularFile* f = _fs->getNewFile(uid, gid, mode);
         addEntry(name, f);
         f->link();
+        return std::unique_ptr<::HDD::File>(f);
     } else if(S_ISDIR(mode)) {
         Directory* f = _fs->getNewDirectory(uid, gid, mode);
         addEntry(name, f);
         f->link();
+        return std::unique_ptr<::HDD::File>(f);
     } else {
         bsod("HDD::Ext2::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
     }
@@ -708,12 +710,12 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
 
 
 void Directory::removeFile(const std::string& name) {
-    ::HDD::File* f = (*this)[name];
-    assert(f != nullptr);
+    std::unique_ptr<::HDD::File> f = (*this)[name];
+    assert(f);
     if(f->getType() == FileType::RegularFile) {
-        static_cast<RegularFile*>(f)->unlink();
+        static_cast<RegularFile*>(f.get())->unlink();
     } else if(f->getType() == FileType::Directory) {
-        static_cast<Directory*>(f)->unlink();
+        static_cast<Directory*>(f.get())->unlink();
     } else {
         bsod("HDD::Ext2::Directory::removeFile: me dunno wat to do wiz type %d!!!\n", f->getType());
     }
@@ -721,11 +723,11 @@ void Directory::removeFile(const std::string& name) {
 }
 
 void Directory::removeDirectory(const std::string& name) {
-    ::HDD::File* f = (*this)[name];
-    assert(f != nullptr);
+    std::unique_ptr<::HDD::File> f = (*this)[name];
+    assert(f);
     assert(f->getType() == FileType::Directory);
     removeEntry(name);
-    static_cast<Directory*>(f)->deleteDir();
+    static_cast<Directory*>(f.get())->deleteDir();
 }
 
 

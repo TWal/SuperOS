@@ -45,13 +45,14 @@ bool Directory::isEmpty() {
     return res;
 }
 
-File* Directory::resolvePath(const std::string& path) {
+std::unique_ptr<File> Directory::resolvePath(const std::string& path) {
     std::vector<std::string> names = split(path, '/', false);
-    File* cur = this;
+    std::unique_ptr<File> cur(this);
+    cur.dontDelete();
     for(const std::string& name : names) {
-        if(cur == nullptr) return nullptr;
+        if(!cur) return cur; //if == nullptr
         if(cur->getType() != FileType::Directory) return nullptr;
-        Directory* d = static_cast<Directory*>(cur);
+        Directory* d = static_cast<Directory*>(cur.get());
         cur = (*d)[name];
     }
     return cur;

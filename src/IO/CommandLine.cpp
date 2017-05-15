@@ -31,8 +31,10 @@ void CommandLine::init(table_type table){
         }
         void* d = cl->pwd->open();
         dirent* dir;
+        int bla = 0;
         while((dir = cl->pwd->read(d)) != nullptr) {
             printf("%s ", dir->d_name);
+            bla++;
         }
         cl->pwd->close(d);
         printf("\n");
@@ -44,8 +46,8 @@ void CommandLine::init(table_type table){
             return;
         }
         if(args.empty()) return;
-        HDD::File* f = cl->pwd->resolvePath(args[0]);
-        if(f == nullptr) {
+        std::unique_ptr<HDD::File> f = cl->pwd->resolvePath(args[0]);
+        if(f.get() == nullptr) {
             printf("%s doesn't exist in current directory\n",args[0].c_str());
             return;
         }
@@ -53,8 +55,8 @@ void CommandLine::init(table_type table){
             printf("%s is not a directory\n",args[0].c_str());
             return;
         }
-        HDD::Directory* d = static_cast<HDD::Directory*>(f);
-        cl->pwd = d;
+        std::unique_ptr<HDD::Directory> d = std::lifted_static_cast<HDD::Directory>(std::move(f));
+        cl->pwd = std::move(d);
     }));
 
     _table.insert(make_pair("cat", [](CommandLine* cl, const vector<string>& args) {
@@ -64,8 +66,8 @@ void CommandLine::init(table_type table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            HDD::File* f = (*cl->pwd)[file];
-            if(f == nullptr) {
+        std::unique_ptr<HDD::File> f = (*cl->pwd)[file];
+            if(f.get() == nullptr) {
                 printf("cat: %s: No such file or directory\n", file.c_str());
                 continue;
             }
@@ -73,7 +75,7 @@ void CommandLine::init(table_type table){
                 printf("cat: %s: Is not a regular file\n", file.c_str());
                 continue;
             }
-            HDD::RegularFile* rf = static_cast<HDD::RegularFile*>(f);
+            HDD::RegularFile* rf = static_cast<HDD::RegularFile*>(f.get());
             char buffer[1025];
             size_t size = rf->getSize();
             for(size_t i = 0; i < size; i += 1024) {
@@ -93,8 +95,8 @@ void CommandLine::init(table_type table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            HDD::File* f = (*cl->pwd)[file];
-            if(f == nullptr) {
+            std::unique_ptr<HDD::File> f = (*cl->pwd)[file];
+            if(f.get() == nullptr) {
                 printf("rm: %s: No such file or directory\n", file.c_str());
                 continue;
             }
@@ -114,8 +116,8 @@ void CommandLine::init(table_type table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            HDD::File* f = (*cl->pwd)[file];
-            if(f == nullptr) {
+            std::unique_ptr<HDD::File> f = (*cl->pwd)[file];
+            if(f.get() == nullptr) {
                 printf("rmdir: %s: No such file or directory\n", file.c_str());
                 continue;
             }
@@ -123,7 +125,7 @@ void CommandLine::init(table_type table){
                 printf("rmdir: %s: Is not a directory\n", file.c_str());
                 continue;
             }
-            HDD::Directory* d = static_cast<HDD::Directory*>(f);
+            HDD::Directory* d = static_cast<HDD::Directory*>(f.get());
             if(!d->isEmpty()) {
                 printf("rmdir: %s: Is not empty\n", file.c_str());
                 continue;
@@ -139,8 +141,8 @@ void CommandLine::init(table_type table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            HDD::File* f = (*cl->pwd)[file];
-            if(f != nullptr) {
+            std::unique_ptr<HDD::File> f = (*cl->pwd)[file];
+            if(f.get() != nullptr) {
                 continue;
             }
             cl->pwd->addEntry(file, 0, 0, S_IFREG | S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
@@ -155,8 +157,8 @@ void CommandLine::init(table_type table){
         }
         if(args.empty()) return;
         for(const string& file : args) {
-            HDD::File* f = (*cl->pwd)[file];
-            if(f != nullptr) {
+            std::unique_ptr<HDD::File> f = (*cl->pwd)[file];
+            if(f.get() != nullptr) {
                 printf("mkdir: file %s already exists\n", file.c_str());
                 continue;
             }
