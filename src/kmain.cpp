@@ -628,7 +628,9 @@ void kloop(){
 /**
    @mainpage Super OS Documentation
 
-   Welcome to the Super OS documentation, WIP, good luck !
+   Welcome to the Super OS documentation, WIP !
+
+   The section Related Page may interest you for finding information quickly.
 
    @authors Thibaut Pérami, Théophile Wallez
 

@@ -28,6 +28,7 @@ The command is `make builddisk`. Some command like `mkfs` will be needed.
 ### QEMU
 
 Once the disk is build you can test on QEMU with `make runqemud` if you want tho allow write on disk and `make runqemus` if not
+`make runqemuk` is the same than `runqemus` but write the logs in the terminal.
 
 If both case you can run `make connect` in an other terminal to open GDB on the OS and debug.
 
@@ -41,5 +42,9 @@ You can do the same with `make rund` and `make runs` with Bochs
 
 ## Documentation
 
-If you have doxygen installed, You can run`make doc` to build the documentation.
+If you have doxygen installed, You can run `make doc` to build the documentation.
 
+
+## Report
+
+You can build the project report with `make report` in root directory or `make` in report directory.
