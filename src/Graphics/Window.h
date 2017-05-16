@@ -8,6 +8,8 @@
 
 namespace video{
 
+    class Workspace;
+
     /**
        @brief Represent a GUI window.
 
@@ -19,8 +21,10 @@ namespace video{
      */
 
     class Window{
+        friend Workspace;
         uint _wid; ///< window ID
         static uint globWid;
+        uint _ws;
     protected:
         Vec2u _offset;
         Vec2u _size;
@@ -53,6 +57,7 @@ namespace video{
         void setOffset(const Vec2u& v);
         Vec2u getSize() const;
         virtual void setSize(const Vec2u& v);
+        uint getWS(){return _ws;}
     };
 }
 

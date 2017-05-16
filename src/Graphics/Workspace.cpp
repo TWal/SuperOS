@@ -47,7 +47,9 @@ namespace video{
 
     void Workspace::handleEventOnMe(input::Event e){
         if(e.type == Event::KEYBOARD){
-            if((e.kcode.state.lWin or e.kcode.state.rWin) and e.kcode.scanCode.code == Keyboard::TAB and !e.kcode.scanCode.release){
+            if((e.kcode.state.lWin or e.kcode.state.rWin)
+               and e.kcode.scanCode.code == Keyboard::TAB
+               and !e.kcode.scanCode.release){
                 cycle();
             }
             if(e.kcode.state.lWin or e.kcode.state.rWin) {
@@ -146,6 +148,7 @@ namespace video{
                             Window* win = currentWorkspace._wins.front();
                             currentWorkspace._wins.pop_front();
                             targetWorkspace._wins.push_front(win);
+                            win->_ws = workspaceNum;
                         }
                     } else {
                         Workspace::active = workspaceNum;
@@ -162,4 +165,8 @@ namespace video{
         get(Workspace::active).handleEventOnMe(e);
     }
 
+    void Workspace::addWin(Window* win){
+        _wins.push_front(win);
+        win->_ws = _number;
+    }
 };

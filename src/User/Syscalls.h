@@ -148,7 +148,8 @@ u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 
 /**
-   @brief Syscall 25, resizewin : resize an already existing window.
+   @brief Syscall 26, resizewin : resize an already existing window.
+   @param fd The window to be resized.
    @param size The new width of the window on the lower 32 bits
    and the new height on the higher 32 bits.
    @param offset The new horizontal offset of the window on the lower 32 bits
@@ -161,6 +162,40 @@ u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
    @retval EINVAL The rectangle is outside the screen.
 */
 u64 sysresizewin(u64 fd, u64 size, u64 offset, u64,u64,u64);
+
+/**
+   @brief Syscall 27, getsize : get the size of a window.
+   @param fd The window of with we want to know the size.
+
+   Apply to both text and graphical windows.
+
+   @return a @ref vec_t : the size.
+   @return EBADF fd is not a window file descriptor.
+*/
+u64 sysgetsize(u64 fd, u64, u64, u64,u64,u64);
+
+/**
+   @brief Syscall 28, getoff : get the offset of a window.
+   @param fd The window of with we want to know the offset.
+
+   Apply to both text and graphical windows.
+
+   @return a @ref vec_t : the offset.
+   @return EBADF fd is not a window file descriptor.
+*/
+u64 sysgetoff(u64 fd, u64, u64, u64,u64,u64);
+
+/**
+   @brief Syscall 29, getws : get the workspace of a window.
+   @param fd The window of with we want to know the workspace.
+
+   Apply to both text and graphical windows.
+
+   @return The number of the workspace on success.
+   @return EBADF fd is not a window file descriptor.
+*/
+u64 sysgetws(u64 fd, u64, u64, u64,u64,u64);
+
 
 
 /**

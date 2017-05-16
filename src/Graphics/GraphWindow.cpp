@@ -18,7 +18,10 @@ namespace video{
             _size = v;
             _buffer = new Color[_size.area()];
         }
-        else memset(_buffer,0,4*_size.area());
+        else {
+            _size = v;
+            memset(_buffer,0,4*_size.area());
+        }
     }
 
     void GraphWindow::send() const{

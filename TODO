@@ -6,12 +6,12 @@ Syscalls
     - *open
     - *close
     - *seek
-    - openwin
-    - opentwin
+    - *openwin
+    - *opentwin
     - futex
     - *pipe
     - *dup(2)
-    - resizeWin
+    - *resizeWin
     - fstat
     - getpid
     - getppid

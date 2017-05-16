@@ -69,9 +69,7 @@ namespace video{
         void cycle();
 
         /// Add a windows, it has focus by default.
-        void addWin(Window* win){
-            _wins.push_front(win);
-        }
+        void addWin(Window* win);
         void handleEventOnMe(input::Event e);
         static void handleEvent(input::Event e);
     };

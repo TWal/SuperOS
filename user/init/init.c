@@ -68,7 +68,7 @@ int main(){
     offset.y = 400;
 
 
-    int fd = openwin(size,offset,2);
+    int fd = openwin(size,offset,1);
     printf("fd : %d, errno : %d",fd,errno);
     int* data = malloc(400);
     memset(data,-1,400);
@@ -86,12 +86,14 @@ int main(){
     FILE* f = fdopen(tfd,"");
     fprintf(f,"Hello world!\n");*/
 
-    for(volatile int i = 0 ; i < 500000000 ; ++ i);
 
-    size.x = 400;
-
-    resizewin(fd,size,offset);
-    printf("fd : %d, errno : %d",fd,errno);
+    while(1){
+        vec_t size = getsize(fd);
+        vec_t off = getoff(fd);
+        int ws = getws(fd);
+        printf("%d %d %d %d %d\n",size.x,size.y,off.x,off.y,ws);
+        for(volatile int i = 0 ; i < 50000000; ++ i);
+    }
 
 
     //   int pid = fork();

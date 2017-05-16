@@ -49,7 +49,13 @@ namespace video{
             assert(x >= 0 && y >= 0);
             return x * y;
         }
-
+        template<typename U>
+        U to() const {
+            static_assert(sizeof(U) == 2* sizeof(T),"Vec2::to unique output has wrong size");
+            U res = x;
+            res += U(y) << (sizeof(T)*8);
+            return res;
+        }
     };
 
     template<typename T,typename U>

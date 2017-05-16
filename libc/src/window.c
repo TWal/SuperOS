@@ -54,4 +54,57 @@ int resizewin(int fd, vec_t size, vec_t offset){
     return res;
 }
 
+vec_t getsize(int fd){
+    vec_t res;
+    asm volatile(
+        "mov $27, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd)  // rdi then rsi then rdx
+        :
+        );
+    if ((int)res.x < 0){
+        errno = res.x;
+        res.x = -1;
+        res.y = 0;
+        return res;
+    }
+    return res;
+}
+
+vec_t getoff(int fd){
+    vec_t res;
+    asm volatile(
+        "mov $28, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd)  // rdi then rsi then rdx
+        :
+        );
+    if ((int)res.x < 0){
+        errno = res.x;
+        res.x = -1;
+        res.y = 0;
+        return res;
+    }
+    return res;
+}
+
+int getws(int fd){
+    int res;
+    asm volatile(
+        "mov $29, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd)  // rdi then rsi then rdx
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+
 #endif

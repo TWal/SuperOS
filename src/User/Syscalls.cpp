@@ -24,6 +24,9 @@ void syscallFill(){
     handlers[SYSOPENWIN] = sysopenwin;
     handlers[SYSOPENTWIN] = sysopentwin;
     handlers[SYSRESIZEWIN] = sysresizewin;
+    handlers[SYSGETSIZE] = sysgetsize;
+    handlers[SYSGETOFF] = sysgetoff;
+    handlers[SYSGETWS] = sysgetws;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -217,6 +220,7 @@ u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     return tmp;
 }
 
+
 u64 syspipe(u64 fd2, u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
@@ -231,6 +235,13 @@ u64 syspipe(u64 fd2, u64,u64,u64,u64,u64){
     pro->_fds[res[1]] = FileDescriptor(std::unique_ptr<Stream>(new PipeStreamIn(ps)));
     return 0;
 }
+
+/*__        ___           _
+  \ \      / (_)_ __   __| | _____      _____
+   \ \ /\ / /| | '_ \ / _` |/ _ \ \ /\ / / __|
+    \ V  V / | | | | | (_| | (_) \ V  V /\__ \
+     \_/\_/  |_|_| |_|\__,_|\___/ \_/\_/ |___/
+*/
 
 u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     Thread* t = schedul.enterSys();
@@ -293,6 +304,42 @@ u64 sysresizewin(u64 fd, u64 size, u64 offset, u64, u64,u64){
     return 0;
 }
 
+u64 sysgetsize(u64 fd, u64, u64, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    // getting the file descriptor.
+    if(pro->_fds.size() <= u64(fd)) return -EBADF;
+    if(!pro->_fds[fd].isWin()) return - EBADF;
+    return pro->_fds[fd].getWin()->getSize().to<u64>();
+}
+
+u64 sysgetoff(u64 fd, u64, u64, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    // getting the file descriptor.
+    if(pro->_fds.size() <= u64(fd)) return -EBADF;
+    if(!pro->_fds[fd].isWin()) return - EBADF;
+    return pro->_fds[fd].getWin()->getOffset().to<u64>();
+}
+
+u64 sysgetws(u64 fd, u64, u64, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    // getting the file descriptor.
+    if(pro->_fds.size() <= u64(fd)) return -EBADF;
+    if(!pro->_fds[fd].isWin()) return - EBADF;
+    return pro->_fds[fd].getWin()->getWS();
+}
+
+
+/* ____
+  |  _ \ _   _ _ __
+  | | | | | | | '_ \
+  | |_| | |_| | |_) |
+  |____/ \__,_| .__/
+              |_|
+*/
+
 u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
@@ -311,6 +358,13 @@ u64 sysdup2(u64 oldfd, u64 newfd, u64,u64,u64,u64){
     pro->_fds[newfd] = pro->_fds[oldfd];
     return newfd;
 }
+
+/* ____
+  |  _ \ _ __ ___   ___ ___  ___ ___  ___  ___
+  | |_) | '__/ _ \ / __/ _ \/ __/ __|/ _ \/ __|
+  |  __/| | | (_) | (_|  __/\__ \__ \  __/\__ \
+  |_|   |_|  \___/ \___\___||___/___/\___||___/
+*/
 
 u64 sysclone(u64 rip,u64 rsp,u64,u64,u64,u64){
     return schedul.clone(rip,rsp);
