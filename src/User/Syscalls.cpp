@@ -27,6 +27,8 @@ void syscallFill(){
     handlers[SYSEXEC] = sysexec;
     handlers[SYSTEXIT] = systexit;
     handlers[SYSWAIT] = syswait;
+    handlers[SYSCHDIR] = syschdir;
+    handlers[SYSMKDIR] = sysmkdir;
 }
 
 //non blocking read
@@ -96,7 +98,6 @@ u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     return tmp;
 }
 
-//enum{O_RDONLY = 1, O_WRONLY = 2, O_RDWR = 3, O_CREAT = 4, O_TRUNC = 8, O_APPEND = 16};
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
@@ -325,4 +326,36 @@ u64 syswait(u64 pid,u64 status,u64,u64,u64,u64){
     //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
     //        t->getTid(),fd,buf,count,tmp);
     //return tmp;
+}
+
+u64 syschdir(u64 path, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+    std::unique_ptr<HDD::File> f = pro->_wd->resolvePath((char*)path);
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -ENOTDIR;
+    pro->_wd = lifted_static_cast<HDD::Directory>(move(f));
+    return 0;
+}
+
+u64 sysmkdir(u64 path, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+
+    // find the directory
+    auto p = splitFileName((char*)path);
+    std::unique_ptr<HDD::File> f = pro->_wd->resolvePath(p.first);
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir = lifted_static_cast<HDD::Directory>(move(f));
+
+    // check directory does not exists.
+    auto testf = (*dir)[p.second];
+    if(testf) return -EEXIST;
+
+    // create the directory
+    dir->addEntry(p.second, 0, 0, S_IRWXO | S_IRWXG | S_IRWXU | S_IFDIR);
+    return 0;
 }

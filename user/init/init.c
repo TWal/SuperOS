@@ -36,6 +36,10 @@ void thread(){
 
 int main(){
     printf("[Init] Init start\n");
+    errno = 0;
+    mkdir("/lol");
+    chdir("/lol");
+    printf("errno %d",errno);
     int fd = open("testfile",O_RDWR | O_CREAT);
     if(fd == -1){
         printf ("open failed %d %d",fd,errno);

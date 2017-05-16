@@ -17,8 +17,8 @@ Syscalls
     - getppid
     - gettid
     - getgid
-    - chdir
-    - mkdir
+    - *chdir
+    - *mkdir
     - rmdir
     - opendir
     - readdir

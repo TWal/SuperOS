@@ -45,6 +45,9 @@ extern "C" {
     void _exit(int status);
     void _texit(int status);
 
+    int chdir(const char* path);
+    int mkdir(const char* path);
+
 #ifdef __cplusplus
 }
 #endif

@@ -131,10 +131,7 @@ runqemus: updatedisk
 	mv disko.img disk.img
 
 runqemuk: updatedisk
-	cp disk.img disko.img
 	qemu-system-x86_64 -boot c -drive format=raw,file=disk.img -m 512 -s -serial stdio
-	mv disk.img diskout.img
-	mv disko.img disk.img
 
 runqemuu: updatedisk
 	cp disk.img disko.img

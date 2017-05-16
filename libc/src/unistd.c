@@ -204,7 +204,42 @@ pid_t waitpid(pid_t p, int* status){
     }
     return res;
 }
+
 pid_t wait(int* status){
     return waitpid(0,status);
 }
+
+int chdir(const char* path){
+    int res;
+    asm volatile(
+        "mov $80, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int mkdir(const char* path){
+    int res;
+    asm volatile(
+        "mov $83, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path)
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+
 #endif

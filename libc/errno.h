@@ -17,6 +17,8 @@ extern int errno;
 #define ENOMEM 6 ///< when no more heap memory is available
 #define EBLOCK 7 ///< Internal error code, normally should not arrive to user mode
 #define EINVAL 8 ///< Invalid value (parameter)
+#define ENOTDIR 9 ///< Not a directory.
+#define EEXIST 10 ///< Object already exists.
 
 
 #endif
