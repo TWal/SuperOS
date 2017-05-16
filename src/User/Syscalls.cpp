@@ -7,6 +7,8 @@
 #include <errno.h>
 #include "../Streams/PipeStream.h"
 #include <unistd.h>
+#include "../Graphics/GraphWindow.h"
+#include "../Graphics/Workspace.h"
 
 using namespace std;
 
@@ -19,6 +21,7 @@ void syscallFill(){
     handlers[SYSSEEK] = sysseek;
     handlers[SYSBRK] = sysbrk;
     handlers[SYSPIPE] = syspipe;
+    handlers[SYSOPENWIN] = sysopenwin;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -220,6 +223,27 @@ u64 syspipe(u64 fd2, u64,u64,u64,u64,u64){
     PipeStream* ps = new PipeStream();
     pro->_fds[res[0]] = FileDescriptor(std::unique_ptr<Stream>(new PipeStreamOut(ps)));
     pro->_fds[res[1]] = FileDescriptor(std::unique_ptr<Stream>(new PipeStreamIn(ps)));
+    return 0;
+}
+
+u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+
+    // size checking
+    video::Vec2u vSize(size);
+    video::Vec2u vOffset(offset);
+    auto botright = vSize + vOffset;
+    if(botright.x >= video::screen.getSize().x) return -EINVAL;
+    if(botright.y >= video::screen.getSize().y) return -EINVAL;
+    if (workspace >= video::Workspace::_totalNumber) return -EINVAL;
+
+    // getting the file descriptor.
+    int fd = pro->getFreeFD();
+    if(pro->_fds.size() <= u64(fd)) pro->_fds.resize(fd+1);
+    video::GraphWindow* w = new video::GraphWindow(vOffset,vSize);
+    pro->_fds[fd] = FileDescriptor(w);
+    video::Workspace::get(workspace).addWin(w);
     return 0;
 }
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <window.h>
 
 
 int factorial(int i){
@@ -37,7 +38,7 @@ void thread(){
 int main(){
     printf("[Init] Init start\n");
     errno = 0;
-    mkdir("/lol");
+    /*mkdir("/lol");
     chdir("/lol");
     printf("errno %d",errno);
     int fd = open("testfile",O_RDWR | O_CREAT);
@@ -56,7 +57,19 @@ int main(){
     int c;
     while((c = fgetc(f)) != EOF){
         putchar(c);
-    }
+        }*/
+
+    printf("hey\n");
+    vec_t size;
+    size.x = 100;
+    size.y = 200;
+    vec_t offset;
+    offset.x = 300;
+    offset.y = 400;
+
+
+    int fd = openwin(size,offset,2);
+    printf("fd : %d, errno : %d",fd,errno);
 
 
 

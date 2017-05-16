@@ -32,8 +32,10 @@ namespace video{
         uint _number;
         /// List of window. _win."first" has focus.
         std::deque<Window*> _wins;
+    public:
         /// Total number of workspaces
         static const uint _totalNumber = 10;
+    private:
         /// All workspaces are statically allocated here.
         static Workspace _elems[_totalNumber];
         enum State {

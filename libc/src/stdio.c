@@ -2,6 +2,7 @@
 #include "../stdio.h"
 #include "../unistd.h"
 #include "../string.h"
+#include "../stdlib.h"
 
 int errno;
 int* __errno_location = &errno;
@@ -242,7 +243,8 @@ size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
     return res/size;
 }
 
-FILE* fdopen(int fd, const char* mode){
+FILE* fdopen(int fd, const char* mode){ // TODO handle mode.
+    (void)mode;
     FILE* f = malloc(sizeof(FILE));
     f->fd = fd;
     return f;

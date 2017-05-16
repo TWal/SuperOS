@@ -9,6 +9,14 @@ namespace video{
         T x;
         T y;
         Vec2() :x(0),y(0){}
+        template<typename U>
+        explicit Vec2(U u){
+            static_assert(sizeof(U) == 2* sizeof(T),"Vec2 unique input has wrong size");
+            x = u & ((U(1) << (sizeof(T)*8)) -1);
+            y = u >> (sizeof(T)*8);
+        }
+
+
         Vec2(T nx, T ny) : x(nx),y(ny){}
         template<typename U>
         Vec2(const Vec2<U>& v) : x(v.x),y(v.y){}
@@ -41,6 +49,7 @@ namespace video{
             assert(x >= 0 && y >= 0);
             return x * y;
         }
+
     };
 
     template<typename T,typename U>

@@ -5,6 +5,7 @@ BytesStream::BytesStream(std::unique_ptr<Bytes> data): _data(std::move(data)),_a
 
 size_t BytesStream::read(void* buf,size_t count){
     size_t toRead = max((size_t)0,min(count,_data->getSize()-_addr));
+    if(toRead == 0) return 0;
     _data->readaddr(_addr,buf,toRead);
     _addr+= toRead;
     return toRead;
@@ -19,6 +20,7 @@ size_t BytesStream::write(const void * buf,size_t count){
     size_t toWrite;
     if(_data->appendable()) toWrite = count;
     else toWrite = max((size_t)0,min(count,_data->getSize()-_addr));
+    if(toWrite == 0) return 0;
     _data->writeaddr(_addr,buf,toWrite);
     _addr+= toWrite;
     return toWrite;

@@ -1,13 +1,34 @@
 #include "GraphWindow.h"
 #include <string.h>
+#include "../log.h"
 
 namespace video{
+    GraphWindow::GraphWindow(Vec2u offset, Vec2u size): Window(offset,size) {
+        _buffer = new Color[size.area()];
+        memset(_buffer,0,4*size.area());
+    }
+
+    GraphWindow::~GraphWindow(){
+        delete _buffer;
+    }
+
+    void GraphWindow::setSize(const Vec2u& v){
+        if(v.area() > _size.area()){
+            delete _buffer;
+            _size = v;
+            _buffer = new Color[_size.area()];
+        }
+        else memset(_buffer,0,4*_size.area());
+    }
 
     void GraphWindow::send() const{
-        uint lim = _size.y + _offset.y;
-        for(uint i = _offset.y ; i < lim ; ++i){
-            screen.writeLine(i,_offset.x,_size.x,_buffer + i * _size.x);
+        //debug("in draw of size %d %d at %d %d", _size.x, _size.y, _offset.x, _offset.y);
+        uint lim = _size.y + _offset.y -1;
+        for(uint i = _offset.y +1 ; i < lim ; ++i){
+            //debug("buffer offset %d", i * _size.x);
+            screen.writeLine(i,_offset.x +1,_size.x -2,_buffer + (i - _offset.y) * _size.x);
         }
+        //debug("out draw");
     }
     void GraphWindow::draw(Vec2u offset,Vec2u size,Color* buffer){
         for(uint i = 0; i < size.y ; ++i){

@@ -97,13 +97,13 @@ namespace video {
             //memcpy(VGAbuffer + i * pitch,buffer + i * Xsize,Xsize * 4);
             memcpy_aligned(VGAbuffer + i * pitch,buffer + i * Xsize,Xsize * 4);
         }
-        //printf("Screen Updated");
+        //debug("Screen Updated");
     }
 
     void Screen::writeLine(uint nb, uint offset, uint size, Color* buf){
         assert(offset + size <= Xsize);
         assert(nb <= Ysize);
-        memcpy(VGAbuffer +nb * pitch + 4* offset,buf,size*4);
+        //memcpy(VGAbuffer +nb * pitch + 4* offset,buf,size*4);
         memcpy(buffer + nb*Xsize + offset, buf, size*4);
     }
 

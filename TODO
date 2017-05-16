@@ -33,6 +33,7 @@ Shell
 *Smart-pointer
 *Smart bsod.
 
+
 Fix on hardware
     - keyboard Alt-Gr -- removed
     - *HDD on big partitions

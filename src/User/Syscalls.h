@@ -114,6 +114,19 @@ u64 sysbrk(u64 addr, u64,u64,u64,u64,u64);
 u64 syspipe(u64 fd2, u64,u64,u64,u64,u64);
 
 /**
+   @brief Syscall 24, openwin : create a new window.
+   @param size The width of the new window on the lower 32 bits
+   and the height on the higher 32 bits.
+   @param offset The horizontal offset of the new window on the lower 32 bits
+   and the vertical offset on the higher 32 bits
+   @param workspace The workspace on which to be created
+   @return The file descriptor of the window on success
+   @retval EINVAL The rectangle is outside the screen or workspace is not valid.
+ */
+u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
+
+
+/**
    @brief Syscall 32, dup : Duplicate a file descriptor;
    @param oldfd The file descriptor to be copied.
    Copy oldfd to a new, free file descriptor
@@ -212,6 +225,15 @@ u64 syschdir(u64 path, u64,u64,u64,u64,u64);
 */
 u64 sysmkdir(u64 path, u64,u64,u64,u64,u64);
 
+/**
+   @brief Syscall 84, rmdir : remove directory.
+   @param path : path to directory to be deleted
+   @retval 0 Success;
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed.
+   @retval EEXIST : path already exists.
+*/
+u64 sysmkdir(u64 path, u64,u64,u64,u64,u64);
 
 
 

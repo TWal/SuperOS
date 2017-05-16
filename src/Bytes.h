@@ -9,13 +9,22 @@
 class Bytes {
 public:
     virtual ~Bytes(){}
-    /// Write `data` of size `size` at the address `addr`
+    /**
+       @brief Write `data` of size `size` at the address `addr`.
+
+       if `appendable` returns `false`, `write` is allowed to fail badly (@ref bsod) if
+       `addr` + `size` is out of bound
+    */
     virtual void writeaddr(u64 addr, const void* data, size_t size) = 0;
-    /// Read `data` of size `size` at the address `addr`
+    /**
+       @brief Read `data` of size `size` at the address `addr`.
+
+       `readaddr` is allowed to fail badly (@ref bsod) if `addr` + `size` is out of bound.
+    */
     virtual void readaddr(u64 addr, void* data, size_t size) const = 0;
     /// Get the size of this sequence. 0 means "unknown"
     virtual size_t getSize() const = 0; // 0 mean unknown or too big
-    /// return true if you can write out of bound.
+    /// Returns `true` if you can write out of bound.
     virtual bool appendable() {return false;}
 };
 

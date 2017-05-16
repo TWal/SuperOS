@@ -32,6 +32,9 @@
 #define SYSOPENWIN 24
 #define SYSOPENTWIN 25
 #define SYSRESIZEWIN 26
+#define SYSGETSIZE 27
+#define SYSGETOFF 28
+#define SYSGETWS 29
 
 #define SYSDUP 32
 #define SYSDUP2 33

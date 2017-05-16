@@ -87,6 +87,7 @@ class BsodStream : public Stream {
         size_t write(const void* buf,size_t count) {
             _pos = drawText((char*)buf, count, _pos, _fg, _bg, _minX, _maxX);
             OSStreams[2]->write(buf, count);
+            return count;
         }
 
     private:

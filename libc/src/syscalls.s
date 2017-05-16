@@ -9,9 +9,3 @@ _texit:
 	mov $60, %eax
 	syscall
 	ret
-
-    .global debug
-debug:
-    mov $42, %eax
-    syscall
-    ret

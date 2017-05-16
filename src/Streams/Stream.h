@@ -17,7 +17,7 @@ public:
     enum{ // Functionality
         READABLE = 1, WRITABLE = 2, SEEKABLE = 4, APPENDABLE = 8, WAITABLE = 16,
     };
-    /// get the functionalities of this Stream.
+    /// Get the functionalities of this Stream.
     virtual u64 getMask() const = 0;
     /// Check for a specific functionality in the stream
     inline bool check(u8 val) const {

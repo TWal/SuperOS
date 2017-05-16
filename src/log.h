@@ -35,7 +35,7 @@ constexpr LogLevel serLvls[LAST_LOGMOD] =
     Debug,  // Mousel
     Debug,  // Syscalls
     Info,   // Schedul
-    Debug,  // Proc
+    Info,  // Proc
     Debug,  // Graphics
     Debug,  // Hdd
     Debug,  // Ext2

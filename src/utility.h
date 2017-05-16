@@ -89,8 +89,19 @@ inline void* getCR2(){
 
 
 [[noreturn]] void vbsod(const char* s, va_list ap);
+
+/**
+   @brief Do a Blue Screen Of Death.
+
+   It is a printf-like function.
+ */
 extern "C" [[noreturn]]  void bsod(const char* s, ...);
 
+/**
+   @brief Reboot the kernel.
+
+   Ugly hack that triple fault the processor.
+ */
 void reboot();
 
 template<typename T, typename U> T alignup(T n, U multiple) {
