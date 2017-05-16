@@ -22,6 +22,7 @@ void syscallFill(){
     handlers[SYSBRK] = sysbrk;
     handlers[SYSPIPE] = syspipe;
     handlers[SYSOPENWIN] = sysopenwin;
+    handlers[SYSOPENTWIN] = sysopentwin;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -245,7 +246,28 @@ u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     // getting the file descriptor.
     int fd = pro->getFreeFD();
     if(pro->_fds.size() <= u64(fd)) pro->_fds.resize(fd+1);
-    video::GraphWindow* w = new video::GraphWindow(vOffset,vSize);
+    video::GraphWindow* w = new video::GraphWindow(vOffset, vSize);
+    pro->_fds[fd] = FileDescriptor(w);
+    video::Workspace::get(workspace).addWin(w);
+    return fd;
+}
+
+u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+
+    // size checking
+    video::Vec2u vSize(size);
+    video::Vec2u vOffset(offset);
+    auto botright = vSize + vOffset;
+    if(botright.x >= video::screen.getSize().x) return -EINVAL;
+    if(botright.y >= video::screen.getSize().y) return -EINVAL;
+    if (workspace >= video::Workspace::_totalNumber) return -EINVAL;
+
+    // getting the file descriptor.
+    int fd = pro->getFreeFD();
+    if(pro->_fds.size() <= u64(fd)) pro->_fds.resize(fd+1);
+    video::TextWindow* w = new video::TextWindow(vOffset, vSize, video::Font::def);
     pro->_fds[fd] = FileDescriptor(w);
     video::Workspace::get(workspace).addWin(w);
     return fd;

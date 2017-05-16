@@ -212,7 +212,6 @@ namespace video{
     }
 
     void TextWindow::send() const {
-        if(!_active) return;
         screen.clear(_offset, _size);
         //avoid infinite loop
         if(_width == 0) return;

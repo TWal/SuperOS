@@ -22,7 +22,6 @@ namespace video{
         uint _wid; ///< window ID
         static uint globWid;
     protected:
-        bool _active;
         Vec2u _offset;
         Vec2u _size;
     public:
@@ -32,6 +31,7 @@ namespace video{
         virtual ~Window(){}
         /// Draw a line around the window to represent the focus
         void drawEdge(const Color& color);
+
         /**
            @brief Draw window on screen.
 
@@ -41,10 +41,6 @@ namespace video{
            If the window is not active, a call to this function has no effect.
         */
         virtual void send() const = 0;
-        /// just change internal state (@ref _active) to have an active mode
-        void show(){_active = true;}
-        /// just change internal state (@ref _active) to have an inactive mode.
-        void hide(){_active = false;}
 
         ///handle an event on this window
         virtual void handleEvent(input::Event e) = 0;

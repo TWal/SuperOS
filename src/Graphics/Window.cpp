@@ -5,7 +5,7 @@ namespace video{
     const Color edge = Color::red;
     uint Window::globWid = 0;
     Window::Window(Vec2u offset, Vec2u size)
-        : _wid(globWid++), _active(false), _offset(offset), _size(size) {
+        : _wid(globWid++), _offset(offset), _size(size) {
     }
 
     void Window::drawEdge(const Color& color) {

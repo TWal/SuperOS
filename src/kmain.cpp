@@ -263,8 +263,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     TextWindow* kernelCmd = new TextWindow(Vec2u{0,0},Vec2u{ssize.x/2,ssize.y},Font::def);
     Workspace::get(0).addWin(kernelLog);
     Workspace::get(0).addWin(kernelCmd);
-    kernelLog->show();
-    kernelCmd->show();
 
     char* loaderLogBuffer = pageHeap.alloc<char>(phyLoaderLogBuffer,LOADERBUFFER);
     debug(Init,"loader log size %lld",loaderPosInBuffer);
@@ -403,7 +401,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     Process* initp = new Process(1,pg);
     Thread* initt = initp->loadFromBytes(init.get());
     TextWindow* initLog = new TextWindow({0,0},screen.getSize(),Font::def);
-    initLog->show();
     Workspace::get(1).addWin(initLog);
     FileDescriptor* fd = new FileDescriptor(initLog);
     //FileDescriptor* fd2 = new FileDescriptor(sers);

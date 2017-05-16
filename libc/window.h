@@ -11,6 +11,7 @@ extern "C" {
     } vec_t;
 
     int openwin(vec_t size, vec_t offset, int workspace);
+    int opentwin(vec_t size, vec_t offset, int workspace);
 
 
 

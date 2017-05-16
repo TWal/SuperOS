@@ -120,11 +120,32 @@ u64 syspipe(u64 fd2, u64,u64,u64,u64,u64);
    @param offset The horizontal offset of the new window on the lower 32 bits
    and the vertical offset on the higher 32 bits
    @param workspace The workspace on which to be created
+
+   The window can then be written on by like a file of size
+   size.x * size.y *4 (each pixel is on 4 bytes and in format BGRA (A stands
+   for Alpha ans is ignored)).
+
    @return The file descriptor of the window on success
    @retval EINVAL The rectangle is outside the screen or workspace is not valid.
  */
 u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 
+/**
+   @brief Syscall 25, openwin : create a new text window.
+   @param size The width of the new window on the lower 32 bits
+   and the height on the higher 32 bits.
+   @param offset The horizontal offset of the new window on the lower 32 bits
+   and the vertical offset on the higher 32 bits
+
+   The window can then be textually written on like a console.
+   The only possible input is console text (it is not possible to get window
+   size currently. May be through escape code later).
+
+   @param workspace The workspace on which to be created
+   @return The file descriptor of the window on success
+   @retval EINVAL The rectangle is outside the screen or workspace is not valid.
+*/
+u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 
 /**
    @brief Syscall 32, dup : Duplicate a file descriptor;
