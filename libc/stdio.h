@@ -33,13 +33,18 @@ extern "C" {
     int fprintf(FILE* file, const char* format, ...);
     int printf(const char* format, ...);
 
+#ifndef SUP_OS_KERNEL
     // file manipulation
+    FILE* fopen(const char* pathname, const char* mode);
+    int fclose(FILE* stream);
     FILE* fdopen(int fd, const char* mode);
-
-
-
+    int fseek(FILE* stream, long int offset, int origin);
+    long int ftell(FILE* stream);
+    void rewind(FILE* stream);
+#endif
 
     size_t fread(void* buf, size_t size, size_t count, FILE* stream);
+    size_t fwrite(void* buf, size_t size, size_t count, FILE* stream);
 
 
 #ifdef __cplusplus

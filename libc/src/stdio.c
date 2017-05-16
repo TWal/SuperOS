@@ -232,6 +232,64 @@ int printf(const char*format,...){
     return i;
 }
 
+#ifndef SUP_OS_KERNEL
+
+FILE* fopen(const char* pathname, const char* mode) {
+    int flags = 0;
+    while(*mode) {
+        switch(*mode) {
+            case 'r':
+                flags |= O_RDONLY;
+                break;
+            case 'w':
+                flags |= O_WRONLY | O_CREAT | O_TRUNC;
+                break;
+            case 'a':
+                flags |= O_WRONLY | O_CREAT | O_APPEND;
+                break;
+            case '+':
+                flags |= O_RDWR;
+            default:
+                break;
+        }
+        ++mode;
+    }
+    int fd = open(pathname, flags);
+    if(fd < 0) {
+        return NULL;
+    } else {
+        FILE* res = (FILE*)malloc(sizeof(FILE));
+        res->fd = fd;
+        return res;
+    }
+}
+
+int fclose(FILE* stream) {
+    int res = close(stream->fd);
+    free(stream);
+    return res;
+}
+
+FILE* fdopen(int fd, const char* mode){
+    FILE* f = malloc(sizeof(FILE));
+    f->fd = fd;
+    return f;
+}
+
+int fseek(FILE* stream, long int offset, int origin) {
+    seek(stream->fd, offset, origin);
+}
+
+long int ftell(FILE* stream) {
+    return seek(stream->fd, 0, SEEK_CUR);
+}
+
+void rewind(FILE* stream) {
+    seek(stream->fd, 0, SEEK_SET);
+}
+
+#endif
+
 size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
     size_t res = 0;
     size_t toRead = size*count;
@@ -243,10 +301,14 @@ size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
     return res/size;
 }
 
-FILE* fdopen(int fd, const char* mode){ // TODO handle mode.
-    (void)mode;
-    FILE* f = malloc(sizeof(FILE));
-    f->fd = fd;
-    return f;
+size_t fwrite(void* buf, size_t size, size_t count, FILE* stream) {
+    size_t res = 0;
+    size_t toWrite = size*count;
+    size_t cur;
+    while(toWrite > 0 && (cur = write(stream->fd, buf, toWrite)) != 0) {
+        res += cur;
+        toWrite -= cur;
+    }
+    return res/size;
 }
 
