@@ -38,6 +38,8 @@ void syscallFill(){
 static u64 nbread(Thread*t, uint fd, void* buf, u64 count){
     auto pro = t->getProcess();
     if(!pro->_usermem.in(buf)) return -EFAULT;
+    // TODO first and last bytes in does not mean all.
+    if(!pro->_usermem.in((char*)buf + count)) return -EFAULT;
     if(pro->_fds.size() <= fd) return -EBADF;
     FileDescriptor& desc = pro->_fds[fd];
     if(!desc.hasStream()) return -EBADF;
@@ -85,6 +87,8 @@ u64 sysread(u64 fd, u64 buf, u64 count, u64,u64,u64){
 u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
     auto pro = t->getProcess();
     if(!pro->_usermem.in(buf)) return -EFAULT;
+    // TODO first and last bytes in does not mean all.
+    if(!pro->_usermem.in((char*)buf + count)) return -EFAULT;
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd].check(Stream::WRITABLE)) return -EBADF;
@@ -244,7 +248,7 @@ u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     video::GraphWindow* w = new video::GraphWindow(vOffset,vSize);
     pro->_fds[fd] = FileDescriptor(w);
     video::Workspace::get(workspace).addWin(w);
-    return 0;
+    return fd;
 }
 
 u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64){

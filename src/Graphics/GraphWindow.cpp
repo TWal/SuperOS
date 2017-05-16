@@ -23,6 +23,7 @@ namespace video{
 
     void GraphWindow::send() const{
         //debug("in draw of size %d %d at %d %d", _size.x, _size.y, _offset.x, _offset.y);
+        //debug ("Color of 0 0 %d %d", _buffer[0].R,_buffer[0].B);
         uint lim = _size.y + _offset.y -1;
         for(uint i = _offset.y +1 ; i < lim ; ++i){
             //debug("buffer offset %d", i * _size.x);
@@ -36,11 +37,12 @@ namespace video{
         }
     }
     void GraphWindow::writeaddr (u64 addr,const void * data, size_t size){
-        assert(addr + size < _size.area() *4);
+        //debug("write on GWin %d %d",size, *((int*)data));
+        assert(addr + size <= _size.area() *4);
         memcpy((u8*)_buffer + addr,data,size);
     }
     void GraphWindow::readaddr (u64 addr, void * data, size_t size) const{
-        assert(addr + size < _size.area() *4);
+        assert(addr + size <= _size.area() *4);
         memcpy(data,(u8*)_buffer + addr,size);
     }
 };

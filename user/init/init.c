@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <window.h>
+#include <string.h>
 
 
 int factorial(int i){
@@ -70,7 +71,16 @@ int main(){
 
     int fd = openwin(size,offset,2);
     printf("fd : %d, errno : %d",fd,errno);
+    int* data = malloc(400);
+    memset(data,-1,400);
 
+    for(int i = 0 ; i < 200 ; ++ i){
+        printf("CouCou");
+        errno = 0;
+        write(fd,data,400);
+        printf(" errno : %d",errno);
+        for(int i = 0 ; i < 10000 ; ++i);
+    }
 
 
 
