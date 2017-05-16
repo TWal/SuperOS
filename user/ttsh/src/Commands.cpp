@@ -5,13 +5,21 @@
 static const int STDIN_FD  = 0;
 static const int STDOUT_FD = 1;
 
+Command::~Command() {
+}
+
 Atomic::Atomic(const std::vector<std::string>& cmdline, const std::vector<Redirection*>& redirections, bool _background) :
     _cmdline(cmdline), _redirections(redirections), _background(_background) {}
 
 int Atomic::run() {
     if(_cmdline.empty()) {
         return 0;
-    //} else if(_cmdline.front() == "cd") {
+    } else if(_cmdline.front() == "cd") {
+        if(_cmdline.size() >= 2) {
+            if(chdir(_cmdline[1].c_str())) {
+                perror("chdir");
+            }
+        }
     } else {
         int oldstdin = dup(STDIN_FD);
         int oldstdout = dup(STDOUT_FD);
@@ -49,6 +57,12 @@ int Atomic::run() {
     }
 }
 
+Atomic::~Atomic() {
+    for(Redirection* r : _redirections) {
+        delete r;
+    }
+}
+
 If::If(Command* cond, Command* ifcommand, Command* elsecommand) :
     _cond(cond), _ifcommand(ifcommand), _elsecommand(elsecommand) {}
 
@@ -56,9 +70,17 @@ int If::run() {
     int condres = _cond->run();
     if(condres == 0) {
         return _ifcommand->run();
-    } else {
+    } else if(_elsecommand != nullptr) {
         return _elsecommand->run();
+    } else {
+        return 0;
     }
+}
+
+If::~If() {
+    delete _cond;
+    delete _ifcommand;
+    delete _elsecommand;
 }
 
 Pipe::Pipe(Command* producer, Command* consumer) :
@@ -95,6 +117,11 @@ int Pipe::run() {
     }
 }
 
+Pipe::~Pipe() {
+    delete _producer;
+    delete _consumer;
+}
+
 And::And(Command* command1, Command* command2) :
     _command1(command1), _command2(command2) {}
 
@@ -105,6 +132,11 @@ int And::run() {
     } else {
         return res1;
     }
+}
+
+And::~And() {
+    delete _command1;
+    delete _command2;
 }
 
 Or::Or(Command* command1, Command* command2) :
@@ -119,11 +151,21 @@ int Or::run() {
     }
 }
 
+Or::~Or() {
+    delete _command1;
+    delete _command2;
+}
+
 Seq::Seq(Command* command1, Command* command2) :
     _command1(command1), _command2(command2) {}
 
 int Seq::run() {
     _command1->run();
     return _command2->run();
+}
+
+Seq::~Seq() {
+    delete _command1;
+    delete _command2;
 }
 
