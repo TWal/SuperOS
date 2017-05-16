@@ -23,6 +23,7 @@ void syscallFill(){
     handlers[SYSPIPE] = syspipe;
     handlers[SYSOPENWIN] = sysopenwin;
     handlers[SYSOPENTWIN] = sysopentwin;
+    handlers[SYSRESIZEWIN] = sysresizewin;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -271,6 +272,25 @@ u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     pro->_fds[fd] = FileDescriptor(w);
     video::Workspace::get(workspace).addWin(w);
     return fd;
+}
+
+u64 sysresizewin(u64 fd, u64 size, u64 offset, u64, u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+
+    // size checking
+    video::Vec2u vSize(size);
+    video::Vec2u vOffset(offset);
+    auto botright = vSize + vOffset;
+    if(botright.x >= video::screen.getSize().x) return -EINVAL;
+    if(botright.y >= video::screen.getSize().y) return -EINVAL;
+
+    // getting the file descriptor.
+    if(pro->_fds.size() <= u64(fd)) return -EBADF;
+    if(!pro->_fds[fd].isWin()) return - EBADF;
+    pro->_fds[fd].getWin()->setSize(vSize);
+    pro->_fds[fd].getWin()->setOffset(vOffset);
+    return 0;
 }
 
 u64 sysdup(u64 oldfd,u64,u64,u64,u64,u64){

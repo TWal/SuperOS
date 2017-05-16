@@ -68,7 +68,7 @@ int main(){
     offset.y = 400;
 
 
-    /*int fd = openwin(size,offset,2);
+    int fd = openwin(size,offset,2);
     printf("fd : %d, errno : %d",fd,errno);
     int* data = malloc(400);
     memset(data,-1,400);
@@ -79,17 +79,19 @@ int main(){
         write(fd,data,400);
         printf(" errno : %d",errno);
         for(int i = 0 ; i < 10000 ; ++i);
-        }*/
+        }
 
-    int tfd = opentwin(size,offset,1);
+    /*int tfd = opentwin(size,offset,1);
     printf("fd : %d, errno : %d",tfd,errno);
     FILE* f = fdopen(tfd,"");
-    fprintf(f,"Hello world!\n");
+    fprintf(f,"Hello world!\n");*/
 
-    for(volatile int i = 0 ; i < 1000000000 ; ++ i);
+    for(volatile int i = 0 ; i < 500000000 ; ++ i);
 
-    close(tfd);
+    size.x = 400;
 
+    resizewin(fd,size,offset);
+    printf("fd : %d, errno : %d",fd,errno);
 
 
     //   int pid = fork();

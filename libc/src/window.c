@@ -38,5 +38,20 @@ int opentwin(vec_t size, vec_t offset, int workspace){
     return res;
 }
 
+int resizewin(int fd, vec_t size, vec_t offset){
+    int res;
+    asm volatile(
+        "mov $26, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd), "S"(size), "d"(offset) // rdi then rsi then rdx
+        :
+        );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
 
 #endif

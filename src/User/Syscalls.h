@@ -148,6 +148,22 @@ u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64);
 
 /**
+   @brief Syscall 25, resizewin : resize an already existing window.
+   @param size The new width of the window on the lower 32 bits
+   and the new height on the higher 32 bits.
+   @param offset The new horizontal offset of the window on the lower 32 bits
+   and the new vertical offset on the higher 32 bits
+
+   Apply to both text and graphical windows.
+
+   @return 0 on success
+   @return EBADF fd is not a window file descriptor.
+   @retval EINVAL The rectangle is outside the screen.
+*/
+u64 sysresizewin(u64 fd, u64 size, u64 offset, u64,u64,u64);
+
+
+/**
    @brief Syscall 32, dup : Duplicate a file descriptor;
    @param oldfd The file descriptor to be copied.
    Copy oldfd to a new, free file descriptor

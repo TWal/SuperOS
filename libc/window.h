@@ -12,6 +12,7 @@ extern "C" {
 
     int openwin(vec_t size, vec_t offset, int workspace);
     int opentwin(vec_t size, vec_t offset, int workspace);
+    int resizewin(int fd, vec_t size, vec_t offset);
 
 
 
