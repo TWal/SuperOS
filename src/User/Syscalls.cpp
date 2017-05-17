@@ -42,6 +42,8 @@ void syscallFill(){
 
     handlers[SYSOPEND] = sysopend;
     handlers[SYSREADD] = sysreadd;
+    handlers[SYSCHDIR] = syschdir;
+    handlers[SYSRENAME] = sysrename;
     handlers[SYSMKDIR] = sysmkdir;
     handlers[SYSRMDIR] = sysrmdir;
     handlers[SYSLINK] = syslink;
@@ -122,7 +124,7 @@ u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
-    char* path = (char*)path;
+    char* path = (char*)upath;
     if(!pro->_usermem.in((void*)upath)) return -EFAULT;
     std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), path);
 

@@ -257,6 +257,22 @@ int chdir(const char* path){
     return res;
 }
 
+int rename(const char* oldpath, const char* newpath) {
+    int res;
+    asm volatile(
+        "mov $82, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(oldpath), "S"(newpath)
+        :
+    );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
 int mkdir(const char* path){
     int res;
     asm volatile(
@@ -320,6 +336,5 @@ int unlink(const char* path) {
     }
     return res;
 }
-
 
 #endif

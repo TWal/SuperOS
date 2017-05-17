@@ -136,6 +136,8 @@ extern "C" {
     int link(const char* path1, const char* path2);
     int unlink(const char* path);
 
+    int rename(const char* oldpath, const char* newpath);
+
 #ifdef __cplusplus
 }
 #endif
