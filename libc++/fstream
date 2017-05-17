@@ -1,0 +1,79 @@
+#ifndef __SUPOS_CPP_FSTREAM
+#define __SUPOS_CPP_FSTREAM
+#ifndef SUP_OS_KERNEL
+
+#include <unistd.h>
+#include <streambuf>
+
+namespace std{
+    template<class charT, class traits>
+    class basic_filebuf : public basic_streambuf<charT,traits>{
+        int _fd;
+        ios_base::openmode _mode;
+    public:
+        using char_type = charT;
+        using traits_type = traits;
+        using int_type = typename traits::int_type;
+        using pos_type = streamsize;
+        using off_type = streamoff;
+        basic_filebuf() : _fd(-1){}
+        basic_filebuf (const basic_filebuf&) = delete;
+        //basic_filebuf (basic_filebuf&& x);
+
+        basic_filebuf* close(){
+            //int i = close(_fd);
+            _fd = -1;
+            //if(i == -1) return nullptr;
+            /*else*/ return this;
+        }
+
+        basic_filebuf* open(int fd, ios_base::openmode mode){
+            //if(_fd != -1) close();
+            _fd = fd;
+            _mode = mode;
+            return this;
+        }
+
+        bool is_open() const {
+            return _fd != -1;
+        }
+
+        int_type uflow(){
+            char_type c;
+            int i = read(_fd,&c,sizeof(char_type));
+            if(i){
+                return traits::to_int_type(c);
+            }
+            else{
+                return traits::eof();
+            }
+        }
+        streamsize xsgetn (char_type* s, streamsize n){
+            streamoff toRead = n;
+            while(toRead > 0){
+                int val = read(_fd,s,toRead);
+                if(val == 0){
+                    return n - toRead;
+                }
+                toRead -= val;
+                s+= val;
+            }
+            return n;//           return read(_fd,s,n);
+        }
+        streamsize xsputn (const char_type* s, streamsize n){
+            streamoff toWrite = n;
+            while(toWrite > 0){
+                int val = write(_fd,s,toWrite);
+                if(val == 0){
+                    return n - toWrite;
+                }
+                toWrite -= val;
+                s+= val;
+            }
+            return n;
+        }
+
+    };
+}
+#endif
+#endif

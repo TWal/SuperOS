@@ -293,7 +293,7 @@ void Paging::createMapping(uptr phy,void* virt,bool wt){
         bsod("Create mapping : physical address is not page-aligned : %p",phy);
     }
     if((uptr)virt & ((1<< 12 )-1)){
-        bsod("Create mapping : virtual address is not page-aligned : %p",phy);
+        bsod("Create mapping : virtual address is not page-aligned : %p",virt);
     }
     if(phy >> 52) {
         bsod("Create mapping : physical address is too large (more than 52 bits)",phy);
@@ -339,7 +339,7 @@ void Paging::createMapping2M(uptr phy, void* virt, bool wt){
         bsod("Create mapping 2M : physical address is not 2M-page-aligned : %p",phy);
     }
     if((uptr)virt & ((1<< 20 )-1)){
-        bsod("Create mapping : virtual address is not 2M-page-aligned : %p",phy);
+        bsod("Create mapping : virtual address is not 2M-page-aligned : %p",virt);
     }
     if(phy >> 52) {
         bsod("Create mapping : physical address is too large (more than 52 bits)",phy);

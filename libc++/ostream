@@ -1,0 +1,64 @@
+#ifndef __SUPOS_CPP_OSTREAM
+#define __SUPOS_CPP_OSTREAM
+#ifndef SUP_OS_KERNEL
+
+#include<ios>
+
+namespace std {
+
+    template<class charT, class traits>
+    class basic_ostream : public virtual basic_ios<charT,traits>{
+    public:
+        using char_type = charT;
+        using traits_type = traits;
+        using int_type = int;
+        using pos_type = streamsize;
+        using off_type = streamoff;
+        using basic_ios<charT,traits>::rdbuf;
+        using basic_ios<charT,traits>::failbit;
+        using basic_ios<charT,traits>::eofbit;
+        using basic_ios<charT,traits>::badbit;
+        using basic_ios<charT,traits>::setstate;
+        class sentry {
+            bool b;
+        public:
+            explicit sentry (basic_ostream& os) : b(true){
+                if(os.fail() or os.eof()){
+                    os.setstate(failbit);
+                    b = false;
+                }
+            }
+            explicit operator bool() const{
+                return b;
+            }
+            sentry (const sentry&) = delete;
+            sentry& operator= (const sentry&) = delete;
+        };
+        explicit basic_ostream (basic_streambuf<char_type,traits_type>* sb) : ios(sb){
+        }
+        basic_ostream(){};
+        basic_ostream(const basic_ostream&) = delete;
+        //protected: basic_ostream& (basic_ostream&& x);
+
+        basic_ostream& put(char_type c){
+            sentry s(*this);
+            if(!s) return *this;
+            int_type i = rdbuf()->sputc(c);
+            if(i == char_type::eof()) setstate(badbit);
+            return *this;
+        }
+
+        basic_ostream& write (const char_type* s, streamsize n){
+            sentry st(*this);
+            if(!st) return *this;
+            int_type i =  rdbuf()->sputn(s,n);
+            if(i < n) setstate(badbit);
+            return *this;
+        }
+
+    };
+}
+
+
+#endif
+#endif

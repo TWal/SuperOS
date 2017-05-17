@@ -40,6 +40,10 @@ namespace std {
         static inline char_type* copy (char_type* dest, const char_type* src, size_t n){
             return reinterpret_cast<char_type*>(memcpy(dest,src,n));
         }
+        static constexpr int_type eof(){
+            return EOF;
+        }
+        static int_type to_int_type(char c){return c;}
         // TODO finish that
 
     };

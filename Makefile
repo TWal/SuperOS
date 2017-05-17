@@ -30,19 +30,20 @@ CFLAGS = $(CBASEFLAGS) -isystem $(LIBC) \
 					 -mcmodel=kernel # 64 bit high-half kernel
 
 CNKFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra \
-					 -fno-builtin $(OPTILVL)
+					 -fno-builtin -isystem $(LIBC) \
+						$(OPTILVL)
 
 
 CXXBASEFLAGS = -fno-rtti -fno-exceptions -std=c++14
 CXX32FLAGS = $(C32FLAGS) $(CXXBASEFLAGS)
 CXXFLAGS = $(CFLAGS) $(CXXBASEFLAGS)
-CXXNKFLAGS = $(CNKFLAGS) $(CXXBASEFLAGS)
+CXXNKFLAGS = $(CNKFLAGS) $(CXXBASEFLAGS) -isystem $(LIBCXX)
 
 LDFLAGS =  -nostdlib -Wl,--build-id=none
 LD32FLAGS = $(LDFLAGS) -m32 -T $(SRC32DIR)/link.ld -Wl,-melf_i386
 LIBS32 = -L $(LIB32GCC) -lgcc
 LD64FLAGS = $(LDFLAGS) -T $(SRCDIR)/link.ld -Wl,-melf_x86_64
-LIBS64 = -L. -L $(LIBGCC) -lc++ -lgcc -lk
+LIBS64 = -L. -L $(LIBGCC) -lgcc -lk
 
 SRC32ASM = $(wildcard $(SRC32DIR)/*.s)
 SRC32CXX = $(wildcard $(SRC32DIR)/*.cpp)
@@ -153,18 +154,18 @@ kernel.elf: $(OBJ) $(SRCDIR)/link.ld libk.a libc++.a
 	@echo
 	@echo
 
-$(OUTDIR)/%.s.o: $(SRCDIR)/%.s libk.a libc++.a Makefile
+$(OUTDIR)/%.s.o: $(SRCDIR)/%.s Makefile
 	@mkdir -p `dirname $@`
 	@$(AS) $(ASFLAGS) $< -o $@
 	@echo Assembling kernel file : $<
 
-$(OUTDIR)/%.c.o: $(SRCDIR)/%.c libk.a libc++.a Makefile
+$(OUTDIR)/%.c.o: $(SRCDIR)/%.c Makefile $(LIBCH)
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<)`
 	@echo Compiling kernel file : $<
 	@$(CC) $(CFLAGS) -MMD -MT '$@' -MF	$(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.c.d, $<) -c $< -o $@
 
-$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp libk.a libc++.a Makefile
+$(OUTDIR)/%.cpp.o: $(SRCDIR)/%.cpp Makefile $(LIBCH) $(LIBCXXH)
 	@mkdir -p `dirname $@`
 	@mkdir -p `dirname $(patsubst $(SRCDIR)/%.cpp, $(DEPDIR)/%.cpp.d, $<)`
 	@echo Compiling kernel file : $<
@@ -261,7 +262,7 @@ $(OUTDIR)/$(LIBCXX)/%.o: $(LIBCXX)/src/%.cpp $(LIBCH) Makefile
 	@mkdir -p $(OUTDIR)/libc++
 	@mkdir -p $(DEPDIR)/libc++
 	@echo Compiling libcpp file : $<
-	@$(CXX) $(CXXFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<) -c $< -o $@
+	@$(CXX) $(CXXNKFLAGS) -MD -MT '$@' -MF	$(patsubst $(LIBCXX)/src/%.cpp, $(DEPDIR)/$(LIBCXX)/%.cpp.d, $<) -c $< -o $@
 
 libc++.a: $(LIBCXXOBJ) $(LIBCXXH) $(LIBCH) Makefile
 	ar rcs libc++.a $(LIBCXXOBJ)

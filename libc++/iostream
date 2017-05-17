@@ -1,0 +1,22 @@
+#ifndef __SUPOS_CPP_IOSTREAM
+#define __SUPOS_CPP_IOSTREAM
+#ifndef SUP_OS_KERNEL
+
+
+#include <iosfwd>
+#include <ios>
+#include <streambuf>
+#include <ostream>
+#include <istream>
+
+namespace std{
+    extern istream cin;
+    extern ostream cout;
+    extern ostream cerr;
+    extern ostream clog;
+
+    static ios_base::Init __iostream_initialization;
+}
+
+#endif
+#endif

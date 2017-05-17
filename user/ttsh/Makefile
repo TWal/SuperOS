@@ -4,7 +4,7 @@ SRCDIR=src
 OUTDIR=out
 DEPDIR=.dep
 
-CXX=g++
+CXX= ../../g++-supos
 CXXFLAGS= -I $(SRCDIR) -I $(OUTDIR) --std=c++14
 CXXWFLAGS= -Wall -Wextra $(CXXFLAGS)
 SRC=$(wildcard $(SRCDIR)/*.cpp)

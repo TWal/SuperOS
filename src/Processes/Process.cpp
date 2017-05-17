@@ -88,11 +88,11 @@ Thread* Process::loadFromBytes(Bytes* file){
         if(ph.type == Elf64::PT_LOAD){
             debug(Proc,"Loading Program Header at %p",ph.vaddr);
             // if this program header is to be loaded
-            assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
+            //assert(!(ph.vaddr & (0x1000 -1))); // assert ph.vaddr aligned on 4K
 
             size_t offset = ph.offset;
             debug(Proc,"Offset in file is %llx",offset);
-            if(offset % 0x1000 == 0){
+            if(offset % 0x1000 == 0 and ph.vaddr % 0x1000 == 0){
                 // the mapping is 4K aligned : better case
                 size_t po = offset / 0x1000;
                 size_t nbfPages = (ph.filesz + 0x1000-1) / 0x1000;
@@ -121,7 +121,15 @@ Thread* Process::loadFromBytes(Bytes* file){
                 }
                 usedAddr((void*)(ph.vaddr + nbvPages * 0x1000));
             }
-            else bsod("Loading unaligned elf64 is not supported for now");
+            else{
+                size_t voffset = ph.vaddr / 0x1000;
+                size_t vsize = ph.memsz + (ph.vaddr - voffset * 0x1000);
+                for(size_t i = 0 ; i < vsize ; ++i){
+                    uptr p = physmemalloc.alloc();
+                    paging.createMapping(p,(void*)(voffset*0x1000 +i * 0x1000));
+                }
+                readaddr(offset,(char*)ph.vaddr,ph.filesz);
+            }
         }
     }
     //printf("loading stack");

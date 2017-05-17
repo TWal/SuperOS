@@ -405,6 +405,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     printf("Init process %p\n",initp);
     initp->_fds.push_back(*fd);
     initp->_fds.push_back(*fd);
+    initp->_fds.push_back(FileDescriptor(unique_ptr<Stream>(new SerialStream())));
     initp->_wd = HDD::VFS::vfs->getRoot();
     //initp->_fds.push_back(*fd2);
     delete fd;

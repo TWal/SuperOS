@@ -1,0 +1,72 @@
+#ifndef __SUPOS_CPP_ISTREAM
+#define __SUPOS_CPP_ISTREAM
+#ifndef SUP_OS_KERNEL
+
+
+#include <ios>
+
+namespace std{
+
+    template<class charT, class traits>
+    class basic_istream : public virtual basic_ios<charT,traits>{
+        streamsize _gcount;
+    public:
+        using char_type = charT;
+        using traits_type = traits;
+        using int_type = int;
+        using pos_type = streamsize;
+        using off_type = streamoff;
+        using basic_ios<charT,traits>::rdbuf;
+        using basic_ios<charT,traits>::failbit;
+        using basic_ios<charT,traits>::eofbit;
+        using basic_ios<charT,traits>::setstate;
+
+        class sentry {
+            bool b;
+        public:
+            explicit sentry (basic_istream& is, bool noskipws = false) : b(true){
+                if(is.fail() or is.eof()){
+                    is.setstate(failbit);
+                    b = false;
+                }
+                // TODO if skipws get ' 's.
+            }
+            explicit operator bool() const{
+                return b;
+            }
+            sentry (const sentry&) = delete;
+            sentry& operator= (const sentry&) = delete;
+        };
+        explicit basic_istream(basic_streambuf<char_type,traits_type>* sb) : ios(sb){
+        }
+        basic_istream(){}
+        streamsize gcount(){return _gcount;}
+        int_type get(){
+            sentry s(*this,true);
+            if(!s) return traits::eof();
+            _gcount = 1;
+            char_type c = rdbuf()->sgetc();
+            if (c == traits::eof()) setstate(eofbit);
+            return c;
+        }
+        basic_istream& get(char_type& c){
+            c = get();
+            return *this;
+        }
+        /*basic_istream& get (char_type* s, streamsize n, char_type delim = '\n'){
+            
+          }*/
+        basic_istream& read (char_type* s, streamsize n){
+            sentry st(*this,true);
+            if(st){
+                int_type count = rdbuf()->sgetn(s,n);
+                _gcount = count;
+            }
+            return *this;
+        }
+    };
+
+}
+
+#endif
+#endif

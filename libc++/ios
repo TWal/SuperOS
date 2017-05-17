@@ -1,0 +1,92 @@
+#ifndef __SUPOS_CPP_IOS
+#define __SUPOS_CPP_IOS
+
+#ifndef SUP_OS_KERNEL
+#include "string"
+#include <iosfwd>
+#include <streambuf>
+
+
+namespace std{
+
+    template<class charT, class traits>
+    class basic_ios : public ios_base{
+    public:
+        using char_type = charT;
+        using traits_type = traits;
+        using int_type = int;
+        using pos_type = streamsize;
+        using off_type = streamoff;
+        using iostate = ios_base::iostate;
+        using fmtflags = ios_base::fmtflags;
+    private:
+        charT _fill;
+        basic_streambuf<charT,traits>* _rdbuf;
+        iostate _rdstate;
+    protected:
+        void init(basic_streambuf<charT,traits>* sb){
+            _width = 0;
+            _flags = skipws | dec;
+            _fill = ' ';
+            _rdbuf = sb;
+            _rdstate = sb ? goodbit : badbit;
+        }
+        basic_ios(){}
+    public:
+        explicit basic_ios(basic_streambuf<charT,traits>* sb){
+            init(sb);
+        }
+        basic_ios (const basic_ios&) = delete;
+        basic_ios& operator= (const basic_ios&) = delete;
+
+        // state flags
+        iostate rdstate() const{
+            return _rdstate;
+        }
+        void clear (iostate state = goodbit){
+            _rdstate = state;
+            if(!_rdbuf) _rdstate |= badbit;
+        }
+        void setstate (iostate state) {
+            clear(rdstate()|state);
+        }
+
+        bool good() const {
+            return rdstate() == goodbit;
+        }
+        bool eof() const{
+            return rdstate() & eofbit;
+        }
+        bool bad() const{
+            return rdstate() & badbit;
+        }
+        bool fail() const{
+            return rdstate() & badbit or rdstate() & failbit;
+        }
+        bool operator!() const {
+            return fail();
+        }
+        operator bool() const {
+            return !fail();
+        }
+
+        // formating
+        char_type fill() const{ return _fill;}
+        char_type fill(char_type c){
+            swap(_fill,c);
+            return c;
+        }
+        basic_streambuf<char_type,traits_type>* rdbuf() const{
+            return _rdbuf;
+        }
+        basic_streambuf<char_type,traits_type>*
+        rdbuf (basic_streambuf<char_type,traits_type>* sb){
+            swap(sb,_rdbuf);
+            clear();
+            return sb;
+        }
+    };
+};
+
+#endif
+#endif

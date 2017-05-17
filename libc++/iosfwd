@@ -1,0 +1,105 @@
+#ifndef __SUPOS_CPP_IOSFWD
+#define __SUPOS_CPP_IOSFWD
+#ifndef SUP_OS_KERNEL
+
+
+#include<utility>
+
+namespace std {
+    using streamsize = unsigned int;
+    using streamoff = int;
+
+    class ios_base{
+    public:
+        static const char goodbit = 0;
+        static const char eofbit = 1;
+        static const char badbit = 2;
+        static const char failbit = 4;
+        using iostate = char;
+        static const short boolalpha = 1;
+        static const short showbase = 2;
+        static const short showpos = 4;
+        static const short skipws = 8;
+        static const short dec = 16;
+        static const short hex = 32;
+        static const short oct = 64;
+        static const short basefield = dec | hex | oct;
+        using fmtflags = short;
+        enum seekdir : char {beg, cur, end};
+        enum openmode : char {in = 1, out = 2};
+
+    protected:
+        streamsize _width;
+        fmtflags _flags;
+        ios_base(){}
+        ios_base(const ios_base&) = delete;
+        ios_base(ios_base&&) = delete;
+    public:
+        fmtflags flags() const {return _flags;}
+        fmtflags flags(fmtflags fmtfl){
+            swap(fmtfl,_flags);
+            return fmtfl;
+        }
+        fmtflags setf (fmtflags fmtfl){return flags(fmtfl | _flags);}
+        fmtflags setf (fmtflags fmtfl, fmtflags mask){
+            return flags((fmtfl&mask)|(flags()&~mask));
+        }
+        void unsetf(fmtflags mask){
+            flags(_flags & ~mask);
+        }
+        streamsize width() const { return _width;}
+        streamsize width(streamsize wide){
+            swap(_width, wide);
+            return wide;
+        }
+        class Init {
+            static int init_cnt;  // internal static counter (for exposition only)
+        public:
+            Init();
+        };
+    };
+
+    template<class charT> struct char_traits;
+
+    template<class T> class allocator;
+
+    template <class charT, class traits=char_traits<charT> > class basic_ios;
+    template <class charT, class traits=char_traits<charT> > class basic_streambuf;
+    template <class charT, class traits=char_traits<charT> > class basic_istream;
+    template <class charT, class traits=char_traits<charT> > class basic_ostream;
+    template <class charT, class traits=char_traits<charT> > class basic_iostream;
+
+    template <class charT, class traits=char_traits<charT>, class Alloc=allocator<charT> >
+    class basic_stringbuf;
+    template <class charT, class traits=char_traits<charT>, class Alloc=allocator<charT> >
+    class basic_istringstream;
+    template <class charT, class traits=char_traits<charT>, class Alloc=allocator<charT> >
+    class basic_ostringstream;
+    template <class charT, class traits=char_traits<charT>, class Alloc=allocator<charT> >
+    class basic_stringstream;
+
+    template <class charT, class traits=char_traits<charT> > class basic_filebuf;
+    template <class charT, class traits=char_traits<charT> > class basic_ifstream;
+    template <class charT, class traits=char_traits<charT> > class basic_ofstream;
+    template <class charT, class traits=char_traits<charT> > class basic_fstream;
+
+    template <class charT, class traits=char_traits<charT> > class istreambuf_iterator;
+    template <class charT, class traits=char_traits<charT> > class ostreambuf_iterator;
+
+    typedef basic_ios<char>              ios;
+    typedef basic_streambuf<char>        streambuf;
+    typedef basic_istream<char>          istream;
+    typedef basic_ostream<char>          ostream;
+    typedef basic_iostream<char>         iostream;
+    typedef basic_stringbuf<char>        stringbuf;
+    typedef basic_istringstream<char>    istringstream;
+    typedef basic_ostringstream<char>    ostringstream;
+    typedef basic_stringstream<char>     stringstream;
+    typedef basic_filebuf<char>          filebuf;
+    typedef basic_ifstream<char>         ifstream;
+    typedef basic_ofstream<char>         ofstream;
+    typedef basic_fstream<char>          fstream;
+}
+
+#endif
+#endif
