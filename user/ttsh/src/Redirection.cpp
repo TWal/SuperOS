@@ -1,5 +1,5 @@
 #include "Redirection.h"
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <unistd.h>
 
 static const int STDIN_FD  = 0;

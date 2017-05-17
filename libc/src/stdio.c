@@ -344,3 +344,6 @@ size_t fwrite(void* buf, size_t size, size_t count, FILE* stream) {
     return res/size;
 }
 
+void perror(const char *s){
+    printf("Error %d with : %s\n",errno,s);
+}

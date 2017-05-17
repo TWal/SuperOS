@@ -318,6 +318,10 @@ namespace std {
     basic_string<T> operator+(basic_string<T> s1, const basic_string<T>& s2) {
         return s1 += s2;
     }
+    template<typename T>
+    basic_string<T> operator+(const T* s, const basic_string<T>& s2) {
+        return basic_string<T>(s) += s2;
+    }
 
 }
 

@@ -121,7 +121,7 @@ extern "C" {
     pid_t waitpid(pid_t p, int* status);
     pid_t wait(int* status);
 
-    int exec(char* path, char** argv);
+    int exec(const char* path, const char* const * argv);
 
     void _exit(int status);
     void _texit(int status);

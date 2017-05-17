@@ -1,0 +1,6 @@
+#ifndef __SUPOS_CPP_CSTDIO
+#define __SUPOS_CPP_CSTDIO
+
+#include <stdio.h>
+
+#endif

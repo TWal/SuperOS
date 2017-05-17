@@ -341,6 +341,9 @@ namespace std{
             _size = n;
             return;
         }
+        value_type* data(){
+            return _data;
+        }
     };
 }
 #endif

@@ -22,4 +22,15 @@ extern int errno;
 #define EXDEV 11 ///< Objects are not on the same partition
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    void perror(const char *s);
+
+#ifdef __cplusplus
+}
+#endif
+
+
 #endif

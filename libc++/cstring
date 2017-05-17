@@ -1,0 +1,6 @@
+#ifndef __SUPOS_CPP_CSTRING
+#define __SUPOS_CPP_CSTRING
+
+#include <string.h>
+
+#endif

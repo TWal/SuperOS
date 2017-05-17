@@ -179,7 +179,7 @@ int dup2(int oldfd, int newfd){
     }
     return res;
 }
-int exec(char* path, char** argv){
+int exec(const char* path, const char* const * argv){
     int res;
     asm volatile(
         "mov $59, %%rax;"

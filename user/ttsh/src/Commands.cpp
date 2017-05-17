@@ -1,6 +1,7 @@
 #include "Commands.h"
 #include <unistd.h>
-#include <sys/wait.h>
+//#include <sys/wait.h>
+#include <errno.h>
 
 static const int STDIN_FD  = 0;
 static const int STDOUT_FD = 1;
@@ -40,7 +41,7 @@ int Atomic::run() {
                 argv.push_back(const_cast<char*>(_cmdline[i].data()));
             }
             argv.push_back(nullptr);
-            if(execv(commandPath.data(), reinterpret_cast<char * const *>(argv.data()))) {
+            if(exec(commandPath.data(), reinterpret_cast<char * const *>(argv.data()))) {
                 perror("execv");
                 return -1;
             }
