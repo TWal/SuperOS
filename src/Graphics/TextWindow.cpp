@@ -271,6 +271,7 @@ namespace video{
                     _keyboardBuffer.clear();
                     _inputBuffer.push_back('\n');
                     putChar('\n');
+                    free();
                 }
                 else{
                     _keyboardBuffer.push_back(sym);

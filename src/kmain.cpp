@@ -333,7 +333,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     }
 
 #elif BLA == USER_TEST
-    debug("hey!");
     HDD::HDD* first = new HDD::HDD(1,true);
     first->init();
     //PartitionTableEntry part1 = first[1];
@@ -396,7 +395,6 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     assert(initf);
     assert(initf->getType() == HDD::FileType::RegularFile);
     std::unique_ptr<HDD::RegularFile> init = lifted_static_cast<HDD::RegularFile>(std::move(initf));
-
     ProcessGroup* pg = new ProcessGroup(1);
     Process* initp = new Process(1,pg);
     Thread* initt = initp->loadFromBytes(init.get());
@@ -405,7 +403,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     FileDescriptor* fd = new FileDescriptor(initLog);
     //FileDescriptor* fd2 = new FileDescriptor(sers);
     printf("Init process %p\n",initp);
-    initp->_fds.push_back(FileDescriptor());
+    initp->_fds.push_back(*fd);
     initp->_fds.push_back(*fd);
     initp->_wd = HDD::VFS::vfs->getRoot();
     //initp->_fds.push_back(*fd2);
@@ -417,6 +415,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     //while(true){
     //     kloop();
     //}
+    info("Booting finished, now running");
     schedul.run();
 
 

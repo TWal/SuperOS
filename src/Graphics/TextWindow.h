@@ -107,7 +107,7 @@ namespace video{
         }
 
         u64 getMask() const {return Stream::READABLE | Stream::WRITABLE |
-                Stream::APPENDABLE;}
+                Stream::APPENDABLE | Stream::WAITABLE;}
         /// Read something typed by keyboard
         size_t read(void* buf, size_t count);
         /// TODO handle ctrl-D

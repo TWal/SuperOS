@@ -60,7 +60,7 @@ int main(){
         putchar(c);
         }*/
 
-    vec_t size;
+    /*vec_t size;
     size.x = 100;
     size.y = 200;
     vec_t offset;
@@ -79,7 +79,7 @@ int main(){
         write(fd,data,400);
         printf(" errno : %d\n",errno);
         for(int i = 0 ; i < 10000 ; ++i);
-        }
+        }*/
 
     /*int tfd = opentwin(size,offset,1);
     printf("fd : %d, errno : %d",tfd,errno);
@@ -87,12 +87,15 @@ int main(){
     fprintf(f,"Hello world!\n");*/
 
 
-    while(1){
+    /*while(1){
         evt_t evt = getevt(fd);
         if(evt.type != EVT_INVALID)
             printf("type : %d\n",evt.type);
         for(volatile int i = 0 ; i < 1000000 ; ++i);
-    }
+        }*/
+
+    char c = getchar();
+    printf("char : %c",c);
 
 
     //   int pid = fork();

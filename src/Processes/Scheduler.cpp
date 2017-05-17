@@ -49,7 +49,7 @@ void Scheduler::init(Thread* initThread){
 
     if(_runTryNum >= _threadFIFO.size()){
         // If all processes are waiting
-        debug(Schedul,"Idle\n");
+        info(Schedul,"Idle\n");
         _runTryNum = 0;
         cli;
         _halted = true;
@@ -70,6 +70,7 @@ void Scheduler::init(Thread* initThread){
 
     // OK must return
     if(!it->second->OK()){
+        ++_runTryNum;
         _threadFIFO.push_back(nextTid);
         run();
     }
