@@ -106,5 +106,22 @@ int getws(int fd){
     return res;
 }
 
+evt_t getevt(int fd){
+    unsigned long long int res0;
+    asm volatile(
+        "mov $30, %%rax;"
+        "syscall"
+        : "=a"(res0)
+        : "D"(fd)  // rdi then rsi then rdx
+        :
+        );
+    evt_t res = *(evt_t*)&res0;
+    if (res.type < 0){
+        errno = -res.type;
+        res.type = -1;
+        return res;
+    }
+    return res;
+}
 
 #endif

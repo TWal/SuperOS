@@ -3,24 +3,25 @@
 
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "../Graphics/GraphEvent.h"
 
 namespace input{
     struct Event{
-        enum Type{KEYBOARD,MOUSE,WINDOW};
+        enum Type : char {KEYBOARD,MOUSE,WINDOW,INVALID};
+        Type type;
         union{
             Keyboard::KeyCode kcode;
             MouseEvent mousec;
-            int windowc;
-        };
-        Type type;
-        Event(Keyboard::KeyCode keyCode) : kcode(keyCode), type(KEYBOARD){}
-        Event(MouseEvent mouseevent) : mousec(mouseevent), type(MOUSE){}
-    };
+            video::GraphEvent gevent;
+        }__attribute__((packed));
+        Event(Keyboard::KeyCode keyCode) : type(KEYBOARD), kcode(keyCode){}
+        Event(MouseEvent mouseevent) : type(MOUSE), mousec(mouseevent) {}
+        Event(video::GraphEvent graphEvent) : type(WINDOW), gevent(graphEvent) {}
+        Event() : type(INVALID){}
+        operator u64(){return *reinterpret_cast<u64*>(this);}
+    }__attribute__((packed));
 
-    /*class EventHandler{
-        virtual bool handleEvent(Event e) const = 0;
-        };*/
-
+    static_assert(sizeof(Event) == 7, "Event too big");
 }
 
 #endif

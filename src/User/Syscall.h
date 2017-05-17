@@ -35,6 +35,7 @@
 #define SYSGETSIZE 27
 #define SYSGETOFF 28
 #define SYSGETWS 29
+#define SYSGETEVT 30
 
 #define SYSDUP 32
 #define SYSDUP2 33

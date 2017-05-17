@@ -40,7 +40,7 @@ struct MouseEvent {
         }
         return (v & (1 << b)) != 0;
     }
-};
+}__attribute__((packed));
 
 static_assert(sizeof(MouseEvent) == 6, "size of MouseEvent");
 

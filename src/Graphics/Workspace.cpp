@@ -2,6 +2,7 @@
 #include "Window.h"
 #include "../IO/Mouse.h"
 #include "../log.h"
+#include "GraphEvent.h"
 
 using namespace input;
 
@@ -43,6 +44,10 @@ namespace video{
         Window* tmp = _wins.front();
         _wins.pop_front();
         _wins.push_back(tmp);
+        if(_wins.size() > 1){
+            _wins.front()->handleEvent(GraphEvent(GraphEvent::Type::FOCUS,1));
+            tmp->handleEvent(GraphEvent(GraphEvent::Type::FOCUS,0));
+        }
     }
 
     void Workspace::handleEventOnMe(input::Event e){
@@ -91,6 +96,8 @@ namespace video{
                         newPos.x = max(0, min(newPos.x, screenSize.x - winSize.x));
                         newPos.y = max(0, min(newPos.y, screenSize.y - winSize.y));
                         _currentWindow->setOffset(newPos);
+                        _currentWindow->handleEvent(
+                            GraphEvent(GraphEvent::Type::MOVE,newPos.x,newPos.y));
                     }
                     if(_state == RESIZING) {
                         Vec2i newSize = _startWindow - _startMousePos + Vec2i(e.mousec.x, e.mousec.y);
@@ -99,6 +106,8 @@ namespace video{
                         newSize.x = max(10, min(newSize.x, screenSize.x - winOff.x));
                         newSize.y = max(10, min(newSize.y, screenSize.y - winOff.y));
                         _currentWindow->setSize(newSize);
+                        _currentWindow->handleEvent(
+                            GraphEvent(GraphEvent::Type::RESIZE,newSize.x,newSize.y));
                     }
                 } else {
                     _state = NORMAL;
@@ -149,6 +158,8 @@ namespace video{
                             currentWorkspace._wins.pop_front();
                             targetWorkspace._wins.push_front(win);
                             win->_ws = workspaceNum;
+                            win->handleEvent(GraphEvent(GraphEvent::Type::WORKSPACE,
+                                                        workspaceNum));
                         }
                     } else {
                         Workspace::active = workspaceNum;

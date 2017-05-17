@@ -196,6 +196,19 @@ u64 sysgetoff(u64 fd, u64, u64, u64,u64,u64);
 */
 u64 sysgetws(u64 fd, u64, u64, u64,u64,u64);
 
+/**
+   @brief Syscall 30, getevt : Get and pop last event of a graphical window.
+   @param fd The window of with we want to pop an event
+
+   The window has FIFO for event, when an event happen, it is pushed on
+   the windows FIFO.
+
+   @return The event on success. (event may be of type invalid if FIFO is empty)
+   @return EBADF fd is not a graphical window file descriptor.
+*/
+u64 sysgetevt(u64 fd, u64, u64, u64,u64,u64);
+
+
 
 
 /**

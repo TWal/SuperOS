@@ -79,7 +79,7 @@ namespace input{
             State state;
             char symbol; // ASCII (0 if not printable)
             EScanCode scanCode;
-        };
+        }__attribute__((packed));
         static_assert(sizeof(KeyCode) == 5,"Wrong Size for KeyCode");
         Keyboard();
         void handleScanCode(uchar sc);

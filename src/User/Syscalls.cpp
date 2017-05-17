@@ -27,6 +27,7 @@ void syscallFill(){
     handlers[SYSGETSIZE] = sysgetsize;
     handlers[SYSGETOFF] = sysgetoff;
     handlers[SYSGETWS] = sysgetws;
+    handlers[SYSGETEVT] = sysgetevt;
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
     handlers[SYSCLONE] = sysclone;
@@ -331,6 +332,14 @@ u64 sysgetws(u64 fd, u64, u64, u64,u64,u64){
     return pro->_fds[fd].getWin()->getWS();
 }
 
+u64 sysgetevt(u64 fd, u64, u64, u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    // getting the file descriptor.
+    if(pro->_fds.size() <= u64(fd)) return -EBADF;
+    if(pro->_fds[fd].getType() != FileDescriptor::FDtype::GWINDOW) return -EBADF;
+    return static_cast<video::GraphWindow*>(pro->_fds[fd].getWin())->getEvent();
+}
 
 /* ____
   |  _ \ _   _ _ __

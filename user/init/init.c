@@ -77,7 +77,7 @@ int main(){
         printf("CouCou");
         errno = 0;
         write(fd,data,400);
-        printf(" errno : %d",errno);
+        printf(" errno : %d\n",errno);
         for(int i = 0 ; i < 10000 ; ++i);
         }
 
@@ -88,11 +88,10 @@ int main(){
 
 
     while(1){
-        vec_t size = getsize(fd);
-        vec_t off = getoff(fd);
-        int ws = getws(fd);
-        printf("%d %d %d %d %d\n",size.x,size.y,off.x,off.y,ws);
-        for(volatile int i = 0 ; i < 50000000; ++ i);
+        evt_t evt = getevt(fd);
+        if(evt.type != EVT_INVALID)
+            printf("type : %d\n",evt.type);
+        for(volatile int i = 0 ; i < 1000000 ; ++i);
     }
 
 

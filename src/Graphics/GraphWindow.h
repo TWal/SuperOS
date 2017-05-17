@@ -1,11 +1,14 @@
 #ifndef GRAPHWINDOW_H
 #define GRAPHWINDOW_H
 
+#include <deque>
 #include "Window.h"
+#include "../IO/Event.h"
 
 namespace video{
     class GraphWindow : public Window, public Bytes{
         Color* _buffer; //heap memory for video Buffer
+        std::deque<input::Event> _events;
     public :
         GraphWindow(Vec2u offset, Vec2u size);
         ~GraphWindow();
@@ -14,7 +17,9 @@ namespace video{
         /// Send window to screen
         void send() const;
         /// Handle an event. @todo put it on the event FIFO
-        void handleEvent(input::Event e){}
+        void handleEvent(input::Event e){
+            _events.push_back(e);
+        }
         /**
            @brief Change the size of the window.
 
@@ -23,6 +28,16 @@ namespace video{
            it has nothing to do with @ref getSize from bytes Interface.
         */
         void setSize(const Vec2u& v);
+
+        /**
+           @brief Returns and unhandled event (for user mode normally).
+         */
+        input::Event getEvent(){
+            if(_events.empty()) return input::Event();
+            input::Event e = _events.front();
+            _events.pop_front();
+            return e;
+        }
 
         // Bytes interface
 
