@@ -1,4 +1,5 @@
 #include "SyscallUtils.h"
+#include "../HDD/VFS.h"
 #include "../Streams/BytesStream.h"
 
 using namespace std;
@@ -28,3 +29,12 @@ pair<string,string> splitFileName(std::string s){
     }
     return make_pair(string(),s);
 }
+
+std::unique_ptr<HDD::File> resolvePath(HDD::Directory* wd, const char* path) {
+    if(path[0] == '/') {
+        return HDD::VFS::vfs->getRoot()->resolvePath(path+1);
+    } else {
+        return wd->resolvePath(path);
+    }
+}
+

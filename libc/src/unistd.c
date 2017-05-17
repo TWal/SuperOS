@@ -209,6 +209,38 @@ pid_t wait(int* status){
     return waitpid(0,status);
 }
 
+int opend(const char* path) {
+    int res;
+    asm volatile(
+        "mov $72, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path)
+        :
+    );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int readd(int fd, struct dirent* buf) {
+    int res;
+    asm volatile(
+        "mov $73, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(fd), "S"(buf)
+        :
+    );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
 int chdir(const char* path){
     int res;
     asm volatile(
@@ -234,6 +266,54 @@ int mkdir(const char* path){
         : "D"(path)
         :
         );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int rmdir(const char* path) {
+    int res;
+    asm volatile(
+        "mov $84, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path)
+        :
+    );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int link(const char* path1, const char* path2) {
+    int res;
+    asm volatile(
+        "mov $86, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path1), "S"(path2)
+        :
+    );
+    if (res < 0){
+        errno = -res;
+        return -1;
+    }
+    return res;
+}
+
+int unlink(const char* path) {
+    int res;
+    asm volatile(
+        "mov $87, %%rax;"
+        "syscall"
+        : "=a"(res)
+        : "D"(path)
+        :
+    );
     if (res < 0){
         errno = -res;
         return -1;

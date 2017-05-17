@@ -13,6 +13,8 @@ extern "C" {
 
     struct FILE;
     typedef struct FILE FILE;
+    struct DIR;
+    typedef struct DIR DIR;
 
     extern FILE* stdin;
     extern FILE* stdout;
@@ -41,6 +43,10 @@ extern "C" {
     int fseek(FILE* stream, long int offset, int origin);
     long int ftell(FILE* stream);
     void rewind(FILE* stream);
+
+    DIR* opendir(const char* path);
+    struct dirent* readdir(DIR* dirp);
+    int closedir(DIR* dirp);
 #endif
 
     size_t fread(void* buf, size_t size, size_t count, FILE* stream);

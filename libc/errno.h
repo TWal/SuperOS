@@ -19,6 +19,7 @@ extern int errno;
 #define EINVAL 8 ///< Invalid value (parameter)
 #define ENOTDIR 9 ///< Not a directory.
 #define EEXIST 10 ///< Object already exists.
+#define EXDEV 11 ///< Objects are not on the same partition
 
 
 #endif

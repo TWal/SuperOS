@@ -268,7 +268,6 @@ class Directory : public ::HDD::Directory, public Inode {
 
         virtual std::unique_ptr<::HDD::File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
         virtual void addEntry(const std::string& name, ::HDD::File* file);
-        virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
 

@@ -55,6 +55,7 @@ class RegularFile : public ::HDD::RegularFile, public File {
         virtual void readaddr(u64 addr, void* data, size_t size) const;
         virtual size_t getSize() const;
     protected:
+        friend class Directory;
         std::unique_ptr<::HDD::RegularFile> _impl;
 };
 
@@ -72,7 +73,6 @@ class Directory : public ::HDD::Directory, public File {
 
         virtual std::unique_ptr<::HDD::File> addEntry(const std::string& name, u16 uid, u16 gid, u16 mode);
         virtual void addEntry(const std::string& name, ::HDD::File* file);
-        virtual void removeFile(const std::string& name);
         virtual void removeDirectory(const std::string& name);
         virtual void removeEntry(const std::string& name);
     protected:
@@ -89,6 +89,7 @@ class BlockDevice : public ::HDD::BlockDevice, public File {
         virtual size_t getSize() const;
     protected:
         friend class FS;
+        friend class Directory;
         std::unique_ptr<::HDD::BlockDevice> _impl;
 };
 
@@ -104,6 +105,7 @@ class CharacterDevice : public ::HDD::CharacterDevice, public File {
         virtual size_t seek(i64 count, mod mode);
     protected:
         friend class FS;
+        friend class Directory;
         std::unique_ptr<::HDD::CharacterDevice> _impl;
 };
 

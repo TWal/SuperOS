@@ -103,7 +103,7 @@ void CommandLine::init(table_type table){
                 printf("rm: %s: Is a directory\n", file.c_str());
                 continue;
             }
-            cl->pwd->removeFile(file);
+            cl->pwd->removeEntry(file);
         }
     }));
 

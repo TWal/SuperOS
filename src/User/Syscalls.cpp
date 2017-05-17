@@ -21,6 +21,7 @@ void syscallFill(){
     handlers[SYSSEEK] = sysseek;
     handlers[SYSBRK] = sysbrk;
     handlers[SYSPIPE] = syspipe;
+
     handlers[SYSOPENWIN] = sysopenwin;
     handlers[SYSOPENTWIN] = sysopentwin;
     handlers[SYSRESIZEWIN] = sysresizewin;
@@ -28,16 +29,23 @@ void syscallFill(){
     handlers[SYSGETOFF] = sysgetoff;
     handlers[SYSGETWS] = sysgetws;
     handlers[SYSGETEVT] = sysgetevt;
+
     handlers[SYSDUP] = sysdup;
     handlers[SYSDUP2] = sysdup2;
+
     handlers[SYSCLONE] = sysclone;
     handlers[SYSFORK] = sysfork;
     handlers[SYSEXIT] = sysexit;
     handlers[SYSEXEC] = sysexec;
     handlers[SYSTEXIT] = systexit;
     handlers[SYSWAIT] = syswait;
-    handlers[SYSCHDIR] = syschdir;
+
+    handlers[SYSOPEND] = sysopend;
+    handlers[SYSREADD] = sysreadd;
     handlers[SYSMKDIR] = sysmkdir;
+    handlers[SYSRMDIR] = sysrmdir;
+    handlers[SYSLINK] = syslink;
+    handlers[SYSUNLINK] = sysunlink;
 }
 
 //non blocking read
@@ -114,37 +122,24 @@ u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
 u64 sysopen(u64 upath, u64 flags, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
+    char* path = (char*)path;
     if(!pro->_usermem.in((void*)upath)) return -EFAULT;
-    string s = reinterpret_cast<const char*>(upath);
-    if(s.empty()) return -EACCESS;
-    std::unique_ptr<HDD::File> f;
-    std::unique_ptr<HDD::Directory> d;
-    if(s[0] == '/'){
-        assert(HDD::VFS::vfs);
-        d = HDD::VFS::vfs->getRoot();
-    }
-    else{
-        assert(pro->_wd);
-        d = std::unique_ptr<HDD::Directory>(pro->_wd.get());
-        d.dontDelete();
-    }
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), path);
 
-    //if the first character is `/`, resolvePath ignores it
-    f = d->resolvePath(s);
     if(!f){
         if(flags & O_CREAT){
-            auto p = splitFileName(s);
-            f = d->resolvePath(p.first);
-            if(f->getType() != HDD::FileType::Directory){
+            auto p = splitFileName(path);
+            f = resolvePath(pro->_wd.get(), p.first.c_str());
+            if(f->getType() != HDD::FileType::Directory) {
                 return -EACCESS;
             }
-            d = std::lifted_static_cast<HDD::Directory>(std::move(f));
+            std::unique_ptr<HDD::Directory> d = std::lifted_static_cast<HDD::Directory>(std::move(f));
             d->addEntry(p.second,0,0, S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP
                         | S_IRUSR | S_IWUSR | S_IFREG);
             f = (*d)[p.second];
             assert(f);
         }
-        else return - EACCESS;
+        else return -EACCESS;
     }
 
     u32 newfd = pro->getFreeFD();
@@ -387,25 +382,16 @@ u64 sysexit(u64 rc,u64,u64,u64,u64,u64){
     schedul.exit(rc);
 }
 
-u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64){
+u64 sysexec(u64 upath, u64 argv, u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
-    if(!pro->_usermem.in((void*)path)) return -EFAULT;
-    info(Syscalls,"Exec in %d to %s", t->getTid(),(char*)path);
-    string s = reinterpret_cast<const char*>(path);
-    std::unique_ptr<HDD::File> f;
-    std::unique_ptr<HDD::Directory> d;
-    if(s[0] == '/'){
-        assert(HDD::VFS::vfs);
-        d = HDD::VFS::vfs->getRoot();
-    }
-    else{
-        assert(pro->_wd);
-        d = std::unique_ptr<HDD::Directory>(pro->_wd.get());
-        d.dontDelete();
-    }
+    char* path = (char*)upath;
+    if(!pro->_usermem.in((void*)upath)) return -EFAULT;
+    info(Syscalls,"Exec in %d to %s", t->getTid(), path);
 
-    f = d->resolvePath(s);
+
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), path);
+
     if(!f) return -EACCESS;
     if(f->getType() != HDD::FileType::RegularFile) return -EACCESS;
     // The file is OK, now computing argc;
@@ -461,14 +447,106 @@ u64 syswait(u64 pid,u64 status,u64,u64,u64,u64){
     //return tmp;
 }
 
+
+/* _____ _ _      ____            _
+  |  ___(_) | ___/ ___| _   _ ___| |_ ___ _ __ ___
+  | |_  | | |/ _ \___ \| | | / __| __/ _ \ '_ ` _ \
+  |  _| | | |  __/___) | |_| \__ \ ||  __/ | | | | |
+  |_|   |_|_|\___|____/ \__, |___/\__\___|_| |_| |_|
+                        |___/
+*/
+
+u64 sysopend(u64 path, u64,u64,u64,u64,u64) {
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), (char*)path);
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -ENOTDIR;
+    std::unique_ptr<HDD::Directory> d = std::lifted_static_cast<HDD::Directory>(std::move(f));
+
+    u32 newfd = pro->getFreeFD();
+    if(pro->_fds.size() <= newfd) pro->_fds.resize(newfd+1);
+    pro->_fds[newfd] = FileDescriptor(std::move(d));
+    return newfd;
+}
+
+u64 sysreadd(u64 fd, u64 thedirent,u64,u64,u64,u64) {
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)thedirent)) return -EFAULT;
+    if(!pro->_usermem.in((void*)(thedirent + sizeof(dirent)))) return -EFAULT;
+    if(pro->_fds.size() <= fd) return -EBADF;
+    FileDescriptor& filed = pro->_fds[fd];
+    if(!filed.isDir()) return -EBADF;
+    dirent* res = filed.getDir()->read(filed.getDopen());
+    if(res != nullptr) {
+        memcpy((void*)thedirent, res, sizeof(dirent));
+    } else {
+        memset((void*)thedirent, 0, sizeof(dirent));
+    }
+    return 0;
+}
+
 u64 syschdir(u64 path, u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
     if(!pro->_usermem.in((void*)path)) return -EFAULT;
-    std::unique_ptr<HDD::File> f = pro->_wd->resolvePath((char*)path);
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), (char*)path);
     if(!f) return -EACCESS;
     if(f->getType() != HDD::FileType::Directory) return -ENOTDIR;
     pro->_wd = lifted_static_cast<HDD::Directory>(move(f));
+    return 0;
+}
+
+//TODO: test this!!!
+u64 sysrename(u64 path1, u64 path2,u64,u64,u64,u64) {
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path1) || !pro->_usermem.in((void*)path2)) return -EFAULT;
+
+    // find the directory
+    auto sp1 = splitFileName((char*)path1);
+    auto sp2 = splitFileName((char*)path2);
+
+    //find directory containing path1
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), sp1.first.c_str());
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir1 = lifted_static_cast<HDD::Directory>(move(f));
+
+    //find directory containing path1
+    f = resolvePath(pro->_wd.get(), sp2.first.c_str());
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir2 = lifted_static_cast<HDD::Directory>(move(f));
+
+    // check path2 does not exists.
+    f = (*dir2)[sp2.second];
+    if(f) return -EEXIST;
+
+    auto fpath1 = (*dir1)[sp1.second];
+
+    stat st;
+    fpath1->getStats(&st);
+    u32 dev1 = st.st_dev;
+    u16 mode = st.st_mode;
+    dir2->getStats(&st);
+    u32 dev2 = st.st_dev;
+
+    if(dev1 != dev2) return -EXDEV;
+
+    if(S_ISDIR(mode)) {
+        //this order to handle '..' properly
+        //the link count can't drop to 0 because there is the link count of '.'
+        dir1->removeEntry(sp1.second);
+        dir2->addEntry(sp2.second, fpath1.get());
+    } else {
+        //this order to avoid the link count to drop to 0
+        dir2->addEntry(sp2.second, fpath1.get()); //before the next line to
+        dir1->removeEntry(sp1.second);
+    }
+
     return 0;
 }
 
@@ -479,7 +557,7 @@ u64 sysmkdir(u64 path, u64,u64,u64,u64,u64){
 
     // find the directory
     auto p = splitFileName((char*)path);
-    std::unique_ptr<HDD::File> f = pro->_wd->resolvePath(p.first);
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), p.first.c_str());
     if(!f) return -EACCESS;
     if(f->getType() != HDD::FileType::Directory) return -EACCESS;
     auto dir = lifted_static_cast<HDD::Directory>(move(f));
@@ -492,3 +570,92 @@ u64 sysmkdir(u64 path, u64,u64,u64,u64,u64){
     dir->addEntry(p.second, 0, 0, S_IRWXO | S_IRWXG | S_IRWXU | S_IFDIR);
     return 0;
 }
+
+
+u64 sysrmdir(u64 path, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+
+    // find the directory
+    auto p = splitFileName((char*)path);
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), p.first.c_str());
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir = lifted_static_cast<HDD::Directory>(move(f));
+
+    // check directory does exists.
+    auto testf = (*dir)[p.second];
+    if(!testf) return -EACCESS;
+    //check if it is a directory
+    if(testf->getType() != HDD::FileType::Directory) return -EACCESS;
+    //check if it is empty
+    if(!std::lifted_static_cast<HDD::Directory>(std::move(testf))->isEmpty()) return -EEXIST;
+
+    // remove the directory
+    dir->removeDirectory(p.second);
+    return 0;
+}
+
+
+u64 syslink(u64 path1, u64 path2,u64,u64,u64,u64) {
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path1) || !pro->_usermem.in((void*)path2)) return -EFAULT;
+
+    // find the directory
+    auto p = splitFileName((char*)path2);
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), p.first.c_str());
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir = lifted_static_cast<HDD::Directory>(move(f));
+
+    // check path2 does not exists.
+    auto testf = (*dir)[p.second];
+    if(testf) return -EEXIST;
+
+    auto fpath1 = resolvePath(pro->_wd.get(), (char*)path1);
+
+    if(!fpath1) return -EACCESS;
+
+    if(fpath1->getType() != HDD::FileType::RegularFile) return -EACCESS;
+
+    stat st;
+    fpath1->getStats(&st);
+    u32 dev1 = st.st_dev;
+    dir->getStats(&st);
+    u32 dev2 = st.st_dev;
+
+    if(dev1 != dev2) return -EXDEV;
+
+    dir->addEntry(p.second, fpath1.get());
+    return 0;
+}
+
+
+u64 sysunlink(u64 path, u64,u64,u64,u64,u64){
+    Thread* t = schedul.enterSys();
+    auto pro = t->getProcess();
+    if(!pro->_usermem.in((void*)path)) return -EFAULT;
+
+    // find the directory
+    auto p = splitFileName((char*)path);
+    std::unique_ptr<HDD::File> f = resolvePath(pro->_wd.get(), p.first.c_str());
+    if(!f) return -EACCESS;
+    if(f->getType() != HDD::FileType::Directory) return -EACCESS;
+    auto dir = lifted_static_cast<HDD::Directory>(move(f));
+
+    // check file does exists.
+    auto testf = (*dir)[p.second];
+    if(!testf) return -EACCESS;
+    //check if it is a regular file
+    if(testf->getType() != HDD::FileType::RegularFile) return -EACCESS;
+
+    // remove the file
+    dir->removeEntry(p.second);
+    return 0;
+}
+
+
+
+

@@ -24,7 +24,10 @@ private:
     u64* _owners;
     std::unique_ptr<Stream>* _str;
     std::unique_ptr<HDD::Directory>* _dir;
-    video::Window* _win;
+    union {
+        video::Window* _win;
+        void* _dopen;
+    };
     FDtype _type;
     void free();
     void drop();
@@ -96,7 +99,15 @@ public :
         else return nullptr;
     }
 
+    /// Get the 'dopen pointer' if the file descriptor contains a directory, otherwise nullptr
+    void* getDopen(){
+        if(_type == DIRECTORY) return _dopen;
+        else return nullptr;
+    }
+
     bool isWin() { return _type == GWINDOW or _type == TWINDOW;}
+
+    bool isDir() { return _type == DIRECTORY; }
 
     video::Window* getWin(){
         if(isWin()) return _win;

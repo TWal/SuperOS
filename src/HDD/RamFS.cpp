@@ -202,10 +202,6 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     }
 }
 
-void Directory::removeFile(const std::string& name) {
-    removeEntry(name);
-}
-
 void Directory::removeDirectory(const std::string& name) {
     removeEntry(name);
 }

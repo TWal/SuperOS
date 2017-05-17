@@ -10,7 +10,7 @@ FileDescriptor::FileDescriptor(std::unique_ptr<Stream>&& str)
 }
 
 FileDescriptor::FileDescriptor(std::unique_ptr<HDD::Directory>&& dir)
-    : _owners(new u64(0)), _dir(new std::unique_ptr<HDD::Directory>(std::move(dir))), _type(DIRECTORY){
+    : _owners(new u64(0)), _dir(new std::unique_ptr<HDD::Directory>(std::move(dir))), _dopen((*_dir)->open()), _type(DIRECTORY){
     *_owners = 1 ;
 }
 
@@ -36,7 +36,10 @@ FileDescriptor::FileDescriptor(const FileDescriptor& other):
     if(_owners)(*_owners)++;
 
     if(_type == GWINDOW or _type == TWINDOW) _win = other._win;
-    if(_type == DIRECTORY) _dir = other._dir;
+    if(_type == DIRECTORY) {
+        _dir = other._dir;
+        _dopen = other._dopen;
+    }
 }
 
 FileDescriptor& FileDescriptor::operator=(const FileDescriptor& fd){
@@ -53,16 +56,19 @@ void FileDescriptor::drop(){
 void FileDescriptor::free(){
     assert(_owners and *_owners == 0);
     delete _owners;
-    delete _str;
     switch(_type){
         case EMPTY:
+            return;
         case TWINDOW: // the stream and the window are part of the same virtual class.
         case STREAM:
+            delete _str;
             return;
         case DIRECTORY:
+            (*_dir)->close(_dopen);
             delete _dir;
             return;
         case GWINDOW:
+            delete _str;
             delete _win;
             return;
     }

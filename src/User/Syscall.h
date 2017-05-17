@@ -56,11 +56,10 @@
 #define SYSKILL 62
 
 
-#define SYSOPENDIR 72
-#define SYSREADDIR 73
-#define SYSSEEKDIR 74
-#define SYSTELLDIR 75
-#define SYSGETCWD 79
+#define SYSOPEND 72
+#define SYSREADD 73
+#define SYSSEEKD 74
+#define SYSTELLD 75
 
 #define SYSCHDIR 80
 #define SYSFCHDIR 81

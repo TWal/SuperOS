@@ -654,12 +654,10 @@ std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 ui
     if(S_ISREG(mode)) {
         RegularFile* f = _fs->getNewFile(uid, gid, mode);
         addEntry(name, f);
-        f->link();
         return std::unique_ptr<::HDD::File>(f);
     } else if(S_ISDIR(mode)) {
         Directory* f = _fs->getNewDirectory(uid, gid, mode);
         addEntry(name, f);
-        f->link();
         return std::unique_ptr<::HDD::File>(f);
     } else {
         bsod("HDD::Ext2::Directory::addEntry: me dunno wat to do wiz mode %u\n", mode);
@@ -669,7 +667,19 @@ std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 ui
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
     if(file->getType() ==  FileType::Directory && std::string("..") != name) {
         static_cast<::HDD::Directory*>(file)->addEntry("..", this);
-        link();
+    }
+
+    //link
+    switch(file->getType()) {
+        case FileType::RegularFile:
+            static_cast<RegularFile*>(file)->link();
+            break;
+        case FileType::Directory:
+            static_cast<Directory*>(file)->link();
+            break;
+        default:
+            bsod("HDD::Ext2::Directory::adEntry: me dunno filetype %u\n", file->getType());
+            break;
     }
     u32 neededSize = sizeof(DirectoryEntry) + name.size();
     stat stats;
@@ -715,26 +725,16 @@ void Directory::addEntry(const std::string& name, ::HDD::File* file) {
             _fs->getInodeData(inode, &dat);
             newEntry.type = inodeToDirType(dat.mode);
             i_writeaddr(targetPos, &newEntry, sizeof(DirectoryEntry));
-            i_writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size());
+            if(targetPos + neededSize < newEntry.rec_len) {
+                i_writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size()+1);
+            } else {
+                i_writeaddr(targetPos+sizeof(DirectoryEntry), name.c_str(), name.size());
+            }
             entry.rec_len = targetPos - curPos;
             i_writeaddr(curPos, &entry, sizeof(DirectoryEntry));
             break;
         }
     }
-}
-
-
-void Directory::removeFile(const std::string& name) {
-    std::unique_ptr<::HDD::File> f = (*this)[name];
-    assert(f);
-    if(f->getType() == FileType::RegularFile) {
-        static_cast<RegularFile*>(f.get())->unlink();
-    } else if(f->getType() == FileType::Directory) {
-        static_cast<Directory*>(f.get())->unlink();
-    } else {
-        bsod("HDD::Ext2::Directory::removeFile: me dunno wat to do wiz type %d!!!\n", f->getType());
-    }
-    removeEntry(name);
 }
 
 void Directory::removeDirectory(const std::string& name) {
@@ -771,12 +771,12 @@ void Directory::removeEntry(const std::string& name) {
         bsod("HDD::Ext2::Directory::removeEntry called with a file that doesn't exists!\n");
     }
 
+    InodeData dat;
+    _fs->getInodeData(inode, &dat);
+    Inode(_fs, inode, dat).unlink();;
     if(type == FT_DIR && std::string("..") != name) {
-        InodeData dat;
-        _fs->getInodeData(inode, &dat);
         Directory directory(_fs, inode, dat);
         directory.removeEntry("..");
-        unlink();
     }
 
     if(curPos == 0) {
@@ -808,7 +808,6 @@ void Directory::deleteDir() {
         }
     }
     close(d);
-    unlink();
 }
 
 void Directory::init() {
@@ -817,10 +816,10 @@ void Directory::init() {
     entry.rec_len = _fs->_blockSize;
     entry.name_len = 1;
     entry.type = FT_DIR;
-    char name = '.';
+    const char* name = ".\0";
     i_resize(_fs->_blockSize);
     i_writeaddr(0, &entry, sizeof(DirectoryEntry));
-    i_writeaddr(sizeof(DirectoryEntry), &name, 1);
+    i_writeaddr(sizeof(DirectoryEntry), name, 2);
     link(); //reference for '.'
 }
 

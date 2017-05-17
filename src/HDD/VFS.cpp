@@ -75,6 +75,7 @@ File::File(FS* fs, ::HDD::File* impl, u32 dev) :
 
 void File::i_getStats(stat* buf) const {
     _impl->getStats(buf);
+    buf->st_dev = _dev;
 }
 
 FileType File::i_getType() const {
@@ -95,7 +96,7 @@ RegularFile::RegularFile(FS* fs, std::unique_ptr<::HDD::RegularFile> impl, u32 d
     VFS::File(fs, impl.get(), dev), _impl(std::move(impl)) {}
 
 void RegularFile::getStats(stat* buf) const {
-    _impl->getStats(buf);
+    i_getStats(buf);
 }
 
 void RegularFile::resize(size_t size) {
@@ -187,11 +188,20 @@ std::unique_ptr<::HDD::File> Directory::addEntry(const std::string& name, u16 ui
 }
 
 void Directory::addEntry(const std::string& name, ::HDD::File* file) {
-    _impl->addEntry(name, file);
-}
-
-void Directory::removeFile(const std::string& name) {
-    _impl->removeFile(name);
+    switch(file->getType()) {
+        case FileType::RegularFile:
+            _impl->addEntry(name, static_cast<RegularFile*>(file)->_impl.get());
+            break;
+        case FileType::Directory:
+            _impl->addEntry(name, static_cast<Directory*>(file)->_impl.get());
+            break;
+        case FileType::BlockDevice:
+            _impl->addEntry(name, static_cast<BlockDevice*>(file)->_impl.get());
+            break;
+        case FileType::CharacterDevice:
+            _impl->addEntry(name, static_cast<CharacterDevice*>(file)->_impl.get());
+            break;
+    }
 }
 
 void Directory::removeDirectory(const std::string& name) {

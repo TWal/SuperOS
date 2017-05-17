@@ -7,9 +7,15 @@
 int errno;
 int* __errno_location = &errno;
 
-struct FILE{
+struct FILE {
     int fd;
 };
+
+struct DIR {
+    int fd;
+    struct dirent dir;
+};
+
 
 static FILE _stdin = {0};
 FILE* stdin = &_stdin;
@@ -287,6 +293,32 @@ long int ftell(FILE* stream) {
 void rewind(FILE* stream) {
     seek(stream->fd, 0, SEEK_SET);
 }
+
+DIR* opendir(const char* path) {
+    int fd = opend(path);
+    if(fd < 0) {
+        return NULL;
+    } else {
+        DIR* res = (DIR*)malloc(sizeof(DIR));
+        res->fd = fd;
+        return res;
+    }
+}
+
+struct dirent* readdir(DIR* dirp) {
+    readd(dirp->fd, &dirp->dir);
+    if(dirp->dir.d_name[0] == 0) {
+        return NULL;
+    } else {
+        return &dirp->dir;
+    }
+}
+
+int closedir(DIR* dirp) {
+    close(dirp->fd);
+    free(dirp);
+}
+
 
 #endif
 

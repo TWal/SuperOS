@@ -269,7 +269,7 @@ u64 sysexit(u64 rc, u64,u64,u64,u64,u64);
    @retval EFAULT argv or one of its member is not in user memory.
    @retval EACCESS path can't be accessed
  */
-u64 sysexec(u64 path, u64 argv, u64,u64,u64,u64);
+u64 sysexec(u64 upath, u64 argv, u64,u64,u64,u64);
 
 /**
    @brief Syscall 60, texit : exit the current thread with code rc
@@ -291,6 +291,26 @@ u64 systexit(u64 rc, u64,u64,u64,u64,u64);
 u64 syswait(u64 pid, u64 status, u64,u64,u64,u64);
 
 /**
+   @brief Syscall 72, opend : open directory
+   @param path : path to the directory
+   @retval file descriptor
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed.
+   @retval ENOTDIR : object pointed to by path is not a directory.
+*/
+u64 sysopend(u64 path, u64,u64,u64,u64,u64);
+
+/**
+   @brief Syscall 73, readd : read directory
+   @param fd : the file descriptor
+   @param thedirent : pointer to dirent structure to fill
+   @retval 0 : success
+   @retval EFAULT : thedirent is not in usermode memory;
+   @retval EBADF : bad file descriptor
+*/
+u64 sysreadd(u64 fd, u64 thedirent,u64,u64,u64,u64);
+
+/**
    @brief Syscall 80, chdir : change directory
    @param path : path to new directory
    @retval 0 Success;
@@ -299,6 +319,18 @@ u64 syswait(u64 pid, u64 status, u64,u64,u64,u64);
    @retval ENOTDIR : object pointed to by path is not a directory.
 */
 u64 syschdir(u64 path, u64,u64,u64,u64,u64);
+
+/**
+   @brief Syscall 82, rename : rename files
+   @param path1 : the current path
+   @param path2 : the new path
+   @retval 0 Success;
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed.
+   @retval EXDEV : @ref path1 and @ref path2 are on different partitions
+   @retval EEXIST : @ref path2 already exists
+*/
+u64 sysrename(u64 path1, u64 path2,u64,u64,u64,u64);
 
 /**
    @brief Syscall 83, mkdir : create directory.
@@ -316,10 +348,32 @@ u64 sysmkdir(u64 path, u64,u64,u64,u64,u64);
    @retval 0 Success;
    @retval EFAULT : path is not in usermode memory;
    @retval EACCESS : path resolution failed.
-   @retval EEXIST : path already exists.
+   @retval EEXIST : directory is not empty
 */
-u64 sysmkdir(u64 path, u64,u64,u64,u64,u64);
+u64 sysrmdir(u64 path, u64,u64,u64,u64,u64);
 
+/**
+   @brief Syscall 86, link : create hard links.
+   @param path1 : the existing file
+   @param path2 : the link to be created
+   @retval 0 Success;
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed.
+   @retval EXDEV : @ref path1 and @ref path2 are on different partitions
+   @retval EEXIST : @ref path2 already exists
+*/
+u64 syslink(u64 path1, u64 path2,u64,u64,u64,u64);
+
+/**
+   @brief Syscall 87, unlink : remove link
+   @param path : the path
+   @retval 0 Success;
+   @retval EFAULT : path is not in usermode memory;
+   @retval EACCESS : path resolution failed.
+   @retval EXDEV : @ref path1 and @ref path2 are on different partitions
+   @retval EEXIST : @ref path2 already exists
+*/
+u64 sysunlink(u64 path, u64,u64,u64,u64,u64);
 
 
 #endif
