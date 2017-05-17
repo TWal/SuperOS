@@ -4,6 +4,7 @@ SRCDIR=src
 OUTDIR=out
 DEPDIR=.dep
 
+#CXX= g++
 CXX= ../../g++-supos
 CXXFLAGS= -I $(SRCDIR) -I $(OUTDIR) --std=c++14
 CXXWFLAGS= -Wall -Wextra $(CXXFLAGS)
@@ -34,6 +35,7 @@ $(OUTDIR)/lex.o: $(SRCDIR)/lex.l $(PARSER)
 $(OUTDIR)/parse.o: $(SRCDIR)/parse.y
 	@mkdir -p $(OUTDIR)
 	bison -r all -d $< -o $(OUTDIR)/parse.cpp
+	#vim $(OUTDIR)/parse.cpp -u NONE -es '+1' '+g/try$$/norm ddma%d2dd%"add' '+wq'
 	$(CXX) $(CXXFLAGS) -c $(OUTDIR)/parse.cpp -o $@
 
 clean:
