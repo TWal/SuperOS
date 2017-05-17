@@ -4,6 +4,12 @@
 // These implementation are only usermode
 // kernel must provide (or not) its own implementation
 #ifndef SUP_OS_KERNEL
+void exit(int status){
+    // TODO handle atexit.
+    _exit(status);
+}
+
+
 pid_t fork(){
     int res;
     asm volatile(

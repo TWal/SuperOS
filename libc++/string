@@ -102,6 +102,14 @@ namespace std {
             _data = _alloc.allocate(_capacity);
             traits_type::copy(_data,s,_size);
         }
+        basic_string (charT c, size_type n, const allocator_type& alloc = allocator_type())
+            :_alloc(alloc){
+            //printf("constr %s \n",s);
+            _size = n;
+            _capacity = strategy(_size+1);
+            _data = _alloc.allocate(_capacity);
+            traits_type::assign(_data,n,c);
+        }
         ~basic_string(){
             if(_data) _alloc.deallocate(_data,_capacity);
         }
@@ -247,6 +255,9 @@ namespace std {
         }
         basic_string& operator += (const basic_string& ref){
             return append(ref);
+        }
+        basic_string& operator += (value_type ref){
+            return append(basic_string(ref,1));
         }
         void pop_back(){
             assert(_size > 0 && "pop_back on empty basic_string");

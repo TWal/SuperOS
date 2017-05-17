@@ -48,7 +48,7 @@ namespace std {
             sentry s(*this);
             if(!s) return *this;
             int_type i = rdbuf()->sputn(&c,sizeof(char_type));
-            if(i == char_type::eof()) setstate(badbit);
+            if(i == traits_type::eof()) setstate(badbit);
             return *this;
         }
 
@@ -65,12 +65,12 @@ namespace std {
     private:
 
         void printDigit(int d){
-        if(d <= 9) {
-            return put('0' + d);
-        } else {
-            return put('a' + (d-10));
+            if(d <= 9) {
+                put('0' + d);
+            } else {
+                put('a' + (d-10));
+            }
         }
-    }
 
         void printUInt(unsigned long long int n, unsigned int base, unsigned int padding){
             // TODO handle prefix on flags
@@ -119,8 +119,17 @@ namespace std {
             return *this;
         }
 
-
+        // manipulators
+        basic_ostream& operator<<(ostream& (*pf) (ostream&)){
+            return pf(*this);
+        }
     };
+    template <class charT, class traits>
+    basic_ostream<charT,traits>& endl (basic_ostream<charT,traits>& os){
+        os.put('\n');
+        //os.flush() TODO flush when bufferised
+        return os;
+    }
 }
 
 

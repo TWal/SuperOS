@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+    #define EXIT_SUCCESS 0
+    #define EXIT_FAILURE 1
 
     int   brk(void* addr);
     void* sbrk(intptr_t offset);
@@ -15,6 +17,7 @@ extern "C" {
     void __initmalloc();
     void __setbrk(void*addr);
     void _exit(int status);
+    void exit(int status);
 
 
 #ifdef __cplusplus

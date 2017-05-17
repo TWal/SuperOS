@@ -24,6 +24,65 @@ namespace std{
         typedef pointer iterator;
         typedef const T* const_iterator;
 
+        class reverse_iterator{
+            friend vector;
+            T* p;
+            reverse_iterator(T* np) : p(np){}
+        public :
+            reverse_iterator& operator++(){
+                --p;
+                return *this;
+            }
+            reverse_iterator& operator+=(size_t n){
+                p -= n;
+                return *this;
+            }
+            reverse_iterator& operator--(){
+                ++p;
+                return *this;
+            }
+            reverse_iterator& operator-=(size_t n){
+                p += n;
+                return *this;
+            }
+            T& operator*() const {
+                return *p;
+            }
+            T* operator->() const {
+                return p;
+            }
+        };
+
+        class const_reverse_iterator{
+            friend vector;
+            const T* p;
+            const_reverse_iterator(const T* np) : p(np){}
+        public :
+            reverse_iterator& operator++(){
+                --p;
+                return *this;
+            }
+            reverse_iterator& operator+=(size_t n){
+                p -= n;
+                return *this;
+            }
+            reverse_iterator& operator--(){
+                ++p;
+                return *this;
+            }
+            reverse_iterator& operator-=(size_t n){
+                p += n;
+                return *this;
+            }
+            const T& operator*() const {
+                return *p;
+            }
+            const T* operator->() const {
+                return p;
+            }
+        };
+
+
     private :
         Alloc _alloc;
         pointer _data;
@@ -59,7 +118,10 @@ namespace std{
 
 
     public :
-        explicit vector (const allocator_type& alloc = allocator_type())
+        vector()
+            :_alloc(),_data(nullptr),_size(0),_capacity(0){
+        }
+        explicit vector (const allocator_type& alloc)
             :_alloc(alloc),_data(nullptr),_size(0),_capacity(0){
         }
         explicit vector (size_type n) : _alloc(){
