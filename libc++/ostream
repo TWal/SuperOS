@@ -19,6 +19,10 @@ namespace std {
         using basic_ios<charT,traits>::eofbit;
         using basic_ios<charT,traits>::badbit;
         using basic_ios<charT,traits>::setstate;
+        using ios_base::flags;
+        using ios_base::dec;
+        using ios_base::hex;
+        using ios_base::oct;
         class sentry {
             bool b;
         public:
@@ -43,7 +47,7 @@ namespace std {
         basic_ostream& put(char_type c){
             sentry s(*this);
             if(!s) return *this;
-            int_type i = rdbuf()->sputc(c);
+            int_type i = rdbuf()->sputn(&c,sizeof(char_type));
             if(i == char_type::eof()) setstate(badbit);
             return *this;
         }
@@ -55,6 +59,66 @@ namespace std {
             if(i < n) setstate(badbit);
             return *this;
         }
+        basic_ostream& operator<<(const basic_string<charT,traits>& str){
+            return write(str.c_str(),str.size());
+        }
+    private:
+
+        void printDigit(int d){
+        if(d <= 9) {
+            return put('0' + d);
+        } else {
+            return put('a' + (d-10));
+        }
+    }
+
+        void printUInt(unsigned long long int n, unsigned int base, unsigned int padding){
+            // TODO handle prefix on flags
+            unsigned long long int i = 1;
+            while(n/i >= base) {
+                i *= base;
+                if(padding > 0) {
+                    padding -= 1;
+                }
+            }
+
+            for(unsigned int j = 1; j < padding; ++j) {
+                put('0');
+            }
+
+            while(n > 0) {
+                printDigit(n/i);
+                n %= i;
+                i /= base;
+            }
+            while(i >= 1) {
+                put('0');
+                i /= base;
+            }
+        }
+        void printInt(long long int n, unsigned int base, unsigned int padding) {
+            if(n < 0) { // TODO handle plus sign on flags
+                put('-');
+                n = -n;
+            }
+            printUInt(n,base,padding);
+        }
+    public:
+        basic_ostream& operator<<(int i){
+            // TODO handle padding
+            if(flags() & dec) printInt(i,10,0);
+            if(flags() & hex) printInt(i,16,0);
+            if(flags() & oct) printInt(i,8,0);
+            return *this;
+        }
+        basic_ostream& operator<<(unsigned int i){
+            // TODO handle padding
+            if(flags() & dec) printUInt(i,10,0);
+            if(flags() & hex) printUInt(i,16,0);
+            if(flags() & oct) printUInt(i,8,0);
+            return *this;
+        }
+
 
     };
 }
