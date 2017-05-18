@@ -87,6 +87,9 @@ inline void* getCR2(){
     return res;
 }
 
+inline void fpu_load_control_word(u16 control) {
+    asm volatile("fldcw %0;"::"m"(control));
+}
 
 [[noreturn]] void vbsod(const char* s, va_list ap);
 

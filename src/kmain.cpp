@@ -239,6 +239,10 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     // (i.e a heap with 4K aligned malloc).
 
 
+    debug(Init, "Setup FPU");
+    fpu_load_control_word(0x37f);
+    fpu_load_control_word(0x37e);
+    fpu_load_control_word(0x37a);
     //Kernel Logging system initialization.
     info(Init,"Setup user mode");
     //User Mode initialization
