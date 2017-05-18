@@ -22,7 +22,7 @@ void BMP::load(std::string file){
     printf("size : %d * %d",_height,_width);
     fprintf(stderr,"loading");
     if(h.depth == 32) {
-        int realwidth = ((h.width*4 +3) /4)*4;
+        int realwidth = ((h.width*4) /4)*4;
         printf("realwidth %d\n",realwidth);
         printf("size %x\n",h.size);
         fprintf(stderr,"load line 43");

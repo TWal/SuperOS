@@ -1,5 +1,5 @@
 #ifndef __SUPOS_WINDOW_H
-#define WINDOW_H
+#define __SUPOS_WINDOW_H
 
 #include <stdbool.h>
 
@@ -36,7 +36,8 @@ extern "C" {
         K_K1, K_K2, K_K3,
         K_K0, K_KDEL, K_T56 = 0x56, K_LWIN = 0x5b, K_RWIN = 0x5c
     }__attribute__((packed)) keycode_t;
-    typedef struct{
+
+    typedef struct {
         bool lShift : 1;
         bool rShift : 1;
         bool lCtrl  : 1;
@@ -47,15 +48,25 @@ extern "C" {
         bool rWin   : 1;
         bool capsLock : 1;
         bool numLock : 1;
-        keycode_t code : 7;
-        bool released :1;
-        bool extended :1;
+    }__attribute__((packed)) key_state_t;
+
+    typedef struct {
+        unsigned char code : 7;
+        bool release :1;
+        bool extended : 1;
         bool valid : 1;
+    } __attribute__((packed)) key_scancode_t;
+
+    typedef struct{
+        key_state_t state;
+        char symbol; // ASCII (0 if not printable)
+        key_scancode_t scanCode;
     }__attribute__((packed)) key_t;
 
     typedef enum{
         MOUSE_LEFT = 1, MOUSE_RIGHT = 2, MOUSE_MIDDLE = 4
     }__attribute__((packed)) mouse_button_t;
+
     typedef struct{
         short x;
         short y;
@@ -66,6 +77,7 @@ extern "C" {
     typedef enum{
         WIN_RESIZE, WIN_MOVE, WIN_FOCUS, WIN_WORKSPACE
     }__attribute__((packed)) win_type_t;
+
     typedef struct{
         unsigned short x;
         unsigned short y;
@@ -77,6 +89,7 @@ extern "C" {
     typedef enum{
         EVT_KEYBOARD, EVT_MOUSE, EVT_WINDOW, EVT_INVALID
     }__attribute__((packed)) evt_type_t;
+
     typedef struct{
         evt_type_t type;
         union{

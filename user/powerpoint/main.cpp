@@ -60,36 +60,32 @@ int main(int argc, char** argv){
 
     int i = 0;
 
-    fprintf(stderr, "MEH1\n");
     evt_t e;
+    int redraw = 1;
     while(1) {
-        fprintf(stderr, "MEH2\n");
-        while((e = getevt(w)).type == EVT_INVALID);
-        fprintf(stderr, "type %d",e.type);
-        if(e.type == EVT_KEYBOARD) {
-            if(e.key.code == K_ENTER) {
-                ++i;
-            }
-            if(e.key.code == K_BACKSPACE) {
-                --i;
-            }
-            fprintf(stderr,"-----------------Keyboard code %d",e.key.code);
+        if(redraw) {
+            getImage(i);
+            printf("%d   %s\n", i, buf);
+
+            BMP bmp;
+            bmp.load(buf);
+            bmp.to32();
+            bmp.draw(w);
         }
 
-        fprintf(stderr, "MEH3\n");
-        getImage(i);
-        fprintf(stderr, "MEH4\n");
-        printf("%d   %s\n", i, buf);
-        fprintf(stderr, "MEH5\n");
+        redraw = 0;
+        while((e = getevt(w)).type == EVT_INVALID);
+        if(e.type == EVT_KEYBOARD && !e.key.scanCode.release) {
+            if(e.key.scanCode.code == K_ENTER) {
+                redraw = 1;
+                ++i;
+            }
+            if(e.key.scanCode.code == K_BACKSPACE) {
+                redraw = 1;
+                --i;
+            }
+        }
 
-        BMP bmp;
-        fprintf(stderr, "MEH6\n");
-        bmp.load(buf);
-        fprintf(stderr, "MEH7\n");
-        bmp.to32();
-        fprintf(stderr, "MEH8\n");
-        bmp.draw(w);
-        fprintf(stderr, "MEH9\n");
     }
 
 #if 0
