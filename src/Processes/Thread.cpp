@@ -15,17 +15,28 @@ using namespace std;
     |_| |_| |_|_|  \___|\__,_|\__,_|
 */
 Thread::Thread(u16 tid, u64 rip,Process* process)
-    : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),_process(process){
+    : _tid(tid), _pid(process->getPid()), _gid(process->getGid()),
+      _process(process), first(true){
     info(Proc,"Creating thread %d at %p",tid,this);
     schedul.addT(_tid,this);
     process->addThread(this);
     context.rip = rip;
     context.rflags = 2 | (1 << 9);
+
+    _mallocMMX = malloc(512+8);
+    if((uptr)_mallocMMX % 16 == 8){
+        _MMX =(void*)((uptr)_mallocMMX + 8);
+    }
+    else if((uptr)_mallocMMX % 16 == 0){
+        _MMX = _mallocMMX;
+    }
+
 }
 Thread::~Thread(){
     info(Proc,"Deletion of thread %d",_tid);
     schedul.freeT(_tid);
     info(Proc,"Deleted of thread %d",_tid);
+    free(_mallocMMX);
     //("thread %d deleted\n",_tid);
 }
 
@@ -33,6 +44,7 @@ Thread::~Thread(){
     debug(Proc,"Starting thread %d in %d at %p",_tid,_pid,context.rip);
     _process->prepare();
     //fprintf(stderr,"started\n");
+    if(!first) loadMMX();
     context.launch();
 }
 void Thread::terminate(u64 returnCode){
@@ -120,4 +132,22 @@ void* Thread::push(const void* data, size_t size){
     assert(_process->_usermem.in((void*)context.rsp));
     memcpy((void*)context.rsp,data,size);
     return (void*)context.rsp;
+}
+
+void Thread::saveMMX(){
+    asm volatile(
+        "fxsave %0"
+        : "=m"(*(char*)_MMX)
+        :
+        : "memory"
+        );
+    first = false;
+}
+void Thread::loadMMX(){
+    asm volatile(
+        "fxrstor %0"
+        :
+        : "m"(*(char*)_MMX)
+        : "memory"
+        );
 }

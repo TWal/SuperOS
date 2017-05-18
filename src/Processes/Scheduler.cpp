@@ -131,6 +131,7 @@ Thread* Scheduler::enterSys(){
 void Scheduler::stopCurent(){
     if(Context::lastContext) enterSys();
     _threadFIFO.push_back(_current->getTid());
+    _current->saveMMX();
     _current = nullptr;
 }
 

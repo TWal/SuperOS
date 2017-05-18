@@ -22,6 +22,9 @@ public :
     u16 _uid;
 private :
     Process* _process; /// Process of the thread, redundant with _pid for speed.
+    void* _mallocMMX;
+    void* _MMX;
+    bool first;
 public :
     Context context;
     Thread(u16 tid,u64 rip,Process* process);
@@ -44,6 +47,10 @@ public :
     u64 nbwaitp(Process* pro, u64* status);
     /// push the data on the stack of the thread (process memory must be activated);
     void* push(const void*data, size_t size);
+    /// Save Current MMX state in this thread.
+    void saveMMX();
+    /// Load Current MMX state from this thread.
+    void loadMMX();
 };
 
 
