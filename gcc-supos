@@ -2,9 +2,11 @@
 
 dirname=`dirname $0`
 
+pushd $dirname
 make -s crt0.o
 make -s libc.a
+popd
 
-gcc -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra -fno-builtin\
+gcc -nostdlib -ffreestanding -fno-stack-protector -Wall -Wextra -fno-builtin \
  -isystem $dirname/libc  -Wl,-melf_x86_64 -L $dirname \
- -L /usr/lib/gcc/x86_64-*linux-gnu/6.* -Wl,crt0.o -Wl,--build-id=none $* -lc -lgcc
+ -L /usr/lib/gcc/x86_64-*linux-gnu/6.* -Wl,$dirname/crt0.o -Wl,--build-id=none $* -lc -lgcc
