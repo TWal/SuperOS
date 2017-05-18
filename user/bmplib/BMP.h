@@ -32,6 +32,7 @@ public:
 private:
 
     Color32 *_buffer32;
+    Color32 *_buffer32_2;
     Color24 *_buffer24;
     u32 _height;
     u32 _width;
