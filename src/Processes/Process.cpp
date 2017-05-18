@@ -130,6 +130,7 @@ Thread* Process::loadFromBytes(Bytes* file){
                     paging.createMapping(p,(void*)(voffset*0x1000 +i * 0x1000));
                 }
                 readaddr(offset,(char*)ph.vaddr,ph.filesz);
+                usedAddr((void*) (voffset*0x1000 + vsize * 0x1000 + 0x1000));
             }
         }
     }

@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 void BMP::load(std::string file){
+    fprintf(stderr,"load entry");
     FILE* f = fopen(file.data(),"r");
     if(!f){
         _error = "Can't open file";
@@ -19,14 +20,18 @@ void BMP::load(std::string file){
     _height = h.height;
     _width = h.width;
     printf("size : %d * %d",_height,_width);
+    fprintf(stderr,"loading");
     if(h.depth == 32) {
-        int realwidth = ((h.width*4 +4) /4)*4;
+        int realwidth = ((h.width*4 +3) /4)*4;
         printf("realwidth %d\n",realwidth);
         printf("size %x\n",h.size);
+        fprintf(stderr,"load line 43");
         _buffer32_2 = (Color32*)malloc(_width*_height *4);
+        fprintf(stderr,"load line 42");
         for(u32 i = 0 ; i < _height ; ++i){
+            //fprintf(stderr,"load line %d",i);
             fseek(f,h.offset + i * realwidth,SEEK_SET);
-            int j = fread(_buffer32_2 + i * _width,3,_width,f);
+            int j = fread(_buffer32_2 + i * _width,4,_width,f);
             if(j < _width){
                 _error = "Can't read line";
                 return;

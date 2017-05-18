@@ -256,8 +256,8 @@ u64 sysopenwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     video::Vec2u vSize(size);
     video::Vec2u vOffset(offset);
     auto botright = vSize + vOffset;
-    if(botright.x >= video::screen.getSize().x) return -EINVAL;
-    if(botright.y >= video::screen.getSize().y) return -EINVAL;
+    if(botright.x > video::screen.getSize().x) return -EINVAL;
+    if(botright.y > video::screen.getSize().y) return -EINVAL;
     if (workspace >= video::Workspace::_totalNumber) return -EINVAL;
 
     // getting the file descriptor.
@@ -277,8 +277,8 @@ u64 sysopentwin(u64 size, u64 offset, u64 workspace, u64,u64,u64){
     video::Vec2u vSize(size);
     video::Vec2u vOffset(offset);
     auto botright = vSize + vOffset;
-    if(botright.x >= video::screen.getSize().x) return -EINVAL;
-    if(botright.y >= video::screen.getSize().y) return -EINVAL;
+    if(botright.x > video::screen.getSize().x) return -EINVAL;
+    if(botright.y > video::screen.getSize().y) return -EINVAL;
     if (workspace >= video::Workspace::_totalNumber) return -EINVAL;
 
     // getting the file descriptor.

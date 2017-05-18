@@ -5,6 +5,7 @@
 #include <new>
 #include <unistd.h>
 #include <window.h>
+#include <errno.h>
 using namespace std;
 
 char buf[100];
@@ -36,12 +37,15 @@ void getImage(int n) {
 }
 
 int main(int argc, char** argv){
+    fprintf(stderr,"powerpoint entry");
     printf("powerpoint entry\n");
     if(argc < 2) {
         printf("usage: powerpoint [directory]");
+        return 1;
     }
     if(chdir(argv[1])) {
         printf("%s: no such file or directory\n", argv[1]);
+        return 1;
     }
 
     vec_t size;
@@ -52,6 +56,7 @@ int main(int argc, char** argv){
     off.y = 0;
 
     int w = openwin(size, off, 1);
+    fprintf(stderr," w : %d %d\n",w,errno);
 
     int i = 0;
 
@@ -60,6 +65,7 @@ int main(int argc, char** argv){
     while(1) {
         fprintf(stderr, "MEH2\n");
         while((e = getevt(w)).type == EVT_INVALID);
+        fprintf(stderr, "type %d",e.type);
         if(e.type == EVT_KEYBOARD) {
             if(e.key.code == K_ENTER) {
                 ++i;
@@ -67,6 +73,7 @@ int main(int argc, char** argv){
             if(e.key.code == K_BACKSPACE) {
                 --i;
             }
+            fprintf(stderr,"-----------------Keyboard code %d",e.key.code);
         }
 
         fprintf(stderr, "MEH3\n");
