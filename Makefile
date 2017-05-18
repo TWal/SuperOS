@@ -417,5 +417,18 @@ doc:
 report:
 	make -C report
 
+ttsh:
+	make -C user/ttsh
+	cp user/ttsh/ttsh iso/ttsh
+
+CMD = $(shell ls user/cmd)
+CMDO = $(patsubst %, iso/bin/%, $(CMD))
+
+cmd: $(CMDO)
+	echo $(CMDO)
+
+iso/bin/% : user/cmd/%/code.c $(LIBCH)
+	./gcc-supos $< -o $@
+
 include $(DEPF)
 

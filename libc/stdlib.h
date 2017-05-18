@@ -14,6 +14,7 @@ extern "C" {
     void* sbrk(intptr_t offset);
     void* malloc(size_t size);
     void  free (void* ptr);
+    void* realloc(void* ptr, size_t size);
     void __initmalloc();
     void __setbrk(void*addr);
     void _exit(int status);

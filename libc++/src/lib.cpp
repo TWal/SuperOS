@@ -42,6 +42,9 @@ namespace std{
         new(&clog) ostream(f);
 
     }
+    extern "C" void __cxa_pure_virtual(){
+        assert(!"Pure virtual call");
+    }
 }
 
 #endif

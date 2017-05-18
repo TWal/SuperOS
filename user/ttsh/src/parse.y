@@ -23,9 +23,8 @@ using namespace std;
 
 void error (const yy::location& loc,const std::string& st){
     //cout << "hey" << endl;
-         std::cerr << "Syntax error " << loc.begin.column
+         std::cout << "Syntax error " << loc.begin.column
               << "-" << loc.end.column <<": " << st<< std::endl;
-     exit(EXIT_FAILURE);
 }
 
 void yy::parser::error(const yy::location& loc,const std::string& st)
@@ -87,14 +86,17 @@ void yy::parser::error(const yy::location& loc,const std::string& st)
 %%
 
 line:
-       command
+        {
+            res = nullptr;
+        }
+    |   command
         {
             res = $1;
         }
     ;
 
 command:
-       atomic_command
+        atomic_command
         {
             $$ = $1;
         }

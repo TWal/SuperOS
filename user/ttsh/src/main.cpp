@@ -9,11 +9,11 @@ int main() {
     while(true) {
         printf("$ ");
         Scanner scan(&input,"test"); // load scanner
-        Command* cmd;
+        Command* cmd = nullptr;
         yy::parser parser(scan,cmd); //load parser
         parser.parse(); //parse
-
-        cmd->run();
+        
+        if(cmd) cmd->run();
 
         delete cmd;
     }

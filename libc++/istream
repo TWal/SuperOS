@@ -44,9 +44,13 @@ namespace std{
         int_type get(){
             sentry s(*this,true);
             if(!s) return traits::eof();
-            _gcount = 1;
-            char_type c = rdbuf()->sgetc();
-            if (c == traits::eof()) setstate(eofbit);
+            char_type c;
+            int_type count = rdbuf()->sgetn(&c,1);
+            _gcount = count;
+            if (count == 0){
+                setstate(eofbit);
+                return traits_type::eof();
+            }
             return c;
         }
         basic_istream& get(char_type& c){
@@ -61,6 +65,9 @@ namespace std{
             if(st){
                 int_type count = rdbuf()->sgetn(s,n);
                 _gcount = count;
+                if (count < n){
+                    setstate(eofbit);
+                }
             }
             return *this;
         }

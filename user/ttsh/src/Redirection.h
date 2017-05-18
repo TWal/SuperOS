@@ -7,6 +7,7 @@ class Redirection {
     public:
         Redirection(const std::string& file);
         virtual void doRedirection() = 0;
+        virtual ~Redirection(){}
     protected:
         std::string _file;
 };

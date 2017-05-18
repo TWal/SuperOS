@@ -2,6 +2,9 @@
 #include <unistd.h>
 //#include <sys/wait.h>
 #include <errno.h>
+#include <iostream>
+
+using namespace std;
 
 static const int STDIN_FD  = 0;
 static const int STDOUT_FD = 1;
@@ -36,13 +39,13 @@ int Atomic::run() {
             for(size_t i = 0; i < _cmdline[0].size(); ++i) {
                 hasSlash |= (_cmdline[0][i] == '/');
             }
-            std::string commandPath = hasSlash ? _cmdline[0] : ("/usr/bin/" + _cmdline[0]);
+            std::string commandPath = hasSlash ? _cmdline[0] : ("/bin/" + _cmdline[0]);
             for(size_t i = 0; i < _cmdline.size(); ++i) {
                 argv.push_back(const_cast<char*>(_cmdline[i].data()));
             }
             argv.push_back(nullptr);
             if(exec(commandPath.data(), reinterpret_cast<char * const *>(argv.data()))) {
-                perror("execv");
+                cout << commandPath << " not found" << endl;
                 return -1;
             }
             return 42; //make gcc happy

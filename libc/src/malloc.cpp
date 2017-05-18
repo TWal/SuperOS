@@ -2,6 +2,7 @@
 #include"malloc.h"
 #include "../stdio.h"
 #include <errno.h>
+#include "../string.h"
 
 
 
@@ -211,4 +212,22 @@ void free(void* ptr) {
 
 
 
+}
+
+void* realloc(void* ptr, size_t size){
+    //TODO clean that
+    if(!ptr and !size) return nullptr;
+    if(!size){
+        free(ptr);
+        return nullptr;
+    }
+    void* n = malloc(size);
+    if(ptr){
+        size_t oldSize = ptrToHeader(ptr)->getSize();
+        size_t toCopy = size > oldSize ? oldSize : size;
+        memcpy(n,ptr,toCopy);
+        free(ptr);
+        return n;
+    }
+    return n;
 }

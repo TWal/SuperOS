@@ -396,7 +396,7 @@ u64 sysexec(u64 upath, u64 argv, u64,u64,u64,u64){
 
     if(!f) return -EACCESS;
     if(f->getType() != HDD::FileType::RegularFile) return -EACCESS;
-    // The file is OK, now computing argc;
+    debug("exec : The file is OK, now computing argc");
     char** targv = (char**)argv;
     debug(Syscalls, "argv = %p",targv);
     //pro->_usermem.DumpTree();
@@ -404,6 +404,7 @@ u64 sysexec(u64 upath, u64 argv, u64,u64,u64,u64){
     int argc = 0;
     std::vector<std::string> argvSave;
     while(targv[argc]){
+        debug("Testing %p",targv[argc]);
         if(!pro->_usermem.in(targv[argc])) return -EFAULT;
         debug(Syscalls,"argument %d is %s",argc,targv[argc]);
         argvSave.push_back(targv[argc]); // TODO correct security failure.

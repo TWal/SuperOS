@@ -27,6 +27,7 @@ static_assert(sizeof(MallocHeader) == 8, "MallocHeader has the wrong size");
 extern "C" void* sbrk(intptr_t offset);
 extern "C" void __initmalloc();
 extern "C" void* malloc(size_t size);
+extern "C" void* realloc(void* ptr, size_t size);
 extern "C" void free(void* ptr);
 
 #endif

@@ -39,65 +39,12 @@ void thread(){
 int main(){
     printf("[Init] Init start\n");
     errno = 0;
-    /*mkdir("/lol");
-    chdir("/lol");
-    printf("errno %d",errno);
-    int fd = open("testfile",O_RDWR | O_CREAT);
-    if(fd == -1){
-        printf ("open failed %d %d",fd,errno);
+    int pid  =fork();
+    if(!pid){
+        char* data[] = {"/ttsh",NULL};
+        exec("/ttsh",data);
+        printf("exec fails %d",errno);
     }
-    FILE* f = fdopen(fd,"rw");
-
-    fprintf(f,"hello %d\n",42);
-    errno = 0;
-    int i = seek(fd,0,SEEK_CUR);
-    printf("errno %d",errno);
-    printf("size %d\n",i);
-
-    seek(fd,0,SEEK_SET);
-    int c;
-    while((c = fgetc(f)) != EOF){
-        putchar(c);
-        }*/
-
-    /*vec_t size;
-    size.x = 100;
-    size.y = 200;
-    vec_t offset;
-    offset.x = 300;
-    offset.y = 400;
-
-
-    int fd = openwin(size,offset,1);
-    printf("fd : %d, errno : %d",fd,errno);
-    int* data = malloc(400);
-    memset(data,-1,400);
-
-    for(int i = 0 ; i < 200 ; ++ i){
-        printf("CouCou");
-        errno = 0;
-        write(fd,data,400);
-        printf(" errno : %d\n",errno);
-        for(int i = 0 ; i < 10000 ; ++i);
-        }*/
-
-    /*int tfd = opentwin(size,offset,1);
-    printf("fd : %d, errno : %d",tfd,errno);
-    FILE* f = fdopen(tfd,"");
-    fprintf(f,"Hello world!\n");*/
-
-
-    /*while(1){
-        evt_t evt = getevt(fd);
-        if(evt.type != EVT_INVALID)
-            printf("type : %d\n",evt.type);
-        for(volatile int i = 0 ; i < 1000000 ; ++i);
-        }*/
-
-    char c = getchar();
-    printf("char : %c",c);
-
-
     //   int pid = fork();
 
 
@@ -139,7 +86,8 @@ int main(){
 
 
     printf("[Init] Init end\n");
-    while(1);
+    while(1){
+        wait(NULL);
+    }
 
-    return factorial(5);
 }
