@@ -8,6 +8,7 @@ extern "C" {
     double sin(double d);
     double cos(double d);
     double sqrt(double d);
+#define M_PI 3.14159265358979323846
 
 #ifdef __cplusplus
 }
