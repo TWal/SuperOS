@@ -66,7 +66,7 @@ private :
 
     static const u8 processQuantum = 5; ///< Number of tick each thread gets when starting.
     volatile u8 _remainingTime; ///< Number of tick remaining for _current
-    static const u8 renderingQuantum = 30; ///< Number of tick between renderings
+    static const u8 renderingQuantum = 60; ///< Number of tick between renderings
     volatile u8 _timeToRendering; ///-< Number of tick remaining before rendering
     volatile bool _halted;
     u64 _runTryNum;

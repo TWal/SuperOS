@@ -16,7 +16,7 @@ bool BytesStream::eof(){
 }
 
 size_t BytesStream::write(const void * buf,size_t count){
-    if(count > 2048) count = 2048;
+    //if(count > 2048) count = 2048;
     size_t toWrite;
     if(_data->appendable()) toWrite = count;
     else toWrite = max((size_t)0,min(count,_data->getSize()-_addr));

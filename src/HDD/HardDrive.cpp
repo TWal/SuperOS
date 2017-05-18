@@ -67,7 +67,7 @@ void HDD::writelba (u32 LBA , const void* data, u32 nbsector){
             while(!getStatus().isReadyOrFailed()){}
             assert(getStatus().isOk());
         }
-        WAIT(10);
+        WAIT(2);
         outw(_basePort,reinterpret_cast<const ushort*>(data)[i]);
     }
 

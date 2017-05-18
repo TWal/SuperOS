@@ -26,7 +26,7 @@ void BMP::load(std::string file){
     _buffer24 = (Color24*)malloc(_width*_height *3);
     for(u32 i = 0 ; i < _height ; ++i){
         fseek(f,h.offset + i * realwidth,SEEK_SET);
-        printf("soffset %d %x\n",i,h.offset + i * realwidth);
+        //printf("soffset %d %x\n",i,h.offset + i * realwidth);
         int j = fread(_buffer24 + i * _width,3,_width,f);
         if(j < _width){
             _error = "Can't read line";

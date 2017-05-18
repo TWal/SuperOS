@@ -20,23 +20,23 @@ namespace video{
     }
 
     void Workspace::drawMe(){
-        debug(Graphics,"Drawing Workspace number %u",_number);
+        //debug(Graphics,"Drawing Workspace number %u",_number);
         screen.clear();
         assert(_number == active);
         if(_wins.empty()){
             screen.send();
             return;
         }
-        debug(Graphics," test 0 number %u",_number);
+        //debug(Graphics," test 0 number %u",_number);
         auto it = _wins.end();
         while(it != _wins.begin()){
             --it;
-            debug("drawing win %p",*it);
-            debug("id : %d, size : %d %d",(*it)->getWID(),(*it)->getSize().x, (*it)->getSize().y);
+            //debug("drawing win %p",*it);
+            //debug("id : %d, size : %d %d",(*it)->getWID(),(*it)->getSize().x, (*it)->getSize().y);
             (*it)->send();
             (*it)->drawEdge(Color({0, 50, 150}));
         }
-        debug(Graphics," test 1 number %u",_number);
+        //debug(Graphics," test 1 number %u",_number);
         _wins.front()->drawEdge(Color::red);
         mouse.draw();
         screen.send();

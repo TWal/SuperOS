@@ -120,8 +120,8 @@ u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
 
 u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     Thread* t = schedul.enterSys();
-    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
-            t->getTid(),fd,buf,count);
+    /*fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+            t->getTid(),fd,buf,count);*/
     auto tmp = swrite(t,fd,(const void*)buf,count);
     //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
     //       t->getTid(),fd,buf,count,tmp);
@@ -183,11 +183,11 @@ u64 nbpoll(Thread* t, pollfd* pollfds, u64 nbfds){
 }
 
 u64 syspoll(u64 pollfds, u64 nbfds,u64,u64,u64,u64){
-    
+   
 }*/
 
 u64 sysseek(u64 fd, u64 offset, u64 mode ,u64,u64,u64){
-    debug(Syscalls,"Seek %llu to %lld from %lld", fd, offset, mode);
+    //debug(Syscalls,"Seek %llu to %lld from %lld", fd, offset, mode);
     Thread* t = schedul.enterSys();
     auto pro = t->getProcess();
     if(pro->_fds.size() <= fd) return -EBADF;
@@ -216,10 +216,10 @@ u64 sysseek(u64 fd, u64 offset, u64 mode ,u64,u64,u64){
 
 u64 sysbrk(u64 addr,u64,u64,u64,u64,u64){
     Thread* t = schedul.enterSys();
-    debug(Syscalls,"sysbrk by %d with 0x%p\n",t->getTid(),addr);
+    //debug(Syscalls,"sysbrk by %d with 0x%p\n",t->getTid(),addr);
     if((i64)addr < 0x200000 and addr != 0) return - EFAULT;
     auto tmp = t->getProcess()->_heap.brk((void*)addr);
-    debug(Syscalls,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
+    //debug(Syscalls,"sysbrk by %d with 0x%p returning %p\n",t->getTid(),addr,tmp);
     t->getProcess()->_usermem.DumpTree();
     if(addr !=0) assert(t->getProcess()->_usermem.in((void*)(addr-1)));
     return tmp;
