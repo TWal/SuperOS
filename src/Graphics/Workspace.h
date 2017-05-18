@@ -72,6 +72,7 @@ namespace video{
         void addWin(Window* win);
         void handleEventOnMe(input::Event e);
         static void handleEvent(input::Event e);
+        void remWin(Window* win);
     };
 }
 

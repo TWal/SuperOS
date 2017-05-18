@@ -323,21 +323,25 @@ int closedir(DIR* dirp) {
 #endif
 
 size_t fread(void* buf, size_t size, size_t count, FILE* stream) {
+    char* buf2 = (char*) buf;
     size_t res = 0;
     size_t toRead = size*count;
     size_t cur;
-    while(toRead > 0 && (cur = read(stream->fd, buf, toRead)) != 0) {
+    while(toRead > 0 && (cur = read(stream->fd, buf2, toRead)) != 0) {
+        buf2 += cur;
         res += cur;
         toRead -= cur;
     }
     return res/size;
 }
 
-size_t fwrite(void* buf, size_t size, size_t count, FILE* stream) {
+size_t fwrite(const void* buf, size_t size, size_t count, FILE* stream) {
+    char* buf2 = (char*) buf;
     size_t res = 0;
     size_t toWrite = size*count;
     size_t cur;
-    while(toWrite > 0 && (cur = write(stream->fd, buf, toWrite)) != 0) {
+    while(toWrite > 0 && (cur = write(stream->fd, buf2, toWrite)) != 0) {
+        buf2 +=cur;
         res += cur;
         toWrite -= cur;
     }

@@ -52,8 +52,13 @@ namespace video {
 
     }
     void Screen::set(uint x, uint y, Color c){
-        assert(x < Xsize);
-        assert(y < Ysize);
+        if( x >= Xsize){
+            bsod("drawing at %d %d invalid",x,y);
+        }
+        if( y >= Ysize){
+            bsod("drawing at %d %d invalid",x,y);
+        }
+        //assert(y < Ysize);
         //printf("Set %d,%d\n",x,y);
         buffer[x + y * Xsize] = c;
     }

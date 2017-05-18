@@ -84,11 +84,11 @@ void doublefault(const InterruptParamsErr& par){
 
 /// General protection fault exception handler
 void gpfault(const InterruptParamsErr& par){
-    printf("General Protection at %p with code %x\n", par.rip, par.errorCode);
-    Workspace::draw();
-    //bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
-    breakpoint;
-    while(true) asm volatile("cli;hlt");
+    //printf("General Protection at %p with code %x\n", par.rip, par.errorCode);
+    //Workspace::draw();
+    bsod("General Protection fault at %p with code %x", par.rip, par.errorCode);
+    //breakpoint;
+    //while(true) asm volatile("cli;hlt");
 }
 
 /**
@@ -421,6 +421,7 @@ extern "C" [[noreturn]] void kinit(KArgs* kargs) {
     //     kloop();
     //}
     info("Booting finished, now running");
+    Workspace::active = 1;
     schedul.run();
 
 

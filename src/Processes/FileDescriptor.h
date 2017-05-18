@@ -24,10 +24,10 @@ private:
     u64* _owners;
     std::unique_ptr<Stream>* _str;
     std::unique_ptr<HDD::Directory>* _dir;
-    union {
+    //union {
         video::Window* _win;
         void* _dopen;
-    };
+    //};
     FDtype _type;
     void free();
     void drop();

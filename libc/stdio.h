@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
     size_t fread(void* buf, size_t size, size_t count, FILE* stream);
-    size_t fwrite(void* buf, size_t size, size_t count, FILE* stream);
+    size_t fwrite(const void* buf, size_t size, size_t count, FILE* stream);
 
 
 #ifdef __cplusplus

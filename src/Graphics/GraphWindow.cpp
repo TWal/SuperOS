@@ -27,10 +27,11 @@ namespace video{
     void GraphWindow::send() const{
         //debug("in draw of size %d %d at %d %d", _size.x, _size.y, _offset.x, _offset.y);
         //debug ("Color of 0 0 %d %d", _buffer[0].R,_buffer[0].B);
-        uint lim = _size.y + _offset.y -1;
-        for(uint i = _offset.y +1 ; i < lim ; ++i){
+        
+        uint lim = _size.y + _offset.y;
+        for(uint i = _offset.y ; i < lim ; ++i){
             //debug("buffer offset %d", i * _size.x);
-            screen.writeLine(i,_offset.x +1,_size.x -2,_buffer + (i - _offset.y) * _size.x);
+            screen.writeLine(i,_offset.x,_size.x,_buffer + (i - _offset.y) * _size.x);
         }
         //debug("out draw");
     }
@@ -40,7 +41,12 @@ namespace video{
         }
     }
     void GraphWindow::writeaddr (u64 addr,const void * data, size_t size){
-        //debug("write on GWin %d %d",size, *((int*)data));
+        debug("write on GWin at %p of %d",addr,size);
+        /*for(int i = 0 ; i < size ; ++i){
+            info("%x ",((char*) data)[i]);
+            }*/
+        //stop;
+
         assert(addr + size <= _size.area() *4);
         memcpy((u8*)_buffer + addr,data,size);
     }

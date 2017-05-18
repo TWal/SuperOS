@@ -108,13 +108,20 @@ u64 swrite(Thread*t, uint fd, const void* buf, u64 count){
     if(pro->_fds.size() <= fd) return -EBADF;
     if(!pro->_fds[fd].hasStream()) return -EBADF;
     if(!pro->_fds[fd].check(Stream::WRITABLE)) return -EBADF;
+    /*if(pro->_fds[fd].getType() == FileDescriptor::FDtype::GWINDOW){
+        info("debug write %p",t);
+        for(int i = 0 ; i < count ; ++i){
+            info("%x ",((char*) buf)[i]);
+        }
+        stop;
+        }*/
     return pro->_fds[fd]->write((void*)buf,count); // UserMem must still be active
 }
 
 u64 syswrite(u64 fd, u64 buf, u64 count, u64,u64,u64){
     Thread* t = schedul.enterSys();
-    //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
-    //        t->getTid(),fd,buf,count);
+    fprintf(stderr,"syswrite by %d on %lld to %p with size %lld\n",
+            t->getTid(),fd,buf,count);
     auto tmp = swrite(t,fd,(const void*)buf,count);
     //fprintf(stderr,"syswrite by %d on %lld to %p with size %lld returning %lld\n",
     //       t->getTid(),fd,buf,count,tmp);

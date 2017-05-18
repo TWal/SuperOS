@@ -203,6 +203,7 @@ void Scheduler::timerHandler(const InterruptParams& params){
             pic.endOfInterrupt(0);
             return;
         }
+        
         debug(Schedul,"Time Interrupt at %p",params.rip);
         Context::save(params); // saving context.
         pic.endOfInterrupt(0);
