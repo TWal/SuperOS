@@ -57,6 +57,20 @@ public :
         _tids.set(gid);
     }
 
+    bool canReturn(){
+        return _remainingTime > 0;
+    }
+    bool souldRender(){
+        return _timeToRendering == 0;
+    }
+    void doneRender(){
+        _timeToRendering = renderingQuantum;
+    }
+    void setRet(u64 v){
+        assert(_current);
+        _current->context.rax = v;
+    }
+
 private :
     std::map<u16,Process*> _processes;
     std::map<u16,Thread*> _threads;

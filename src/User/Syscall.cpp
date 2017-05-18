@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include"../Interrupts/Interrupt.h"
 #include "Context.h"
+#include "../Processes/Scheduler.h"
 
 #define STAR 0xC0000081
 #define LSTAR 0xC0000082
@@ -32,6 +33,7 @@ u64 systest(u64 a,u64 b,u64 c,u64 d,u64 e,u64 f){
 }
 
 
+extern "C" void sysleave(u64 ret);
 /// @brief Interrupt handlers for interrupt 0x80
 u64 syscallInt(const InterruptParams& par){
     syscallHandler hand = nullptr;
@@ -39,7 +41,9 @@ u64 syscallInt(const InterruptParams& par){
     else if(handlers[par.rax]) hand = handlers[par.rax];
     else hand = handlers[SYSERROR];
     Context::save(par); // saving context.
-    return hand(par.rbx,par.rcx,par.rdx,par.rsi,par.rdi,par.rbp);
+    u64 a = hand(par.rbx,par.rcx,par.rdx,par.rsi,par.rdi,par.rbp);
+    sysleave(a);
+    return a;
 }
 
 /**
@@ -69,5 +73,18 @@ void syscallInit(){
 /// Save current syscall context in Context::lastContext.
 extern "C" void syssave(){
     Context::lastContext = (Context*)-sizeof(Context);
+}
+
+extern "C" void sysleave(u64 ret){
+    if(!schedul.canReturn()){
+        schedul.setRet(ret);
+        schedul.stopCurent();
+        if(schedul.souldRender()){
+            kloop();
+            schedul.doneRender();
+        }
+        schedul.run();
+    }
+    else return;
 }
 

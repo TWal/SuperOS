@@ -7,6 +7,7 @@
 #include "../User/Syscall.h"
 #include "Scheduler.h"
 #include "../log.h"
+#include "../HDD/FileSystem.h"
 
 using namespace std;
 
@@ -185,6 +186,9 @@ Process::Process(Process& other, Thread* toth, u16 pid):
 
     _usermem = other._usermem;
     _heap = other._heap;
+    auto f = (*other._wd)["."];
+    assert(f->getType() == HDD::FileType::Directory);
+    _wd = std::lifted_static_cast<HDD::Directory>(std::move(f));
     // Creating the new thread and coping the context of the calling thread
     // The new process has only one thread : the copy of the thread that called fork
     Thread* tcopy = new Thread(pid,0,this);

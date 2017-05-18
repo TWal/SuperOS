@@ -32,7 +32,12 @@ syscall:
     testq $-1,(%rbx,%rax,8)     # test if the pointer is activated (non zero)
     cmovzq %rcx,%rax              # if not call handler -1
     call *(%rbx,%rax,8)
-    add $0x10,%rsp
+    add $0x8,%rsp
+    mov %rax,%rdi
+    push %rax
+    call sysleave
+    pop %rax
+    add $0x8,%rsp
     pop %r15
     pop %r14
     pop %r13
