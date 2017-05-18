@@ -1,0 +1,237 @@
+\documentclass{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsopn}
+\usepackage{mathrsfs}
+
+\title{Diapo pour Super OS}
+
+\author{Thibaut Pérami, Théophile Wallez}
+
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+    \frametitle{Introduction}
+    \begin{itemize}
+        \item SuperOS : User-friendly, Preemptive with Enhanced Rendering Operating System
+        \item Pour x86\_64
+        \item Codé en C++
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Boot}
+    \begin{itemize}
+        \item on utilise la convention multiboot
+        \item loader fait maison pour charger un ELF 64-bit (nécessaire à cause du paging)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Pagination}
+    En 32 bits :
+    \begin{itemize}
+        \item deux modes de protection de la mémoire : pagination et segmentation
+        \item 4Go de mémoire virtuelle
+    \end{itemize}
+    En 64 bits :
+    \begin{itemize}
+        \item plus de segmentation, ça ne sert plus qu'à gérer les droits
+        \item la pagination est obligatoire dès le début
+        \item 256To de mémoire virtuelle (sur SuperOS : 1To)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Découpage de l'espace virtuel}
+    \begin{itemize}
+        \item Les adresses positives de 0 à 512 Go sont pour l'user-mode
+        \item Les adresses négatives de -512 Go à 0 sont pour le noyau
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Disque dur}
+    \begin{itemize}
+        \item On communique avec l'interface ATA PIO
+        \item On utilise seulement deux commandes : lire et écrire un LBA
+        \item La plupart des BIOS ont une option pour émuler un driver ATA PIO sur un disque dur SATA
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{Système de fichiers}
+    \begin{itemize}
+        \item On a commencé par faire du FAT32 en lecture
+        \item Finalement on a fait de l'ext2 (lecture et écriture)
+        \item On a aussi un RamFS (pour /tmp et /dev)
+        \item Et un VFS, pour gérer les points de montage
+        \item On gère la mémoire avec des std::unique\_ptr customisés
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Input : clavier et souris}
+    \begin{itemize}
+        \item On utilise l'interface PS/2
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Output : écran et BSOD}
+    \begin{itemize}
+        \item On utilise la spécification VBE
+        \item Pour cela on utilise la convention multiboot de GRUB, qui fournit un buffer vidéo linéaire mappé dans la mémoire physique
+        \item Le loader vérifie que le mode fourni par le bootloader est correct : profondeur 32 bits, bleu puis vert puis rouge puis alpha.
+        \item On fait du double-buffering, pour la copie de la RAM vers la VRAM on utilise des instructions SSE non temporelles
+        \item On peut aller jusqu'à 80FPS
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Organisation des processus}
+    \begin{itemize}
+        \item Groupe de processus : un groupe a un identifiant gid. Il contient des processus, dont le leader a un pid égal au gid
+        \item Processus : possède un espace mémoire dédié, d'une table de descripteurs de fichiers, et une liste de thread dont un principal qui a un tid égal au pid
+        \item Thread : Il partage tout avec les autres threads du processus, sauf ses registres. Son exécution est gérée par le scheduler
+        \item Les processus forment une hiérarchie dont la racine est init
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Appels systèmes}
+    Ils sont similaires à ceux de Linux
+    \begin{itemize}
+        \item read, write
+        \item fork, wait, exit (exit\_group), texit (exit), exec (execv)
+        \item clone (version ultra allégée 0\% de matière grasse)
+        \item open, close, seek
+        \item graphique TODO
+        \item pipe, dup, dup2
+        \item opend (opendir), readd (readdir)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Interface de flux et descripteurs de fichiers}
+    Pour les flux :
+    \begin{itemize}
+        \item on utilise une classe virtuelle pure Stream
+        \item elle possède un masque décrivant ses capacitées
+    \end{itemize}
+    Les descripteurs de fichiers :
+    \begin{itemize}
+        \item représente un flux, un dossier ou une fenêtre
+        \item fait du comptage de référence en interne
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Gestion des fenêtres}
+    \begin{itemize}
+        \item Le gestionnaire de fenêtres est codé en dur dans le noyau (c'est un macro-noyau)
+        \item On a dix workspaces où on peut mettre des fenêtres
+        \item On peut bouger et redimensionner les fenêtres à la souris
+        \item On peut changer les fenêtres de workspace, et changer de keymap (azerty / qwerty / dvorak)
+        \item Deux type de fenêtre : graphique et texte
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Gestion des évènements}
+    \begin{itemize}
+        \item Ils sont envoyés au workspace actif
+        \item Qui le transmet à la fenêtre courante
+        \item Qui le transmet au programme à qui appartient la fenêtre
+    \end{itemize}
+    À chaque étape, les évènements peuvent être "interceptés" (par exemple ceux pour changer de workspace ou de fenêtre)
+\end{frame}
+
+\begin{frame}
+    \frametitle{Attente}
+    \begin{itemize}
+        \item Géré par un couple Waiting, Waitable
+        \item Quand un thread est en attente, le scheduler ne l'exécute pas
+        \item Quand tous les threads sont en attente, le scheduler met en pause le processeur
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Bibliothèque standard}
+    \begin{itemize}
+        \item libc : fonctions d'affichage (printf, putchar, ..), gestion de la mémoire (malloc, free), wrappers pour appels systèmes
+        \item libc++ : ce dont on avait besoin au fur et à mesure
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : les optimisations de GCC}
+    \begin{itemize}
+        \item GCC qui modifie les arguments poussés sur la pile quand il n'en a plus besoin
+        \item GCC qui inline tout et ne prends pas en compte le fait qu'une interruption peut arriver
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : stack overflows}
+    \begin{itemize}
+        \item Au début : pile juste au dessus du code et des données du noyau
+        \item Après : pas de pages en dessous de la pile $\Rightarrow$ triple fault
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : integer overflows}
+    32 bits, c'est petit !
+    \begin{itemize}
+        \item Problème avec les partitions de plus de 4Go
+        \item Problème quand la partition est à plus de 4Go du début du disque
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : trucs qui ont pas l'air important}
+    \begin{itemize}
+        \item Synchronisation du disque dur tous les 512 octets
+        \item Utiliser invlpg à chaque modification du paging pour invalider le cache
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : les émulateurs c'est bien, mais...}
+    \begin{itemize}
+        \item Gros problème de lenteur : on avait activé le writethrough
+        \item Le convertisseur USB $\leftrightarrow$ PS/2 est pas toujours bien
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : le code 64-bit}
+    \begin{itemize}
+        \item Difficile de mélanger du code 32-bit et 64-bit
+        \item Le linker met le code pas là où on veut en 64-bit, alors qu'on a besoin d'être précis pour la convention multiboot
+    \end{itemize}
+    $\rightarrow$ loader fait maison
+\end{frame}
+
+\begin{frame}
+    \frametitle{Difficultées rencontrées : le reste}
+    \begin{itemize}
+        \item Plein de bugs dans libc++ car les objets sont pas forcément construits
+        \item Les spécifications du disque dur sont incohérentes
+        \item Héritage diamant dans le système de fichiers $\rightarrow$ dynamic\_cast, mais il a un fonctionnement quantique
+        \item Quand on testait la suppression sur ext2, on vérifiait avec fsck que le code était correct. Mais il faut effacer tout trace car fsck est très intelligent et peut remonter tout ce qu'on a fait
+    \end{itemize}
+\end{frame}
+
+\end{document}
+
