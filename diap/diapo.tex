@@ -28,12 +28,24 @@
 \end{frame}
 
 \begin{frame}
-    \frametitle{Boot}
+    \frametitle{BootLoading}
     \begin{itemize}
         \item on utilise la convention multiboot
         \item loader fait maison pour charger un ELF 64-bit (nécessaire à cause du paging)
     \end{itemize}
 \end{frame}
+
+\begin{frame}
+  \frametitle{Séquence de boot}
+  \begin{itemize}
+  \item le BIOS charge le MBR et lance.
+  \item le MBR charge grub et le lance.
+  \item GRUB charge loader.elf, kernel.elf, et setup le buffer graphique puis
+    lance le loader.elf
+  \item le loader passe en long mode et lance le kernel
+  \end{itemize}
+\end{frame}
+
 
 \begin{frame}
     \frametitle{Pagination}

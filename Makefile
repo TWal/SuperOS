@@ -313,8 +313,8 @@ init: user/init/init.c libc.a crt0.o
 
 #---------------------------------Disk building------------------------------------
 disk.img :
-	dd if=/dev/zero of=disk.img bs=512 count=131072 #64 MiB
-	#dd if=/dev/zero of=disk.img bs=512 count=2097152 # 1 GiB
+	#dd if=/dev/zero of=disk.img bs=512 count=131072 #64 MiB
+	dd if=/dev/zero of=disk.img bs=512 count=2097152 # 1 GiB
 	#dd if=/dev/zero of=disk.img bs=512 count=4194304 # 2 GiB
 
 load: disk.img
@@ -323,7 +323,7 @@ load: disk.img
 
 partition:
 	#sudo echo "," | sudo sfdisk $(LOOPDEV)
-	sudo echo -e ",32MiB\n,32MiB" | sudo sfdisk $(LOOPDEV)
+	sudo echo -e ",256MiB\n,256MiB" | sudo sfdisk $(LOOPDEV)
 	sudo partprobe $(LOOPDEV)
 	sudo mkfs.$(FSTYPE) $(MKFSARGS) $(LOOPDEV)p1
 	sudo mkfs.$(FSTYPE) $(MKFSARGS) $(LOOPDEV)p2

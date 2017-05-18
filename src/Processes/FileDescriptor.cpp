@@ -12,7 +12,6 @@ FileDescriptor::FileDescriptor(std::unique_ptr<Stream>&& str)
 FileDescriptor::FileDescriptor(std::unique_ptr<HDD::Directory>&& dir)
     : _owners(new u64(0)), _dir(new std::unique_ptr<HDD::Directory>(std::move(dir))), _dopen((*_dir)->open()), _type(DIRECTORY){
     *_owners = 1 ;
-    assert(false);
 }
 
 FileDescriptor::FileDescriptor(video::GraphWindow* win)
@@ -39,7 +38,6 @@ FileDescriptor::FileDescriptor(const FileDescriptor& other):
     if(_type == GWINDOW or _type == TWINDOW) _win = other._win;
     if(_type == DIRECTORY) {
         _dir = other._dir;
-        assert(false);
         _dopen = other._dopen;
     }
 }
@@ -67,7 +65,6 @@ void FileDescriptor::free(){
             return;
         case DIRECTORY:
             (*_dir)->close(_dopen);
-            assert(false);
             delete _dir;
             return;
         case GWINDOW:
