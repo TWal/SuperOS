@@ -84,6 +84,9 @@ int main(int argc, char** argv){
                 redraw = 1;
                 --i;
             }
+            if(e.key.symbol == 'q'){
+                exit(0);
+            }
         }
 
     }
